@@ -68,7 +68,5 @@
         "hubcloudLink": null,
         "filepressLink": null,
         "gdtotLink": null
-    }
-    // ... more movie objects following the same JSON format ...
-    // REMEMBER: NO COMMA after the last object's closing brace }
-]
+ } // Closing brace of the LAST movie object
+] // The final closing square bracket of the whole list. NO COMMA before this!
