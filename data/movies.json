@@ -1,0 +1,74 @@
+[
+    {
+        "id": 1,
+        "filename": "Chhaava.2025.720p.NF.WEB-DL.AAC5.1.AV1-Telly.mkv",
+        "size": "815 MB",
+        "quality": "720p",
+        "languages": "Hindi",
+        "lastUpdated": "2025-04-12",
+        "url": "https://pub-db4aad121b26409eb63bf48ceb693403.r2.dev/Chhaava.2025.720p.NF.WEB-DL.AAC5.1.AV1-Telly.mkv",
+        "telegramLink": "https://t.me/Cinema_ghar_file_share_bot?start=BQADAQADQgkAAo9Z6EeQW8SXp4jhVBYE",
+        "gdflixLink": null,
+        "hubcloudLink": "https://hubcloud.lol/drive/tf9mlhz5mdlfii4",
+        "filepressLink": null,
+        "gdtotLink": null
+    },
+    {
+        "id": 2,
+        "filename": "Chhaava.2025.1080p.NF.WEB-DL.AAC5.1.AV1-Telly.mkv",
+        "size": "~2.8 GB",
+        "quality": "1080p",
+        "languages": "Hindi",
+        "lastUpdated": "2025-04-12",
+        "url": "https://pub-9b19d6a3be994ea8afbf05883e2ab59f.r2.dev/Chhaava.2025.1080p.NF.WEB-DL.AAC5.1.AV1-Telly.mkv",
+        "telegramLink": "https://t.me/Cinema_ghar_file_share_bot?start=BQADAQADQwkAAo9Z6EdleN10XCZ9UhYE",
+        "gdflixLink": null,
+        "hubcloudLink": "https://hubcloud.lol/drive/v215166041eucnb",
+        "filepressLink": null,
+        "gdtotLink": null
+    },
+    {
+        "id": 3,
+        "filename": "Court.State.vs.A.Nobody.2025.720p.NF.WEB-DL.MULTI.AAC5.1.AV1-Telly.mkv",
+        "size": "1.5 GB",
+        "quality": "720p",
+        "languages": "Multi",
+        "lastUpdated": "2025-04-14",
+        "url": "https://pub-db4aad121b26409eb63bf48ceb693403.r2.dev/Court.State.vs.A.Nobody.2025.720p.NF.WEB-DL.MULTI.AAC5.1.AV1-Telly.mkv",
+        "telegramLink": "https://t.me/Cinema_ghar_file_share_bot?start=BQADAQADOgkAAo9Z6Eehby8FfkyjBhYE",
+        "gdflixLink": null,
+        "hubcloudLink": null,
+        "filepressLink": null,
+        "gdtotLink": null
+    },
+    {
+        "id": 4,
+        "filename": "Court.State.vs.A.Nobody.2025.1080p.NF.WEB-DL.MULTI.AAC5.1.AV1-Telly.mkv",
+        "size": "3.0 GB",
+        "quality": "1080p",
+        "languages": "Multi",
+        "lastUpdated": "2025-04-14",
+        "url": "https://pub-db4aad121b26409eb63bf48ceb693403.r2.dev/Court.State.vs.A.Nobody.2025.1080p.NF.WEB-DL.MULTI.AAC5.1.AV1-Telly.mkv",
+        "telegramLink": "https://t.me/Cinema_ghar_file_share_bot?start=BQADAQADQgkAAo9Z6EeQW8SXp4jhVBYE",
+        "gdflixLink": null,
+        "hubcloudLink": null,
+        "filepressLink": null,
+        "gdtotLink": null
+    },
+    {
+        "id": 5,
+        "filename": "Perusu.2025.720p.NF.WEB-DL.MULTI.AAC5.1.AV1-Telly.mkv",
+        "size": "983 MB",
+        "quality": "720p",
+        "languages": "Kannada | Malayalam | Tamil | Telugu",
+        "lastUpdated": "2025-04-14",
+        "url": "https://pub-db4aad121b26409eb63bf48ceb693403.r2.dev/Perusu.2025.720p.NF.WEB-DL.MULTI.AAC5.1.AV1-Telly.mkv",
+        "telegramLink": "https://t.me/Cinema_ghar_file_share_bot?start=BQADAQAD1QcAAmmt6Uf3g7j1B470rRYE",
+        "gdflixLink": null,
+        "hubcloudLink": null,
+        "filepressLink": null,
+        "gdtotLink": null
+    }
+    // ... more movie objects following the same JSON format ...
+    // REMEMBER: NO COMMA after the last object's closing brace }
+]
