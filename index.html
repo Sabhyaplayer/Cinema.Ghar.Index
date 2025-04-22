@@ -1537,8 +1537,8 @@
                SEARCH_DEBOUNCE_DELAY: 300,
                SUGGESTIONS_DEBOUNCE_DELAY: 250, // Keep suggestions client-side for now for simplicity
                MAX_SUGGESTIONS: 50,            // Keep suggestions client-side for now
-               UPDATES_PREVIEW_INITIAL_COUNT: 10,
-               UPDATES_PREVIEW_LOAD_MORE_COUNT: 10,
+               UPDATES_PREVIEW_INITIAL_COUNT: 10, // Initial count for "Recently Added"
+               UPDATES_PREVIEW_LOAD_MORE_COUNT: 10, // How many to load on "Show More"
                MOVIE_DATA_API_URL: '/api/movies' // API endpoint URL (remains the same)
            };
 
@@ -1628,7 +1628,7 @@
            // [NO CHANGES needed to these functions: sanitize, TimeAgo, extractSizeData, getMimeTypeFromUrl, handleVideoError, extractQualityFromFilename, normalizeTextForSearch, escapeRegExp, copyToClipboard]
            // ... (paste all your existing utility functions here, they are needed for display) ...
             const sanitize = (str) => { if (str === null || typeof str === 'undefined') return ""; const temp = document.createElement('div'); temp.textContent = String(str); return temp.innerHTML; };
-            const TimeAgo = { MINUTE: 60, HOUR: 3600, DAY: 86400, WEEK: 604800, MONTH: 2592000, YEAR: 31536000, format: (isoString) => { if (!isoString) return 'N/A'; try { const date = new Date(isoString); const seconds = Math.floor((new Date() - date) / 1000); if (isNaN(seconds) || seconds < 0) { return TimeAgo.formatFullDate(date); } if (seconds < 2) return "just now"; if (seconds < TimeAgo.MINUTE) return `${seconds} sec${seconds > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.HOUR) return `${Math.floor(seconds / TimeAgo.MINUTE)} min${Math.floor(seconds / TimeAgo.MINUTE) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY) return `${Math.floor(seconds / TimeAgo.HOUR)} hr${Math.floor(seconds / TimeAgo.HOUR) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY * 2) return "Yesterday"; if (seconds < TimeAgo.WEEK) return `${Math.floor(seconds / TimeAgo.DAY)} days ago`; if (seconds < TimeAgo.MONTH) return `${Math.floor(seconds / TimeAgo.WEEK)} wk${Math.floor(seconds / TimeAgo.WEEK) > 1 ? 's' : ''} ago`; return TimeAgo.formatFullDate(date, true); } catch (e) { console.error("Date Format Error (TimeAgo):", isoString, e); return 'Invalid Date'; } }, formatFullDate: (date, short = false) => { if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid Date'; const optsDate = short ? { year: '2-digit', month: 'numeric', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' }; const optsTime = { hour: 'numeric', minute: '2-digit', hour12: true }; try { return `${date.toLocaleDateString(undefined, optsDate)}${short ? '' : ', ' + date.toLocaleTimeString(undefined, optsTime)}`; } catch (e) { console.error("toLocaleDateString/Time failed:", e); return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; } } };
+            const TimeAgo = { MINUTE: 60, HOUR: 3600, DAY: 86400, WEEK: 604800, MONTH: 2592000, YEAR: 31536000, format: (isoString) => { if (!isoString) return 'N/A'; try { const date = new Date(isoString); const seconds = Math.floor((new Date() - date) / 1000); if (isNaN(seconds) || seconds < 0) { /* If date is in future or invalid after parsing */ console.warn(`TimeAgo: Invalid seconds calculation for ${isoString}. Parsed date: ${date}. Returning full date.`); return TimeAgo.formatFullDate(date); } if (seconds < 2) return "just now"; if (seconds < TimeAgo.MINUTE) return `${seconds} sec${seconds > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.HOUR) return `${Math.floor(seconds / TimeAgo.MINUTE)} min${Math.floor(seconds / TimeAgo.MINUTE) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY) return `${Math.floor(seconds / TimeAgo.HOUR)} hr${Math.floor(seconds / TimeAgo.HOUR) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY * 2) return "Yesterday"; if (seconds < TimeAgo.WEEK) return `${Math.floor(seconds / TimeAgo.DAY)} days ago`; if (seconds < TimeAgo.MONTH) return `${Math.floor(seconds / TimeAgo.WEEK)} wk${Math.floor(seconds / TimeAgo.WEEK) > 1 ? 's' : ''} ago`; /* Older than a month, show date */ return TimeAgo.formatFullDate(date, true); } catch (e) { console.error("Date Format Error (TimeAgo):", isoString, e); return 'Invalid Date'; } }, formatFullDate: (date, short = false) => { if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid Date'; const optsDate = short ? { year: '2-digit', month: 'numeric', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' }; const optsTime = { hour: 'numeric', minute: '2-digit', hour12: true }; try { return `${date.toLocaleDateString(undefined, optsDate)}${short ? '' : ', ' + date.toLocaleTimeString(undefined, optsTime)}`; } catch (e) { console.error("toLocaleDateString/Time failed:", e); /* Fallback format */ return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; } } };
             function extractSizeData(inputString) { if (!inputString) return { value: 0, unit: '', display: 'N/A', bytes: 0 }; const r = /(?<size>[\d.]+)\s?(?<unit>GB|MB)/i; const m = String(inputString).match(r); if (m?.groups?.size && m?.groups?.unit) { const value = parseFloat(m.groups.size); const unit = m.groups.unit.toUpperCase(); if (!isNaN(value)) { const bytes = unit === 'GB' ? value * 1024 * 1024 * 1024 : value * 1024 * 1024; return { value: value, unit: unit, display: `${value} ${unit}`, bytes: isNaN(bytes) ? 0 : bytes }; } } return { value: 0, unit: '', display: 'N/A', bytes: 0 }; }
             function getMimeTypeFromUrl(url) { if (!url) return 'video/*'; const m = url.match(/\.([a-zA-Z0-9]+)(?:[?#]|$)/); if (!m) return 'video/*'; const ext = m[1].toLowerCase(); const mimeMap = { 'mkv': 'video/x-matroska', 'mp4': 'video/mp4', 'mov': 'video/quicktime', 'avi': 'video/x-msvideo', 'webm': 'video/webm', 'wmv': 'video/x-ms-wmv', 'flv': 'video/x-flv', 'ts': 'video/mp2t', 'm4v': 'video/x-m4v', 'ogv': 'video/ogg' }; return mimeMap[ext] || 'video/*'; }
             function handleVideoError(event) { console.error("HTML5 Video Error:", event, videoElement?.error); let msg = "An unknown error occurred while trying to play the video."; if (videoElement?.error) { switch (videoElement.error.code) { case MediaError.MEDIA_ERR_ABORTED: msg = 'Playback was aborted.'; break; case MediaError.MEDIA_ERR_NETWORK: msg = 'A network error caused the video download to fail.'; break; case MediaError.MEDIA_ERR_DECODE: msg = 'Video decoding error (unsupported codec or corrupt file?).'; break; case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: msg = 'Video format not supported or server/network failed.'; break; default: msg = `An unknown video error occurred (Code: ${videoElement.error.code}).`; break; } } if (audioWarningDiv) { audioWarningDiv.innerHTML = `<strong>Playback Error:</strong> ${sanitize(msg)} <br>Consider using 'Copy URL' with an external player (VLC/MX) or 'Open Externally' (Android).`; audioWarningDiv.style.display = 'block'; } } if (videoElement) { videoElement.addEventListener('error', handleVideoError); }
@@ -1643,7 +1643,7 @@
                // Input 'movie' is a row directly from the API response (database row)
                const processed = { ...movie }; // Copy existing fields
 
-               // Reconstruct some display/sorting fields if needed, or trust API data
+               // Use original_id from DB as the primary identifier for frontend logic
                processed.id = movie.original_id; // Use original_id for consistency with previous logic
                processed.displayFilename = sanitize(movie.filename || '');
 
@@ -1661,7 +1661,14 @@
                }
 
                // Use the timestamp from the DB for date logic
+               // ** IMPORTANT: movie.last_updated_ts MUST be a valid timestamp string (e.g., ISO 8601) from the API **
                processed.lastUpdatedTimestamp = movie.last_updated_ts ? new Date(movie.last_updated_ts).getTime() : 0;
+                if (isNaN(processed.lastUpdatedTimestamp)) {
+                    // If parsing fails, reset timestamp to 0 and log a warning
+                    console.warn(`Invalid date format received for movie ID ${processed.id}, filename "${processed.displayFilename}":`, movie.last_updated_ts);
+                    processed.lastUpdatedTimestamp = 0;
+                }
+
 
                // Use original_id for numeric sorting/linking if needed
                processed.numericId = typeof processed.id === 'number' ? processed.id : Infinity;
@@ -1679,14 +1686,15 @@
            // *** NOTE ***: These functions now take the *processed* movie object
            //              (after preprocessMovieData runs on the API response item)
            function createActionContentHTML(movie) {
-               // ... (Keep your existing createActionContentHTML function exactly as it was) ...
-               // It relies on the processed data format which preprocessMovieData ensures.
+                // ... (Keep your existing createActionContentHTML function exactly as it was) ...
+                // It relies on the processed data format which preprocessMovieData ensures.
                 const displayFilename = movie.displayFilename;
                 const displaySize = movie.sizeData.display;
                 const displayQuality = movie.displayQuality;
                 const streamTitle = (displayFilename || '').split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim() + (displayQuality !== 'N/A' ? ` (${displayQuality})` : '');
-                const formattedDateRelative = TimeAgo.format(movie.last_updated_ts); // Use timestamp field
-                const formattedDateFull = movie.lastUpdatedTimestamp > 0 ? TimeAgo.formatFullDate(new Date(movie.lastUpdatedTimestamp)) : 'N/A';
+                // ** Use the potentially corrected/validated timestamp from preprocessMovieData **
+                const formattedDateRelative = TimeAgo.format(movie.last_updated_ts); // Pass the original string from API, TimeAgo handles null/invalid internally
+                const formattedDateFull = movie.lastUpdatedTimestamp > 0 ? TimeAgo.formatFullDate(new Date(movie.lastUpdatedTimestamp)) : 'N/A'; // Use numeric timestamp for full date
                 let hdrLogoHtml = ''; let fourkLogoHtml = ''; const lowerFilename = (displayFilename || '').toLowerCase();
                 if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
                 if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
@@ -1728,8 +1736,9 @@
                 const displayFilename = movie.displayFilename;
                 const displaySize = movie.sizeData.display;
                 const displayQuality = movie.displayQuality;
-                const formattedDateRelative = TimeAgo.format(movie.last_updated_ts); // Use timestamp
-                const formattedDateFull = movie.lastUpdatedTimestamp > 0 ? TimeAgo.formatFullDate(new Date(movie.lastUpdatedTimestamp)) : 'N/A';
+                // ** Use the potentially corrected/validated timestamp from preprocessMovieData **
+                const formattedDateRelative = TimeAgo.format(movie.last_updated_ts); // Pass original string, TimeAgo handles internal check
+                const formattedDateFull = movie.lastUpdatedTimestamp > 0 ? TimeAgo.formatFullDate(new Date(movie.lastUpdatedTimestamp)) : 'N/A'; // Use numeric for full date
                 let hdrLogoHtml = ''; let fourkLogoHtml = ''; const lowerFilename = (displayFilename || '').toLowerCase();
                 if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
                 if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
@@ -1859,8 +1868,10 @@
                updatesPreviewShownCount = initialCount;
 
                 // Check if API indicated more pages (approximate check)
-               // A better API would return totalItems even for this initial fetch
-               const potentiallyMore = weeklyUpdatesData.length === config.UPDATES_PREVIEW_INITIAL_COUNT;
+                // A better API would return totalItems even for this initial fetch
+                // Let's use the totalPages and page from the response
+                const potentiallyMore = weeklyUpdatesData.length >= config.UPDATES_PREVIEW_INITIAL_COUNT; // Assume more if we got a full page
+
 
                if (potentiallyMore) {
                    showMoreUpdatesButton.style.display = 'block';
@@ -1876,7 +1887,7 @@
                showMoreUpdatesButton.disabled = true;
                showMoreUpdatesButton.textContent = "Loading...";
 
-               const nextPage = Math.floor(updatesPreviewShownCount / config.UPDATES_PREVIEW_LOAD_MORE_COUNT) + 1;
+               const nextPage = Math.floor(updatesPreviewShownCount / config.UPDATES_PREVIEW_LOAD_MORE_COUNT) + 1; // Calculate next page based on count
 
                try {
                    const params = {
@@ -1894,7 +1905,8 @@
                        weeklyUpdatesData.push(...newItems); // Add to the overall list if needed elsewhere
                        updatesPreviewShownCount += newItems.length;
 
-                       if (data.items.length < config.UPDATES_PREVIEW_LOAD_MORE_COUNT || data.page >= data.totalPages) {
+                       // Use totalPages from API response to determine if more exist
+                       if (data.page >= data.totalPages) {
                            showMoreUpdatesButton.textContent = "All Updates Shown";
                            // Keep disabled
                        } else {
@@ -1915,7 +1927,8 @@
            function appendUpdatesToPreview(startIndex, endIndex) {
                if (!updatesPreviewList) return;
                const fragment = document.createDocumentFragment();
-               const itemsToAppend = weeklyUpdatesData.slice(startIndex, endIndex); // Get the correct slice
+               // Use the MASTER weeklyUpdatesData list, slicing the newly added part
+               const itemsToAppend = weeklyUpdatesData.slice(startIndex, endIndex);
 
                itemsToAppend.forEach((movie, indexInSlice) => {
                    const overallIndex = startIndex + indexInSlice; // Calculate correct overall index
@@ -1930,14 +1943,17 @@
                    const lowerFilename = (movie.displayFilename || '').toLowerCase();
                     if (movie.displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
                     if ((movie.displayQuality || '').includes('HDR') || (movie.displayQuality || '').includes('DOLBY VISION') || movie.displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
+                   // ** Use the potentially corrected/validated timestamp from preprocessMovieData **
+                   const formattedDateRelative = TimeAgo.format(movie.last_updated_ts); // Pass original string
+                   const formattedDateFull = movie.lastUpdatedTimestamp > 0 ? TimeAgo.formatFullDate(new Date(movie.lastUpdatedTimestamp)) : 'N/A';
 
                    itemDiv.innerHTML = `
                        <div class="preview-col-id" title="ID: ${sanitize(movie.id || 'N/A')}">${sanitize(movie.id || 'N/A')}</div>
                        <div class="preview-col-filename" title="${movie.displayFilename}">
                            ${sanitize(movie.displayFilename)}${fourkLogoHtml}${hdrLogoHtml}
                        </div>
-                       <div class="preview-col-date" title="${TimeAgo.formatFullDate(new Date(movie.lastUpdatedTimestamp))}">
-                           ${TimeAgo.format(movie.last_updated_ts)}
+                       <div class="preview-col-date" title="${formattedDateFull}">
+                           ${formattedDateRelative} <!-- This uses TimeAgo.format -->
                        </div>
                        <div class="preview-col-view">
                            <button class="button view-button" aria-expanded="false">View</button>
@@ -2015,7 +2031,7 @@
                console.log(`Rendering results for tab: ${activeResultsTab}`, apiResponse);
                console.time("renderActiveResultsView");
 
-               const { tableBody, pagination, pageKey, tableHead } = tabMappings[activeResultsTab];
+               const { tableBody, pagination, tableHead } = tabMappings[activeResultsTab]; // Removed pageKey, not used
                if (!tableBody || !pagination) {
                    console.error("Missing table body or pagination controls for tab:", activeResultsTab);
                    console.timeEnd("renderActiveResultsView");
@@ -2068,9 +2084,13 @@
                    return;
                }
 
+                // Store total pages on the container for potential use in changePage validation
+                targetContainer.dataset.totalPages = totalPages;
+
+
                targetContainer.innerHTML = ''; // Clear previous controls
                let paginationHTML = '';
-               const maxPagesToShow = 5;
+               const maxPagesToShow = 5; // Number of page links shown around current page
                const halfPages = Math.floor(maxPagesToShow / 2);
 
                // Previous Button
@@ -2078,38 +2098,44 @@
 
                // Page Number Logic
                let startPage, endPage;
-               if (totalPages <= maxPagesToShow + 2) { // Show all if few pages
+               if (totalPages <= maxPagesToShow + 2) { // Show all if few pages (e.g., 1 ... 5 6 7)
                    startPage = 1;
                    endPage = totalPages;
                } else { // Calculate window with ellipsis
+                   // Start page is current - half, but at least 2
                    startPage = Math.max(2, currentPage - halfPages);
+                   // End page is current + half, but at most totalPages - 1
                    endPage = Math.min(totalPages - 1, currentPage + halfPages);
-                   // Adjust window if close to edges
-                   if (currentPage - halfPages < 2) {
-                       endPage = Math.min(totalPages - 1, maxPagesToShow);
+
+                   // Adjust window if it bumps against the edges
+                   if (currentPage - halfPages < 2) { // If near the beginning
+                       endPage = Math.min(totalPages - 1, maxPagesToShow); // Show maxPagesToShow buttons (e.g. 1 ... 2 3 4 5 6 ... last)
                    }
-                   if (currentPage + halfPages > totalPages - 1) {
-                       startPage = Math.max(2, totalPages - maxPagesToShow + 1);
+                   if (currentPage + halfPages > totalPages - 1) { // If near the end
+                       startPage = Math.max(2, totalPages - maxPagesToShow + 1); // Show maxPagesToShow buttons (e.g. 1 ... 95 96 97 98 99 ... 100)
                    }
                }
 
-               // First Page Link & Ellipsis
-               if (startPage > 1) {
+                // Always show first page link unless it's the only page or part of the main range
+                if (startPage > 1) {
                    paginationHTML += `<button onclick="changePage(1)" title="Page 1">1</button>`;
+                   // Add ellipsis if there's a gap between 1 and startPage
                    if (startPage > 2) {
                        paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`;
                    }
                }
 
-               // Page Number Buttons
+
+               // Page Number Buttons in the calculated range
                for (let i = startPage; i <= endPage; i++) {
                    paginationHTML += (i === currentPage)
                        ? `<span class="current-page">${i}</span>`
                        : `<button onclick="changePage(${i})" title="Page ${i}">${i}</button>`;
                }
 
-               // Last Page Link & Ellipsis
-               if (endPage < totalPages) {
+                // Always show last page link unless it's the only page or part of the main range
+                if (endPage < totalPages) {
+                   // Add ellipsis if there's a gap between endPage and totalPages
                    if (endPage < totalPages - 1) {
                        paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`;
                    }
@@ -2133,28 +2159,31 @@
            //    currentState.currentPageAll = 1; currentState.currentPageMovies = 1; currentState.currentPageSeries = 1;
            // }
            window.changePage = function(newPage) { // *** MODIFIED ***
-               if (currentViewMode !== 'search' || newPage < 1 || newPage === currentState.currentPage) {
-                   // Basic validation, actual totalPages check happens during render based on API response
+                // Basic validation: Ensure newPage is within reasonable bounds and different from current
+                if (currentViewMode !== 'search' || newPage < 1 || newPage === currentState.currentPage) {
                    return;
                }
+
                 // Check against totalPages from last API response if available
-                // This is slightly imperfect as total could change, but prevents unnecessary clicks
                 const currentPagination = tabMappings[activeResultsTab]?.pagination;
                 if(currentPagination && currentPagination.dataset.totalPages) {
                     const totalP = parseInt(currentPagination.dataset.totalPages, 10);
-                    if(newPage > totalP) return;
+                    if(newPage > totalP) {
+                        console.log(`Change page request to ${newPage} denied, exceeds total pages (${totalP}).`);
+                        return; // Don't proceed if requested page is beyond known total
+                    }
                 }
-
 
                currentState.currentPage = newPage;
                closePlayerIfNeeded(null);
-               // Don't show loading state, just fetch and re-render
+               // Don't show full loading state, maybe just dim slightly? For now, just fetch.
+               // showLoadingStateInTables(`Loading page ${newPage}...`); // Optional: Add loading state
                fetchAndRenderResults().then(() => {
                    // Scroll to top after results are rendered
                    const activeTableBody = tabMappings[activeResultsTab]?.tableBody;
                    scrollToTopOfActiveTable(activeTableBody);
                });
-               saveStateToLocalStorage(); // Save page change potentially
+               saveStateToLocalStorage(); // Save page change potentially (or maybe not save page?)
            }
            function scrollToTopOfActiveTable(tableBodyElement) { /* ... Keep existing function ... */ if (!tableBodyElement) return; const tableContainer = tableBodyElement.closest('.table-container'); if (tableContainer) { const searchBarArea = container.querySelector('#search-focus-area'); const backButtonElem = resultsArea.querySelector('#backToHomeButtonResults'); const filterArea = resultsArea.querySelector('.results-filter-area'); const tabNav = resultsArea.querySelector('.tab-navigation'); let stickyHeaderHeight = 0; if (container.classList.contains('results-active')) { stickyHeaderHeight = (searchBarArea?.offsetHeight || 0) + (backButtonElem?.offsetHeight || 0) + (backButtonElem ? parseFloat(getComputedStyle(backButtonElem).marginBottom) : 0) + (filterArea?.offsetHeight || 0) + (tabNav?.offsetHeight || 0); } const elementTop = tableContainer.getBoundingClientRect().top + window.pageYOffset; const scrollPosition = elementTop - stickyHeaderHeight - 20; window.scrollTo({ top: scrollPosition, behavior: 'smooth' }); } }
            window.switchTab = function(tabId) { // *** MODIFIED ***
@@ -2193,14 +2222,18 @@
                const isCurrentlyAssociatedActiveRow = activeTableActionRow && activeTableActionRow.id === targetRowId;
                const elementToFocusAfterClose = triggerElement || buttonElement;
 
+               // Close any active row (from any source) *before* opening a new one
                if (!isCurrentlyAssociatedActiveRow) {
                    closePlayerIfNeeded(elementToFocusAfterClose);
                    closeActiveActionRow('any', elementToFocusAfterClose);
                }
 
+
                if (isCurrentlyAssociatedActiveRow) {
+                   // If clicking the button for the currently open row, just close it
                    closeActiveActionRow('table', elementToFocusAfterClose);
                } else {
+                   // Open the new action row
                    const movie = currentViewData[dataIndex]; // Get movie from the current page's data
                    if (!movie) { console.error("Movie data not found for index:", dataIndex); return; }
 
@@ -2223,7 +2256,7 @@
                    buttonElement.textContent = 'Hide';
                    buttonElement.setAttribute('aria-expanded', 'true');
                    mainRowElement.classList.add('active-main-row');
-                   activeTableActionRow = targetRow;
+                   activeTableActionRow = targetRow; // Set the new active row
                    focusFirstElementInContainer(targetRow);
                    scrollToRowIfNeeded(mainRowElement);
                }
@@ -2244,14 +2277,18 @@
                const isCurrentlyAssociatedActiveRow = activePreviewActionRow && activePreviewActionRow.id === targetRowId;
                const elementToFocusAfterClose = triggerElement || buttonElement;
 
+                // Close any active row (from any source) *before* opening a new one
                if (!isCurrentlyAssociatedActiveRow) {
                    closePlayerIfNeeded(elementToFocusAfterClose);
                    closeActiveActionRow('any', elementToFocusAfterClose);
                }
 
+
                if (isCurrentlyAssociatedActiveRow) {
+                     // If clicking the button for the currently open row, just close it
                    closeActiveActionRow('preview', elementToFocusAfterClose);
                } else {
+                    // Open the new action row
                    const movie = weeklyUpdatesData[movieIndex]; // Get data from updates array
                    if (!movie) { console.error("Movie data not found for preview index:", movieIndex); return; }
 
@@ -2261,7 +2298,7 @@
                    buttonElement.textContent = 'Hide';
                    buttonElement.setAttribute('aria-expanded', 'true');
                    mainItemDiv.classList.add('active-main-row');
-                   activePreviewActionRow = targetRowDiv;
+                   activePreviewActionRow = targetRowDiv; // Set the new active row
                    focusFirstElementInContainer(targetRowDiv);
                    scrollToRowIfNeeded(mainItemDiv);
                }
@@ -2518,7 +2555,8 @@
                          // Fetch and display only the shared item
                         await displaySharedItem(shareId);
                         // Optionally fetch all qualities in the background for the filter
-                        fetchApiData({limit: 1, type: 'all'}).then(data => { // Dummy fetch to get headers/initial qualities if needed later
+                        // Fetch *some* data to populate quality filter even in shared view
+                        fetchApiData({limit: 100, sort: 'quality', sortDir: 'asc'}).then(data => {
                             if (data && data.items) {
                                 populateQualityFilter(data.items.map(preprocessMovieData)); // Populate filter from any fetched data
                             }
@@ -2532,12 +2570,19 @@
                          // Consider if this is too much data. A server-side suggestion endpoint is better.
                          // For now, let's fetch a decent chunk for suggestions.
                          console.log("Fetching initial data for suggestions...");
+                          // Fetch a broader set, maybe not sorted by date, to get diverse qualities?
+                          // Or, fetch distinct qualities via a dedicated endpoint later.
+                          // Let's stick to recent for now, but increase limit.
                          const suggestionData = await fetchApiData({ limit: 5000, sort: 'lastUpdated', sortDir: 'desc' }); // Fetch a large-ish recent chunk
                          if(suggestionData && suggestionData.items) {
                              localSuggestionData = suggestionData.items.map(preprocessMovieData);
                              console.log(`Loaded ${localSuggestionData.length} items for suggestions.`);
                              // Populate quality filter from this initial data
                              populateQualityFilter(localSuggestionData);
+                         } else {
+                             console.warn("Could not load initial data for suggestions/quality filter.");
+                             // Populate with some defaults if fetch fails?
+                             // populateQualityFilter([]); // Pass empty array to allow hardcoded fallbacks if any
                          }
 
                          // Set the view mode to homepage *after* updates are loaded
