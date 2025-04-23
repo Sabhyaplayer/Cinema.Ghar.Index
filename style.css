@@ -1,0 +1,1284 @@
+/* style.css */
+:root {
+    --primary-color: #0d6efd; /* Bootstrap blue */
+    --primary-hover: #0b5ed7;
+    --secondary-color: #6c757d; /* Bootstrap secondary grey */
+    --secondary-hover: #5a6268;
+    --light-bg: #f8f9fa; /* Very light grey */
+    --container-bg: #ffffff; /* White */
+    --text-color: #212529; /* Dark grey */
+    --text-muted: #6c757d;
+    --border-color: #dee2e6; /* Light grey border */
+    --header-bg: #ffffff; /* Used for results-active search bar background */
+    --table-header-bg: #e9ecef; /* Light grey for table header */
+    --table-row-hover: #f1f3f5; /* Slightly darker hover */
+    --table-row-active: #e6f0ff; /* Subtle blue highlight for active row */
+    --error-color: #dc3545; /* Bootstrap danger */
+    --error-bg: #f8d7da; /* Background for error messages */
+    --error-border: #f5c6cb;
+    --error-text: #721c24;
+    --success-color: #198754; /* Bootstrap success */
+    --warning-bg: #fff3cd;
+    --warning-text: #856404;
+    --warning-border: #ffeeba;
+    --pagination-active-bg: var(--primary-color);
+    --pagination-active-border: var(--primary-color);
+    --pagination-hover-bg: #e9ecef;
+    --pagination-disabled-color: #adb5bd;
+    --pagination-disabled-bg: #ffffff;
+    --pagination-disabled-border: #dee2e6;
+    --filter-active-border: #adb5bd;
+    --tab-active-border: var(--primary-color);
+    --tab-hover-bg: #e9ecef;
+    --suggestion-hover-bg: #e9ecef;
+    --button-secondary-bg: var(--secondary-color);
+    --button-secondary-hover: var(--secondary-hover);
+    --button-primary-bg: var(--primary-color); /* Added for Search button */
+    --button-primary-hover: var(--primary-hover); /* Added for Search button */
+    --button-share-bg: #6f42c1; /* Bootstrap purple for share */
+    --button-share-hover: #5a349b;
+
+    --border-radius-sm: 0.375rem; /* 4px -> MODIFIED TO 0.375rem (6px) */
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 0.75rem; /* MODIFIED TO 0.75rem */
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 10px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 25px rgba(0,0,0,0.1);
+
+    /* For preview item layout */
+    --preview-col-width-id: 10%;
+    --preview-col-width-filename: 55%;
+    --preview-col-width-date: 20%;
+    --preview-col-width-view: 15%;
+
+    /* Transitions */
+    --transition-speed: 0.3s;
+    --transition-timing: ease;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    height: 100%; /* Ensure html takes full height */
+    scroll-behavior: smooth; /* Smooth scrolling for anchors/JS scrolls */
+}
+
+body {
+    font-family: 'Poppins', 'Product Sans', Arial, sans-serif; /* Add Product Sans fallback */
+    /* Simpler background */
+    background-color: var(--container-bg);
+    color: var(--text-color);
+    line-height: 1.6;
+    width: 100%;
+    min-height: 100vh; /* Ensure body takes at least full viewport height */
+    display: flex;
+    flex-direction: column; /* Stack header/content/footer vertically */
+    margin: 0; /* Remove default body margin */
+}
+
+/* Page Loader - Initially visible */
+#page-loader {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease-out;
+}
+#page-loader .spinner-container { /* Added container for spinner + text */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+#page-loader .spinner {
+    width: 50px;
+    height: 50px;
+    border-width: 5px;
+    margin: 0; /* Remove auto margin */
+}
+/* Hide loader via JS by setting display: none */
+
+
+#cinemaghar-container {
+    background-color: transparent;
+    margin: 0 auto; /* Center horizontally */
+    padding: 20px 0 0 0; /* NO bottom padding, footer will handle it */
+    width: 100%;
+    max-width: 1300px; /* Max width */
+    border-radius: 0; /* No radius */
+    box-shadow: none; /* No shadow */
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Allow container to grow */
+    overflow: visible; /* Allow absolute elements */
+    position: relative; /* For absolute positioning (though not used for footer now) */
+    color: var(--text-color);
+    transition: background-color var(--transition-speed) var(--transition-timing),
+                padding var(--transition-speed) var(--transition-timing);
+}
+
+/* Style container when results are shown */
+#cinemaghar-container.results-active {
+    padding-top: 0; /* Remove top padding when results show */
+}
+
+/* --- Search Focus Area (Handles Centering Logic) --- */
+#search-focus-area {
+    display: flex; /* Default state is flex */
+    flex-direction: column;
+    align-items: center; /* Center horizontally */
+    /* Adjusted padding to account for missing top-right buttons space */
+    padding: 100px 20px 20px 20px;
+    text-align: center;
+    transition: flex-grow var(--transition-speed) var(--transition-timing),
+                padding var(--transition-speed) var(--transition-timing),
+                justify-content var(--transition-speed) var(--transition-timing),
+                background-color var(--transition-speed) var(--transition-timing),
+                border-bottom var(--transition-speed) var(--transition-timing);
+    width: 100%;
+    flex-grow: 1; /* Takes up space initially */
+    justify-content: center;
+}
+
+/* State when results are shown: Shrink and align to top */
+#cinemaghar-container.results-active #search-focus-area {
+    flex-grow: 0; /* Don't grow */
+    justify-content: flex-start; /* Align content (search bar) to the top */
+    padding: 20px 20px 10px 20px; /* REDUCED PADDING */
+    background-color: var(--header-bg); /* Need background when results show */
+    border-bottom: 1px solid var(--border-color); /* Separator line */
+}
+/* Hide search focus area completely when showing shared item */
+#cinemaghar-container.shared-view-active #search-focus-area {
+    display: none; /* Hide when shared view is active */
+}
+
+/* --- Simplified Title --- */
+#search-focus-area .simple-title {
+    font-family: 'Poppins', 'Product Sans', Arial, sans-serif;
+    font-size: 60px; /* Adjusted size */
+    font-weight: 500; /* Medium weight */
+    color: var(--text-color); /* Changed from var(--primary-color) */
+    margin-bottom: 5px; /* Reduced margin to bring signature closer */
+    cursor: pointer; /* For reset functionality */
+    transition: opacity var(--transition-speed) var(--transition-timing),
+                max-height var(--transition-speed) var(--transition-timing),
+                margin var(--transition-speed) var(--transition-timing);
+    overflow: hidden;
+    max-height: 150px; /* Adjust as needed */
+    opacity: 1;
+    line-height: 1.2;
+    letter-spacing: -0.5px; /* Optional subtle tightening */
+}
+
+/* Signature Style */
+#search-focus-area .signature {
+    display: block; /* Ensure it takes block level */
+    width: 100%; /* Allow full width for text-align */
+    max-width: 700px; /* Match search bar area width */
+    margin: -5px auto 25px auto; /* Adjusted margin: Negative top to pull up, bottom space */
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: normal;
+    font-weight: 400;
+    text-align: right; /* RIGHT ALIGNED */
+    transition: opacity var(--transition-speed) var(--transition-timing),
+                max-height var(--transition-speed) var(--transition-timing),
+                margin var(--transition-speed) var(--transition-timing);
+    overflow: hidden;
+    max-height: 50px; /* Adjust as needed */
+    opacity: 1;
+}
+
+/* Hide Title, Signature, and Prompt when results are shown */
+#cinemaghar-container.results-active #search-focus-area .simple-title,
+#cinemaghar-container.results-active #search-focus-area .signature {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 0; /* Prevent padding from taking space */
+    border: none; /* Prevent border from taking space */
+    overflow: hidden; /* Ensure fully hidden */
+}
+
+.search-input-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 700px; /* Consistent width */
+    margin: 0 auto 25px auto;
+    display: flex;
+    align-items: center;
+    gap: 0; /* No gap needed if button is attached */
+}
+
+/* Box Style Search Input */
+#cinemaghar-container #mainSearchInput {
+    flex-grow: 1;
+    min-width: 0;
+    width: auto;
+    padding: 12px 18px 12px 45px; /* Adjust padding for icon and box shape */
+    border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm); /* Square left corners */
+    border: 1px solid var(--border-color); /* Consistent border */
+    border-right: none; /* Remove right border to join with button */
+    font-size: 16px;
+    box-shadow: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    height: 46px; /* Adjusted height */
+    outline: none;
+    background-color: var(--container-bg);
+}
+#cinemaghar-container #mainSearchInput:hover {
+    border-color: #adb5bd; /* Darker border on hover */
+    box-shadow: var(--shadow-sm);
+}
+#cinemaghar-container #mainSearchInput:focus {
+    border-color: var(--primary-color); /* Blue border on focus */
+    box-shadow: 0 0 0 1px var(--primary-color); /* Subtle focus ring */
+    z-index: 3; /* Ensure focus outline is on top */
+}
+
+/* Box Style Search Button */
+#cinemaghar-container .search-input-wrapper #searchSubmitButton {
+    flex-shrink: 0;
+    margin: 0;
+    height: 46px; /* Match input height */
+    padding: 0 22px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0; /* Square right corners */
+    background-color: var(--button-primary-bg); /* BLUE Background */
+    color: white !important; /* WHITE Text */
+    border: 1px solid var(--button-primary-bg); /* BLUE Border */
+    box-shadow: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#cinemaghar-container .search-input-wrapper #searchSubmitButton:hover {
+    background-color: var(--button-primary-hover);
+    border-color: var(--button-primary-hover);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Search Icon */
+.search-input-wrapper::before {
+    content: '';
+    position: absolute;
+    left: 15px; /* Adjust icon position for box */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px; /* Icon size */
+    height: 18px;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="%236c757d" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>'); /* Grey icon */
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.7; /* Slightly softer icon */
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Search Suggestions */
+#searchInputSuggestions {
+    position: absolute;
+    top: calc(100% + 1px); /* Position below input */
+    left: 0;
+    width: 100%; /* Full width of wrapper */
+    max-width: 100%;
+    background-color: var(--container-bg);
+    border: 1px solid var(--border-color); /* Match input border */
+    border-top: none;
+    border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm); /* Match box shape */
+    box-shadow: var(--shadow-md); /* Consistent shadow */
+    z-index: 10;
+    max-height: 350px;
+    overflow-y: auto;
+    display: none;
+}
+#searchInputSuggestions div {
+    padding: 10px 18px 10px 45px; /* Match input padding */
+    font-size: 15px; /* Slightly smaller than input */
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+#searchInputSuggestions div:last-child { border-bottom: none; }
+#searchInputSuggestions div:hover { background-color: var(--suggestion-hover-bg); }
+#searchInputSuggestions div strong { font-weight: 600; color: var(--primary-color); }
+
+/* Buttons below search bar */
+.search-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px; /* Increased space */
+    margin-bottom: 30px; /* Added margin below this area */
+    transition: opacity var(--transition-speed) var(--transition-timing),
+                max-height var(--transition-speed) var(--transition-timing),
+                margin var(--transition-speed) var(--transition-timing);
+    overflow: hidden;
+    max-height: 100px; /* Adjust as needed */
+    opacity: 1;
+}
+/* Style these like secondary buttons */
+#cinemaghar-container .search-actions .button {
+    padding: 9px 18px;
+    font-size: 14px;
+    background-color: var(--light-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm); /* Match box shape */
+    box-shadow: none;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+#cinemaghar-container .search-actions .button:hover {
+    border-color: #adb5bd;
+    background-color: #e9ecef;
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+}
+
+/* Hide search action buttons WHEN RESULTS ARE SHOWN */
+#cinemaghar-container.results-active .search-actions {
+    opacity: 0;
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+/* --- Updates Preview Section --- */
+#updates-preview-section {
+    width: 100%;
+    max-width: 850px;
+    margin: 10px auto 0 auto; /* Center below search actions */
+    padding: 20px;
+    background-color: transparent; /* Make transparent */
+    border: none; /* Remove border */
+    border-radius: 0; /* No radius */
+    text-align: left;
+    display: none; /* Hidden by default, shown by JS */
+    transition: opacity var(--transition-speed) var(--transition-timing),
+                transform var(--transition-speed) var(--transition-timing);
+    opacity: 1;
+    transform: translateY(0);
+}
+#updates-preview-section h3 {
+    font-size: 16px; /* Smaller heading */
+    font-weight: 500;
+    margin-bottom: 15px;
+    color: var(--text-muted); /* Muted color */
+    text-align: center;
+}
+#updates-preview-list {
+    margin-bottom: 20px;
+    border-top: 1px solid var(--border-color); /* Add top border */
+    padding-top: 15px;
+}
+.update-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    line-height: 1.4;
+    gap: 10px;
+    transition: background-color 0.2s ease;
+    position: relative;
+}
+.update-item:hover {
+     background-color: var(--table-row-hover);
+}
+.update-item.active-main-row {
+    background-color: var(--table-row-active);
+}
+.update-item:last-of-type {
+    border-bottom: none;
+}
+.update-item > div {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+.update-item .preview-col-id {
+    width: var(--preview-col-width-id);
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.update-item .preview-col-filename {
+    flex-grow: 1;
+    width: var(--preview-col-width-filename);
+    word-break: break-word;
+    white-space: normal;
+    cursor: pointer; /* <<<<< ADDED CURSOR POINTER */
+    font-weight: 500;
+    color: var(--text-color); /* Changed from primary-color to default text */
+    padding-right: 10px;
+    overflow: hidden;
+    min-width: 0;
+    transition: color 0.2s ease; /* Added transition */
+}
+.update-item .preview-col-filename:hover {
+    color: var(--primary-color); /* <<<<< CHANGE COLOR ON HOVER */
+    /* text-decoration: underline; */ /* Optional underline */
+}
+.update-item .preview-col-filename .quality-logo {
+    height: 1.1em;
+    width: auto;
+    vertical-align: text-bottom;
+    margin-left: 6px;
+    display: inline-block;
+    line-height: 1;
+    filter: grayscale(30%);
+    opacity: 0.8;
+}
+.update-item .preview-col-date {
+    width: var(--preview-col-width-date);
+    justify-content: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    text-align: center;
+    flex-shrink: 0;
+}
+.update-item .preview-col-view {
+    width: var(--preview-col-width-view);
+    justify-content: center;
+    flex-shrink: 0;
+}
+.update-item .preview-col-view .button.view-button {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-width: 55px;
+    background-color: var(--button-secondary-bg);
+    color: white !important;
+    border-radius: var(--border-radius-sm);
+    border: none;
+}
+.update-item .preview-col-view .button.view-button:hover {
+    background-color: var(--button-secondary-hover);
+}
+
+/* Action Row for Preview Section */
+.preview-action-row {
+    display: none;
+    padding: 20px 15px;
+    background-color: #f0f2f5;
+    border-bottom: 1px solid var(--border-color);
+    /* box-shadow: inset 0 3px 5px rgba(0,0,0,0.04); */ /* MODIFIED: Commented out */
+}
+/* Common action row styles applied below */
+
+
+#showMoreUpdatesButton {
+    display: block;
+    margin: 10px auto 0 auto;
+    padding: 9px 20px;
+    font-size: 14px;
+    background-color: var(--button-secondary-bg);
+    color: white !important;
+    border: none;
+    border-radius: var(--border-radius-sm); /* Match box theme */
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+#showMoreUpdatesButton:hover {
+    background-color: var(--button-secondary-hover);
+    box-shadow: var(--shadow-sm);
+}
+#showMoreUpdatesButton:disabled {
+    background-color: #adb5bd;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Hide updates preview section when results are active or shared view is active */
+#cinemaghar-container.results-active #updates-preview-section,
+#cinemaghar-container.shared-view-active #updates-preview-section {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: opacity calc(var(--transition-speed) / 2) var(--transition-timing),
+                transform calc(var(--transition-speed) / 2) var(--transition-timing),
+                visibility 0s calc(var(--transition-speed) / 2);
+    visibility: hidden;
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+}
+
+
+/* --- Results Area (Hidden by Default) --- */
+#results-area { /* This is now a <main> tag in HTML */
+    display: none; /* Hidden initially - JS controls display: block */
+    padding: 15px 25px 20px 25px; /* Padding */
+    background-color: var(--container-bg); /* White background */
+    /* flex-grow: 1; */ /* Let content determine height */
+    overflow: hidden; /* Contain elements */
+    width: 100%; /* Ensure it spans width */
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2),
+                transform var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2);
+}
+#cinemaghar-container.results-active #results-area {
+    display: block; /* Show when results are active */
+    opacity: 1;
+    transform: translateY(0);
+}
+/* Hide results area completely when showing shared item */
+#cinemaghar-container.shared-view-active #results-area {
+    display: none;
+}
+
+/* --- Shared Item View (Hidden by Default) --- */
+#shared-item-view { /* This is now a <main> tag in HTML */
+    display: none; /* Hidden initially */
+    padding: 25px;
+    margin-top: 20px;
+    background-color: var(--container-bg);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    max-width: 850px; /* Limit width like action rows */
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2),
+                transform var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2);
+}
+#cinemaghar-container.shared-view-active #shared-item-view {
+    display: block; /* Show when shared view is active */
+    opacity: 1;
+    transform: translateY(0);
+}
+#shared-item-view .back-button {
+    margin-bottom: 25px; /* Space below back button */
+}
+#shared-item-content {
+    /* Styles similar to action row content */
+    padding: 20px 15px;
+    background-color: #f0f2f5;
+    border-radius: var(--border-radius-sm);
+    /* box-shadow: inset 0 3px 5px rgba(0,0,0,0.04); */ /* MODIFIED: Commented out */
+}
+#shared-item-content .action-info,
+#shared-item-content .action-buttons-container {
+    /* Reuse existing action row styles */
+    margin-bottom: 20px;
+}
+#shared-item-content .action-buttons-container {
+    border-top: 1px solid var(--border-color);
+    padding-top: 25px;
+}
+#shared-item-view .status-message,
+#shared-item-view .error-message {
+    text-align: center;
+    padding: 30px 15px;
+    font-size: 16px;
+    color: var(--text-muted);
+}
+#shared-item-view .error-message {
+    color: var(--error-text); /* Use defined error text color */
+    background-color: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-radius: var(--border-radius-sm);
+    font-weight: 500;
+}
+
+
+/* MODIFICATION: Back Button Styling */
+#cinemaghar-container .back-button {
+    display: none; /* Hidden by default */
+    align-items: center; /* Align icon and text */
+    margin-bottom: 15px; /* Space below */
+    padding: 8px 16px;
+    font-size: 14px;
+    background-color: var(--light-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    align-self: flex-start; /* Keep it left-aligned */
+    width: max-content; /* Prevent taking full width */
+}
+
+#cinemaghar-container .back-button:hover {
+    border-color: #adb5bd;
+    background-color: #e9ecef;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Show back button only when results or shared view are active */
+#cinemaghar-container.results-active #backToHomeButtonResults,
+#cinemaghar-container.shared-view-active #backToHomeButtonShared {
+    display: inline-flex; /* Use inline-flex to allow margin */
+}
+/* No need for explicit hide rules, default is display: none */
+
+
+/* --- Results Filter Area --- */
+.results-filter-area {
+    display: flex;
+    gap: 20px;
+    margin: 0 0 20px 0;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+.results-filter-area .filter-group { display: flex; align-items: center; gap: 8px; }
+.results-filter-area label { font-size: 14px; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
+#cinemaghar-container #mainQualityFilterSelect {
+    padding: 9px 12px;
+    border-radius: var(--border-radius-sm); /* Match box theme */
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    min-width: 160px;
+    height: 40px;
+    line-height: 1.5;
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%236c757d" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>');
+    background-repeat: no-repeat; background-position: right 10px center; background-size: 16px 12px;
+    padding-right: 35px; outline: none;
+}
+#cinemaghar-container #mainQualityFilterSelect:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+}
+#cinemaghar-container #mainQualityFilterSelect.filter-active {
+     border-color: var(--primary-color); /* Indicate filter is active */
+     font-weight: 500;
+}
+
+/* --- Tab Navigation --- */
+.tab-navigation { /* This is now a <nav> tag in HTML */
+    display: flex;
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+.tab-navigation .tab-button { /* Specificity increased slightly due to <nav> */
+    padding: 12px 25px;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.2s ease-in-out;
+    margin-bottom: -1px;
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+    white-space: nowrap;
+}
+.tab-navigation .tab-button:hover {
+    background-color: var(--tab-hover-bg);
+    color: var(--text-color);
+}
+.tab-navigation .tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--tab-active-border);
+    font-weight: 600;
+}
+
+/* --- Tab Content --- */
+.tab-content > div { display: none; padding-top: 0; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.tab-content > div.active { display: block; }
+
+/* --- Tables --- */
+#cinemaghar-container .table-container {
+    overflow-x: auto;
+    background: var(--container-bg);
+    border-radius: var(--border-radius-sm); /* Match box theme */
+    box-shadow: none;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+}
+#cinemaghar-container table { width: 100%; border-collapse: collapse; min-width: 650px; }
+#cinemaghar-container th, #cinemaghar-container td { padding: 14px 12px; border: none; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 14px; vertical-align: middle; font-weight: 400; }
+#cinemaghar-container th { background-color: var(--table-header-bg); font-weight: 600; color: var(--text-color); white-space: nowrap; position: sticky; top: 0; z-index: 2; cursor: pointer; user-select: none; }
+#cinemaghar-container th:not(.sortable) { cursor: default; }
+#cinemaghar-container th.col-id, #cinemaghar-container td.col-id,
+#cinemaghar-container th.col-size, #cinemaghar-container td.col-size,
+#cinemaghar-container th.col-quality, #cinemaghar-container td.col-quality,
+#cinemaghar-container th.col-updated, #cinemaghar-container td.col-updated,
+#cinemaghar-container th.col-view, #cinemaghar-container td.col-view { text-align: center; white-space: nowrap; }
+
+/* Sorting Indicators */
+#allFilesTable th.sortable:hover, #moviesTable th.sortable:hover, #seriesTable th.sortable:hover { background-color: #dde2e6; }
+#cinemaghar-container th .sort-indicator { display: inline-block; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; margin-left: 8px; vertical-align: middle; opacity: 0.5; transition: opacity 0.2s ease, border-color 0.2s; }
+#cinemaghar-container th.sort-asc .sort-indicator { border-bottom: 5px solid var(--primary-color); opacity: 1; }
+#cinemaghar-container th.sort-desc .sort-indicator { border-top: 5px solid var(--primary-color); opacity: 1; }
+#cinemaghar-container th:not(.sortable) .sort-indicator { display: none; }
+
+/* Column widths */
+#cinemaghar-container th.col-id, #cinemaghar-container td.col-id { width: 8%; }
+#cinemaghar-container th.col-filename, #cinemaghar-container td.col-filename { width: 45%; }
+#cinemaghar-container th.col-size, #cinemaghar-container td.col-size { width: 12%; }
+#cinemaghar-container th.col-quality, #cinemaghar-container td.col-quality { width: 13%; }
+#cinemaghar-container th.col-updated, #cinemaghar-container td.col-updated { width: 12%; }
+#cinemaghar-container th.col-view, #cinemaghar-container td.col-view { width: 10%; }
+
+#cinemaghar-container tr:last-of-type td:not(.action-row td) { border-bottom: none; }
+#cinemaghar-container tbody tr.movie-data-row:hover {
+    background-color: var(--table-row-hover);
+}
+#cinemaghar-container tbody tr.movie-data-row.active-main-row {
+    background-color: var(--table-row-active);
+}
+
+#cinemaghar-container td.col-filename { word-break: break-word; text-align: left; min-width: 150px; cursor: pointer; color: var(--primary-color); font-weight: 500; transition: color 0.2s ease; white-space: normal; position: relative; }
+#cinemaghar-container td.col-filename:hover { color: var(--primary-hover); text-decoration: underline; }
+#cinemaghar-container td.col-filename .quality-logo { height: 1.1em; width: auto; vertical-align: text-bottom; margin-left: 6px; display: inline-block; line-height: 1; filter: grayscale(30%); opacity: 0.8; transition: filter 0.2s ease, opacity 0.2s ease; }
+#cinemaghar-container td.col-filename:hover .quality-logo { filter: grayscale(0%); opacity: 1; }
+#cinemaghar-container td.col-quality { text-align: center; min-width: 80px; white-space: nowrap; font-weight: 500; }
+#cinemaghar-container td.col-updated { white-space: nowrap; min-width: 100px; color: var(--text-muted); font-size: 13px; text-align: center; }
+#cinemaghar-container td.status-message, #cinemaghar-container td.error-message { color: var(--text-muted); font-style: italic; text-align: center; padding: 25px; font-size: 15px; }
+#cinemaghar-container td.error-message { color: var(--error-text); background-color: var(--error-bg); border: 1px solid var(--error-border); font-weight: 500; font-style: normal; }
+#cinemaghar-container td.loading-message { color: var(--text-muted); text-align: center; padding: 35px 15px; font-size: 15px; }
+#cinemaghar-container td.loading-message .spinner { margin: 0 auto 10px auto; }
+
+/* Action Row (Table) */
+#cinemaghar-container tr.action-row { display: none; background-color: #f8f9fa; }
+#cinemaghar-container .action-row td { padding: 25px 20px; text-align: left; border-bottom: none; /* box-shadow: inset 0 3px 5px rgba(0,0,0,0.04); */ /* MODIFIED: Commented out */ }
+/* Common Action Info/Buttons styles used by table, preview, and shared view */
+#cinemaghar-container .action-info,
+#cinemaghar-container .preview-action-row .action-info,
+#cinemaghar-container #shared-item-content .action-info {
+    margin-bottom: 20px; font-size: 14px; color: var(--text-muted); text-align: left; line-height: 1.7;
+}
+#cinemaghar-container .action-info .info-item,
+#cinemaghar-container .preview-action-row .action-info .info-item,
+#cinemaghar-container #shared-item-content .action-info .info-item {
+    display: block; margin-bottom: 8px;
+}
+#cinemaghar-container .action-info strong,
+#cinemaghar-container .preview-action-row .action-info strong,
+#cinemaghar-container #shared-item-content .action-info strong {
+    color: var(--text-color); font-weight: 600; margin-right: 8px; display: inline-block; min-width: 90px;
+}
+#cinemaghar-container .action-info .quality-logo,
+#cinemaghar-container .preview-action-row .action-info .quality-logo,
+#cinemaghar-container #shared-item-content .action-info .quality-logo {
+    height: 1.1em; width: auto; vertical-align: text-bottom; margin-left: 4px; display: inline-block;
+}
+#cinemaghar-container .action-buttons-container,
+#cinemaghar-container .preview-action-row .action-buttons-container,
+#cinemaghar-container #shared-item-content .action-buttons-container {
+    display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 12px; margin-bottom: 15px; border-top: 1px solid var(--border-color); padding-top: 25px;
+}
+/* Remove bottom margin from last element in shared content */
+#cinemaghar-container #shared-item-content > *:last-child {
+    margin-bottom: 0;
+}
+/* Ensure border-top doesn't apply if action-info is first in shared content */
+#cinemaghar-container #shared-item-content > .action-buttons-container:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+
+/* --- Buttons General Styling --- */
+/* Excludes search button, footer buttons, preview view button, table view button, back button */
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) {
+    display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; margin: 2px 0; color: white !important; border: none; border-radius: var(--border-radius-sm); /* Match box theme */ text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; white-space: nowrap; line-height: 1.4; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm);
+}
+/* MODIFIED: Added span style for emojis */
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) span[aria-hidden="true"] {
+    margin-right: 0.5em;
+    font-size: 1.1em; /* Slightly larger emoji */
+    line-height: 1; /* Ensure alignment */
+}
+
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):hover {
+    opacity: 0.9; filter: brightness(1.1); box-shadow: 0 3px 7px rgba(0,0,0,0.12); transform: translateY(-1px);
+}
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):active {
+    filter: brightness(0.9); transform: translateY(0); box-shadow: var(--shadow-sm);
+}
+
+/* Specific Button Colors (Adjust radius) */
+#cinemaghar-container .movie-data-row .view-button { background-color: var(--button-secondary-bg); padding: 6px 12px !important; /* Smaller padding */ font-size: 12px !important; min-width: 55px; border-radius: var(--border-radius-sm) !important; border: none; color: white !important; } /* Table row view button */
+#cinemaghar-container .movie-data-row .view-button:hover { background-color: var(--button-secondary-hover); }
+#cinemaghar-container .play-button { background-color: var(--success-color); border-radius: var(--border-radius-sm); }
+#cinemaghar-container .intent-button { background-color: #17a2b8; border-radius: var(--border-radius-sm); }
+#cinemaghar-container .vlc-button { background-color: #fd7e14; border-radius: var(--border-radius-sm); }
+#cinemaghar-container .download-button { background-color: var(--primary-color); border-radius: var(--border-radius-sm); }
+#cinemaghar-container .telegram-button:not(#page-footer .button) { background-color: #0088cc; border-radius: var(--border-radius-sm); } /* Avoid conflict with footer */
+#cinemaghar-container .gdflix-button { background-color: #E50914; border-radius: var(--border-radius-sm); }
+#cinemaghar-container .hubcloud-button { background-color: #1E90FF; border-radius: var(--border-radius-sm); }
+#cinemaghar-container .filepress-button { background-color: #6c757d; border-radius: var(--border-radius-sm); }
+#cinemaghar-container .gdtot-button { background-color: #ffc107; color: #333 !important; border-radius: var(--border-radius-sm); }
+/* Share Button Style */
+#cinemaghar-container .share-button { background-color: var(--button-share-bg); border-radius: var(--border-radius-sm); }
+#cinemaghar-container .share-button:hover { background-color: var(--button-share-hover); }
+
+
+/* --- Copy Feedback (Shared Class) --- */
+#cinemaghar-container .copy-feedback {
+    display: none; /* Initially hidden */
+    margin-left: 10px;
+    font-size: 13px;
+    color: var(--success-color);
+    font-weight: 600;
+    opacity: 0; /* Start transparent */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    vertical-align: middle;
+    transform: translateY(3px) scale(0.95); /* Start slightly down and smaller */
+    pointer-events: none; /* Don't block clicks */
+}
+#cinemaghar-container .copy-feedback.show {
+    opacity: 1;
+    transform: translateY(0) scale(1); /* Animate to normal position and size */
+}
+/* Specific styling for the share fallback message if needed */
+#cinemaghar-container .copy-feedback.share-fallback {
+     color: var(--text-muted); /* Make it less prominent */
+}
+/* Error state for feedback */
+#cinemaghar-container .copy-feedback.error {
+     color: var(--error-color);
+}
+
+/* --- Video Player Container --- */
+#cinemaghar-container .video-container { margin: 20px auto 0 auto; background: #f0f2f5; padding: 50px 20px 20px 20px; border-radius: var(--border-radius-sm); /* Match box theme */ box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; width: 100%; max-width: 850px; text-align: center; display: flex; flex-direction: column; }
+#cinemaghar-container .close-btn { position: absolute; top: 15px; right: 18px; background: var(--error-color); color: white !important; border: none; padding: 6px 12px; border-radius: var(--border-radius-sm); /* Match box theme */ cursor: pointer; font-size: 14px; font-weight: 500; z-index: 10; transition: background-color 0.2s ease; }
+#cinemaghar-container .close-btn:hover { background-color: #c82333; }
+#cinemaghar-container #audioWarning { display: none; background-color: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); padding: 12px; margin-bottom: 15px; border-radius: var(--border-radius-sm); /* Match box theme */ font-size: 14px; text-align: center; position: relative; z-index: 1; line-height: 1.5; flex-shrink: 0; }
+#cinemaghar-container #audioWarning strong { font-weight: 600; }
+#cinemaghar-container #html5VideoPlayer { width: 100%; max-height: 480px; display: block; margin: 10px auto 15px auto; background: black; border-radius: var(--border-radius-sm); /* Match box theme */ outline: none; box-shadow: var(--shadow-md); flex-shrink: 1; flex-grow: 1; object-fit: contain; cursor: default; }
+#cinemaghar-container .custom-controls { margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0; position: relative; }
+#cinemaghar-container .custom-controls .button { background-color: #5a6268; min-width: 60px; font-size: 12px; padding: 6px 10px; color: white !important; border-radius: var(--border-radius-sm); /* Match box theme */ border: none;}
+#cinemaghar-container .custom-controls .button:hover { background-color: #495057; }
+#cinemaghar-container #audioTrackSelect { padding: 6px 10px; border-radius: var(--border-radius-sm); /* Match box theme */ background-color: #e9ecef; border: 1px solid var(--border-color); font-size: 13px; font-family: inherit; cursor: pointer; max-width: 150px; display: none; transition: border-color 0.2s ease; height: 30px; line-height: 1; vertical-align: middle; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%236c757d" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>'); background-repeat: no-repeat; background-position: right 5px center; background-size: 12px 10px; padding-right: 25px; }
+#cinemaghar-container #audioTrackSelect:focus { border-color: var(--primary-color); outline: none; }
+#cinemaghar-container #videoTitle { font-weight: 600; margin-bottom: 15px; font-size: 18px; color: var(--text-color); position: relative; z-index: 1; padding-top: 0; text-align: left; word-break: break-word; flex-shrink: 0; }
+#cinemaghar-container .vlc-copy-box { margin-top: 20px; background: #e9ecef; padding: 12px 15px; border-radius: var(--border-radius-sm); /* Match box theme */ font-size: 14px; word-wrap: break-word; line-height: 1.6; color: var(--text-muted); text-align: left; border: 1px solid var(--border-color); flex-shrink: 0; display: none; }
+#cinemaghar-container .vlc-copy-box strong { color: var(--text-color); font-weight: 600; display: block; margin-bottom: 5px; }
+#cinemaghar-container .vlc-copy-box code { background: #dcdcdc; padding: 3px 6px; border-radius: var(--border-radius-sm); font-family: 'Courier New', Courier, monospace; word-break: break-all; color: #333; font-size: 13px; display: block; margin-top: 3px; user-select: all; }
+.player-control-group { display: flex; align-items: center; gap: 6px; } .player-control-group label { font-size: 12px; color: var(--text-muted); white-space: nowrap; } #volumeSlider { width: 80px; cursor: pointer; height: 5px; transition: opacity 0.2s ease; vertical-align: middle; accent-color: var(--primary-color); } #playbackSpeedSelect { padding: 4px 8px; font-size: 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background-color: #fff; height: 30px; line-height: 1; vertical-align: middle; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%236c757d" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>'); background-repeat: no-repeat; background-position: right 5px center; background-size: 12px 10px; padding-right: 25px; }
+
+/* --- Fullscreen Player Styles --- */
+#cinemaghar-container .video-container.is-fullscreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; max-width: none; padding: 0; margin: 0; border-radius: 0; background-color: black; z-index: 2147483647; display: flex; flex-direction: column; justify-content: center; }
+#cinemaghar-container .video-container.is-fullscreen #html5VideoPlayer { width: 100%; height: 100%; max-height: none; flex-grow: 1; flex-shrink: 1; border-radius: 0; box-shadow: none; margin: 0; object-fit: contain; cursor: default; }
+#cinemaghar-container .video-container.is-fullscreen .custom-controls, #cinemaghar-container .video-container.is-fullscreen .close-btn, #cinemaghar-container .video-container.is-fullscreen #videoTitle, #cinemaghar-container .video-container.is-fullscreen #audioWarning, #cinemaghar-container .video-container.is-fullscreen .vlc-copy-box { display: none !important; }
+
+/* --- Pagination --- */
+.pagination-container { text-align: center; margin: 30px 0 15px 0; user-select: none; }
+.pagination-container button, .pagination-container span { display: inline-block; padding: 9px 16px; margin: 0 4px; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); /* Match box theme */ background-color: white; color: var(--primary-color); cursor: pointer; font-size: 14px; transition: all 0.2s ease; vertical-align: middle; }
+.pagination-container button:hover:not(:disabled) { background-color: var(--pagination-hover-bg); border-color: #adb5bd; }
+.pagination-container span.current-page { background-color: var(--pagination-active-bg); border-color: var(--pagination-active-border); color: white; font-weight: 600; cursor: default; }
+.pagination-container button:disabled { color: var(--pagination-disabled-color); background-color: var(--pagination-disabled-bg); border-color: var(--pagination-disabled-border); cursor: not-allowed; opacity: 0.7; }
+.pagination-container .page-info { font-size: 13px; color: var(--text-muted); margin: 0 5px; padding: 9px 0; border: none; background: none; cursor: default; display: inline-block; vertical-align: middle; }
+
+/* --- Spinner --- */
+.spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: var(--primary-color); margin: 30px auto; animation: spin 1s ease infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Loading messages with spinner */
+.loading-inline-spinner { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 20px; }
+.loading-inline-spinner .spinner { margin: 0; width: 24px; height: 24px; border-width: 3px; }
+.loading-inline-spinner span { color: var(--text-muted); font-size: 14px; }
+
+/* Error message container styling */
+.error-container {
+    padding: 20px;
+    text-align: center;
+    width: 100%;
+    background-color: var(--error-bg);
+    color: var(--error-text);
+    border: 1px solid var(--error-border);
+    border-radius: var(--border-radius-sm);
+    margin: 20px auto;
+    max-width: 800px;
+}
+
+/* --- Footer Styles --- */
+#page-footer {
+    width: 100%;
+    margin-top: 40px; /* Space above footer */
+    padding: 25px 20px; /* Padding inside footer */
+    border-top: 1px solid var(--border-color);
+    background-color: var(--light-bg); /* Subtle background */
+    text-align: center;
+    display: flex; /* Default state is flex */
+    flex-direction: column; /* Stack text and buttons vertically initially */
+    align-items: center;
+    gap: 15px; /* Gap between text and button row */
+    flex-shrink: 0; /* Prevent footer from shrinking */
+    transition: display var(--transition-speed) var(--transition-timing);
+}
+/* Hide footer in shared view */
+#cinemaghar-container.shared-view-active #page-footer {
+    display: none; /* Hide when shared view is active */
+}
+
+#page-footer .footer-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 0; /* Remove extra margin */
+}
+
+#page-footer .footer-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* Space between buttons */
+    flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+}
+
+/* Style for footer buttons */
+#cinemaghar-container #page-footer .button {
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
+    padding: 8px 15px; /* Slightly larger padding than original top-right */
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-sm); /* Subtle shadow for depth */
+    background-color: var(--primary-color); /* BLUE */
+    color: white !important; /* WHITE TEXT */
+    border: 1px solid var(--primary-color); /* BLUE BORDER */
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+#cinemaghar-container #page-footer .button:hover {
+    background-color: var(--primary-hover); /* Darker blue on hover */
+    border-color: var(--primary-hover);
+    color: white !important;
+    box-shadow: var(--shadow-md); /* Slightly stronger shadow on hover */
+    filter: none;
+    opacity: 1;
+    transform: translateY(-1px); /* Slight lift on hover */
+}
+/* Icon styling for footer buttons */
+#cinemaghar-container #page-footer .button svg {
+    height: 1em;
+    width: 1em;
+    margin-right: 6px; /* Slightly more space for icon */
+    vertical-align: text-bottom;
+    fill: white; /* WHITE ICON */
+    opacity: 1;
+}
+
+/* --- Responsive Styles --- */
+@media screen and (max-width: 768px) {
+  body { font-size: 14px; }
+  #cinemaghar-container {
+      max-width: 100%;
+      margin: 0;
+      padding: 10px 0 0 0; /* NO bottom padding */
+      border-radius: 0;
+      box-shadow: none;
+      flex-grow: 1;
+  }
+
+  /* Search Focus Area on mobile */
+  #search-focus-area {
+      padding: 70px 15px 20px 15px; /* Adjust top padding */
+  }
+  #cinemaghar-container.results-active #search-focus-area {
+      padding: 15px 15px 10px 15px; /* Adjusted padding */
+      border-bottom: 1px solid var(--border-color);
+      min-height: 67px; /* Ensure minimum height to prevent jitter */
+  }
+
+  /* Title Mobile */
+  #search-focus-area .simple-title {
+      font-size: 42px; /* Smaller title */
+      margin-bottom: 0px;
+  }
+  /* Signature Mobile */
+  #search-focus-area .signature {
+      font-size: 11px;
+      margin: -2px auto 20px auto; /* Adjust margin */
+      max-width: 95%; /* Allow wider on mobile */
+  }
+
+  /* Search Input Wrapper Mobile */
+  .search-input-wrapper {
+      margin-bottom: 20px;
+      max-width: 95%;
+      gap: 0; /* No gap */
+  }
+  #cinemaghar-container #mainSearchInput {
+      padding: 10px 15px 10px 40px; /* Adjust padding */
+      font-size: 14px;
+      height: 42px; /* Slightly shorter */
+      border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
+  }
+   /* Search Button Mobile */
+   #cinemaghar-container .search-input-wrapper #searchSubmitButton {
+       height: 42px; /* Match mobile input height */
+       padding: 0 18px; /* Adjust padding */
+       font-size: 13px;
+       border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+   }
+  .search-input-wrapper::before { left: 12px; width: 16px; height: 16px; opacity: 0.6; } /* Adjust icon */
+
+  /* Search Suggestions Mobile */
+  #searchInputSuggestions {
+      width: 100%;
+      max-width: 100%;
+      top: calc(100% + 1px); /* Smaller gap */
+      border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
+  }
+  #searchInputSuggestions div { padding: 9px 15px 9px 40px; font-size: 14px; } /* Adjust padding */
+
+  .search-actions { gap: 10px; margin-bottom: 25px; margin-top: 15px; }
+  #cinemaghar-container .search-actions .button { padding: 9px 16px; font-size: 13px; }
+
+  #updates-preview-section {
+      max-width: 100%; /* Allow full width on mobile */
+      padding: 15px;
+      margin-top: 5px;
+      border-left: none;
+      border-right: none;
+      border-radius: 0;
+  }
+  #updates-preview-section h3 { font-size: 14px; margin-bottom: 12px; }
+  #updates-preview-list { padding-top: 10px;}
+  .update-item {
+      font-size: 13px;
+      padding: 10px 5px; /* Adjust padding */
+      gap: 5px; /* Reduce gap */
+  }
+  .update-item .preview-col-id { width: 12%; font-size: 12px; }
+  .update-item .preview-col-filename { width: 53%; font-weight: 500; /* Ensure consistent weight */ }
+  .update-item .preview-col-filename .quality-logo { height: 1em; }
+  .update-item .preview-col-date { width: 18%; font-size: 11px; }
+  .update-item .preview-col-view { width: 17%; }
+  .update-item .preview-col-view .button.view-button { font-size: 11px; padding: 5px 8px; min-width: 40px; }
+
+  /* Preview Action Row on mobile */
+  #cinemaghar-container .preview-action-row { padding: 15px 10px; }
+  #cinemaghar-container .preview-action-row .action-info { font-size: 13px; margin-bottom: 15px; }
+  #cinemaghar-container .preview-action-row .action-info .info-item { margin-bottom: 6px; line-height: 1.5; }
+  #cinemaghar-container .preview-action-row .action-info strong { min-width: 65px; margin-right: 5px; }
+  #cinemaghar-container .preview-action-row .action-info .quality-logo { height: 0.9em; }
+  #cinemaghar-container .preview-action-row .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
+  #cinemaghar-container .preview-action-row .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; }
+  #cinemaghar-container .preview-action-row .action-buttons-container .view-button { width: 100%; } /* Make table view button full width too */
+
+
+  #showMoreUpdatesButton { font-size: 13px; padding: 8px 18px; }
+
+
+  /* Results Area on mobile */
+  #results-area { margin: 0; padding: 15px; border-radius: 0;}
+
+  /* Shared Item View on mobile */
+  #shared-item-view {
+      padding: 15px;
+      margin-top: 10px;
+      max-width: 95%;
+      border-radius: var(--border-radius-sm);
+  }
+  #shared-item-view .back-button {
+      margin-bottom: 20px;
+      padding: 7px 12px;
+      font-size: 13px;
+  }
+  #shared-item-content {
+      padding: 15px 10px;
+  }
+  #shared-item-content .action-info {
+      font-size: 13px; margin-bottom: 15px;
+  }
+   #shared-item-content .action-info .info-item {
+      margin-bottom: 6px; line-height: 1.5;
+  }
+   #shared-item-content .action-info strong {
+      min-width: 65px; margin-right: 5px;
+  }
+   #shared-item-content .action-info .quality-logo {
+      height: 0.9em;
+  }
+   #shared-item-content .action-buttons-container {
+      flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px;
+  }
+   #shared-item-content .action-buttons-container .button {
+      font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; box-sizing: border-box;
+   }
+   /* Shared item copy feedback spacing */
+   #shared-item-content .action-buttons-container .copy-feedback {
+      margin-left: 0;
+      margin-top: 5px;
+      text-align: center;
+      width: 100%;
+      display: block; /* Ensure it takes space below button */
+      vertical-align: initial;
+   }
+
+
+  /* MODIFICATION: Back Button Mobile Style */
+  #cinemaghar-container .back-button { /* General style for mobile back buttons */
+      padding: 7px 12px;
+      font-size: 13px;
+  }
+
+  .results-filter-area {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      margin: 0 0 15px 0;
+      padding-bottom: 15px;
+  }
+  .results-filter-area .filter-group { justify-content: space-between; }
+  #cinemaghar-container #mainQualityFilterSelect { height: 40px; min-width: unset; flex-grow: 1; }
+
+  .tab-navigation { margin-bottom: 20px; }
+  .tab-navigation .tab-button { padding: 10px 15px; font-size: 15px; } /* Slightly larger tab text */
+
+  #cinemaghar-container .table-container {
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+      margin-left: -15px; /* Extend edge-to-edge within results area */
+      margin-right: -15px;
+      overflow-x: visible;
+   }
+   #cinemaghar-container table {
+        min-width: unset;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm); /* Match box theme */
+        box-shadow: var(--shadow-sm);
+        display: block;
+        overflow-x: auto; /* Enable horizontal scroll for table */
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+   }
+   /* Force table layout for rows/header */
+   #cinemaghar-container thead, #cinemaghar-container tbody, #cinemaghar-container tr { display: table; width: 100%; table-layout: fixed; }
+   #cinemaghar-container thead { position: sticky; top: 0; z-index: 3; background: var(--table-header-bg); } /* Ensure sticky header background */
+   #cinemaghar-container th, #cinemaghar-container td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid var(--border-color); display: table-cell; white-space: normal; vertical-align: middle; }
+
+  /* Hide columns on mobile */
+  #cinemaghar-container thead tr th.col-size,
+  #cinemaghar-container thead tr th.col-updated,
+  #cinemaghar-container tbody tr:not(.action-row) td.col-size,
+  #cinemaghar-container tbody tr:not(.action-row) td.col-updated { display: none; }
+
+   /* Adjust visible column widths */
+   #cinemaghar-container th.col-id, #cinemaghar-container td.col-id { width: 15%; text-align: center; }
+   #cinemaghar-container th.col-filename, #cinemaghar-container td.col-filename { width: 45%; font-weight: 500; }
+   #cinemaghar-container th.col-quality, #cinemaghar-container td.col-quality { width: 20%; text-align: center; font-weight: 500;}
+   #cinemaghar-container th.col-view, #cinemaghar-container td.col-view { width: 20%; text-align: center; }
+
+  #cinemaghar-container th .sort-indicator { margin-left: 4px; border-width: 4px; }
+  #cinemaghar-container th.sort-asc .sort-indicator { border-bottom-width: 4px; }
+  #cinemaghar-container th.sort-desc .sort-indicator { border-top-width: 4px; }
+
+  #cinemaghar-container td.col-filename { word-break: break-word; white-space: normal; cursor: pointer; }
+  #cinemaghar-container td.col-filename .quality-logo { height: 0.9em; margin-left: 3px; vertical-align: baseline; }
+  #cinemaghar-container td.col-quality { min-width: unset; }
+  #cinemaghar-container .movie-data-row .view-button { font-size: 12px; padding: 6px 8px !important; min-width: 45px; width: auto; /* Don't force full width */ }
+
+   #cinemaghar-container .action-row td { padding: 15px 10px; display: block; width: auto; white-space: normal; }
+   #cinemaghar-container .action-info { font-size: 13px; margin-bottom: 15px; }
+   #cinemaghar-container .action-info .info-item { display: block; margin-bottom: 6px; line-height: 1.5; }
+   #cinemaghar-container .action-info strong { display: inline-block; min-width: 65px; font-weight: 600; margin-right: 5px; }
+   #cinemaghar-container .action-info .quality-logo { height: 0.9em; vertical-align: baseline; }
+   #cinemaghar-container .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
+   #cinemaghar-container .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; }
+   /* Explicitly style action row view button for mobile (make it full width like others) */
+   #cinemaghar-container .action-row .action-buttons-container .view-button {
+       width: 100%;
+       padding: 10px 15px !important;
+       font-size: 13px !important;
+       margin: 0;
+       box-sizing: border-box;
+       min-width: unset; /* Override specific min-width */
+    }
+   #cinemaghar-container .preview-action-row .action-buttons-container .button { /* Apply full width to preview buttons too */
+       font-size: 13px;
+       padding: 10px 15px;
+       width: 100%;
+       margin: 0;
+       box-sizing: border-box;
+   }
+   #cinemaghar-container .preview-action-row .action-buttons-container .view-button {
+       width: 100%;
+       padding: 10px 15px !important; /* Override smaller padding */
+       font-size: 13px !important; /* Override smaller font */
+       min-width: unset; /* Override specific min-width */
+   }
+   /* Action row copy feedback spacing */
+    #cinemaghar-container .action-row .action-buttons-container .copy-feedback,
+    #cinemaghar-container .preview-action-row .action-buttons-container .copy-feedback {
+        margin-left: 0;
+        margin-top: 5px;
+        text-align: center;
+        width: 100%;
+        display: block; /* Ensure it takes space below button */
+        vertical-align: initial;
+    }
+
+
+  /* Player adjustments */
+  #cinemaghar-container #html5VideoPlayer { max-height: 280px; border-radius: var(--border-radius-sm);}
+  #cinemaghar-container .video-container { padding: 45px 10px 15px 10px; max-width: 100%; margin-left: 0; margin-right: 0; border-radius: var(--border-radius-sm); }
+  #cinemaghar-container .video-container.is-fullscreen #html5VideoPlayer { max-height: none; }
+  #cinemaghar-container .close-btn { top: 12px; right: 12px; padding: 5px 9px; font-size: 12px; }
+  #cinemaghar-container #videoTitle { font-size: 16px; }
+  #cinemaghar-container #audioWarning { font-size: 12px; padding: 10px; line-height: 1.4; }
+  #cinemaghar-container .custom-controls { gap: 8px; }
+  #cinemaghar-container .custom-controls .button { padding: 7px 10px; font-size: 11px; min-width: 55px;}
+  #cinemaghar-container #audioTrackSelect { font-size: 12px; padding: 5px 8px; max-width: 120px; height: 34px; }
+  #cinemaghar-container .vlc-copy-box { font-size: 12px; padding: 10px; }
+  #cinemaghar-container .vlc-copy-box code { font-size: 11px; }
+  .player-control-group label { font-size: 11px;}
+  #volumeSlider { width: 60px;}
+  #playbackSpeedSelect { font-size: 12px; padding: 3px 6px; height: 34px; }
+
+  /* Pagination Adjustments */
+    .pagination-container { margin: 20px 0 10px 0; }
+    .pagination-container button,
+    .pagination-container span { padding: 8px 12px; font-size: 13px; margin: 0 3px;}
+    .pagination-container .page-info { font-size: 12px; margin: 0 5px; padding: 8px 0;}
+
+    /* Footer Mobile Adjustments */
+    #page-footer {
+        margin-top: 30px; /* Less margin */
+        padding: 20px 15px; /* Less padding */
+        gap: 12px;
+    }
+    #page-footer .footer-text {
+        font-size: 12px; /* Smaller text */
+    }
+    #page-footer .footer-buttons {
+        gap: 12px; /* Less gap */
+    }
+    #cinemaghar-container #page-footer .button {
+        font-size: 12px; /* Smaller button text */
+        padding: 7px 12px; /* Smaller padding */
+    }
+    #cinemaghar-container #page-footer .button svg {
+        margin-right: 5px;
+    }
+} /* End of Mobile Media Query */
