@@ -10,8 +10,6 @@
 
     <style>
       /* --- START OF INLINED style.css --- */
-      /* --- PASTE YOUR ENTIRE style.css HERE --- */
-      /* (Your existing CSS is quite long, paste it fully here) */
       :root {
           --primary-color: #0d6efd; /* Bootstrap blue */
           --primary-hover: #0b5ed7;
@@ -50,6 +48,10 @@
           --button-primary-hover: var(--primary-hover); /* Added for Search button */
           --button-share-bg: #6f42c1; /* Bootstrap purple for share */
           --button-share-hover: #5a349b;
+          --button-trailer-bg: #e9ecef; /* Light grey for Trailer button */
+          --button-trailer-hover: #dde2e6;
+          --button-trailer-text: var(--text-color);
+          --button-trailer-border: var(--border-color);
 
           --border-radius-sm: 0.375rem; /* 4px -> MODIFIED TO 0.375rem (6px) */
           --border-radius-md: 0.5rem;
@@ -298,9 +300,6 @@
           pointer-events: none;
           z-index: 2;
       }
-
-      /* Search Suggestions (REMOVED) */
-      /* #searchInputSuggestions { display: none; } */
 
       /* Buttons below search bar */
       .search-actions {
@@ -752,6 +751,7 @@
       /* Action Row (Table) */
       #cinemaghar-container tr.action-row { display: none; background-color: #f8f9fa; }
       #cinemaghar-container .action-row td { padding: 25px 20px; text-align: left; border-bottom: none; /* box-shadow: inset 0 3px 5px rgba(0,0,0,0.04); */ /* MODIFIED: Commented out */ }
+
       /* Common Action Info/Buttons styles used by table, preview, and shared view */
       #cinemaghar-container .action-info,
       #cinemaghar-container .preview-action-row .action-info,
@@ -773,6 +773,38 @@
       #cinemaghar-container #shared-item-content .action-info .quality-logo {
           height: 1.1em; width: auto; vertical-align: text-bottom; margin-left: 4px; display: inline-block;
       }
+      /* Trailer button within action-info */
+      #cinemaghar-container .action-info .trailer-button {
+          margin-left: 10px;
+          padding: 4px 10px;
+          font-size: 12px;
+          line-height: 1;
+          vertical-align: middle;
+          background-color: var(--button-trailer-bg);
+          color: var(--button-trailer-text) !important;
+          border: 1px solid var(--button-trailer-border);
+          border-radius: var(--border-radius-sm);
+          text-decoration: none;
+          transition: all 0.2s ease;
+          display: inline-flex; /* Align icon and text */
+          align-items: center;
+          box-shadow: none;
+      }
+       #cinemaghar-container .action-info .trailer-button:hover {
+           background-color: var(--button-trailer-hover);
+           border-color: #adb5bd;
+           box-shadow: var(--shadow-sm);
+           transform: translateY(-1px);
+       }
+       /* Trailer button SVG styling */
+       #cinemaghar-container .action-info .trailer-button svg {
+           width: 14px;
+           height: 14px;
+           margin-right: 5px;
+           fill: #FF0000; /* YouTube Red */
+           vertical-align: middle;
+       }
+
       #cinemaghar-container .action-buttons-container,
       #cinemaghar-container .preview-action-row .action-buttons-container,
       #cinemaghar-container #shared-item-content .action-buttons-container {
@@ -790,21 +822,21 @@
 
 
       /* --- Buttons General Styling --- */
-      /* Excludes search button, footer buttons, preview view button, table view button, back button */
-      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) {
+      /* Excludes search button, footer buttons, preview view button, table view button, back button, trailer button */
+      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):not(.trailer-button) {
           display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; margin: 2px 0; color: white !important; border: none; border-radius: var(--border-radius-sm); /* Match box theme */ text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; white-space: nowrap; line-height: 1.4; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm);
       }
       /* MODIFIED: Added span style for emojis */
-      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) span[aria-hidden="true"] {
+      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):not(.trailer-button) span[aria-hidden="true"] {
           margin-right: 0.5em;
           font-size: 1.1em; /* Slightly larger emoji */
           line-height: 1; /* Ensure alignment */
       }
 
-      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):hover {
+      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):not(.trailer-button):hover {
           opacity: 0.9; filter: brightness(1.1); box-shadow: 0 3px 7px rgba(0,0,0,0.12); transform: translateY(-1px);
       }
-      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):active {
+      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):not(.trailer-button):active {
           filter: brightness(0.9); transform: translateY(0); box-shadow: var(--shadow-sm);
       }
 
@@ -1026,9 +1058,6 @@
          }
         .search-input-wrapper::before { left: 12px; width: 16px; height: 16px; opacity: 0.6; } /* Adjust icon */
 
-        /* Search Suggestions Mobile (REMOVED) */
-        /* #searchInputSuggestions { display: none; } */
-
         .search-actions { gap: 10px; margin-bottom: 25px; margin-top: 15px; }
         #cinemaghar-container .search-actions .button { padding: 9px 16px; font-size: 13px; }
 
@@ -1060,8 +1089,12 @@
         #cinemaghar-container .preview-action-row .action-info .info-item { margin-bottom: 6px; line-height: 1.5; }
         #cinemaghar-container .preview-action-row .action-info strong { min-width: 65px; margin-right: 5px; }
         #cinemaghar-container .preview-action-row .action-info .quality-logo { height: 0.9em; }
+        /* Trailer button mobile */
+        #cinemaghar-container .action-info .trailer-button { margin-left: 5px; padding: 3px 8px; font-size: 11px; }
+        #cinemaghar-container .action-info .trailer-button svg { width: 12px; height: 12px; margin-right: 4px; }
+
         #cinemaghar-container .preview-action-row .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
-        #cinemaghar-container .preview-action-row .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; }
+        #cinemaghar-container .preview-action-row .action-buttons-container .button:not(.view-button):not(.trailer-button) { font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; }
         #cinemaghar-container .preview-action-row .action-buttons-container .view-button { width: 100%; } /* Make table view button full width too */
 
 
@@ -1101,7 +1134,7 @@
          #shared-item-content .action-buttons-container {
             flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px;
         }
-         #shared-item-content .action-buttons-container .button {
+         #shared-item-content .action-buttons-container .button:not(.trailer-button) {
             font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; box-sizing: border-box;
          }
          /* Shared item copy feedback spacing */
@@ -1184,7 +1217,7 @@
          #cinemaghar-container .action-info strong { display: inline-block; min-width: 65px; font-weight: 600; margin-right: 5px; }
          #cinemaghar-container .action-info .quality-logo { height: 0.9em; vertical-align: baseline; }
          #cinemaghar-container .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
-         #cinemaghar-container .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; }
+         #cinemaghar-container .action-buttons-container .button:not(.view-button):not(.trailer-button) { font-size: 13px; padding: 10px 15px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; }
          /* Explicitly style action row view button for mobile (make it full width like others) */
          #cinemaghar-container .action-row .action-buttons-container .view-button {
              width: 100%;
@@ -1194,7 +1227,7 @@
              box-sizing: border-box;
              min-width: unset; /* Override specific min-width */
           }
-         #cinemaghar-container .preview-action-row .action-buttons-container .button { /* Apply full width to preview buttons too */
+         #cinemaghar-container .preview-action-row .action-buttons-container .button:not(.trailer-button) { /* Apply full width to preview buttons too */
              font-size: 13px;
              padding: 10px 15px;
              width: 100%;
@@ -1483,12 +1516,12 @@
 
 <!-- START OF INLINED SCRIPT BLOCK (MODIFIED - NO SUGGESTIONS, API FOCUS) -->
 <script>
-       // --- START OF INLINED script.js (MODIFIED - NO SUGGESTIONS, API FOCUS) ---
+       // --- START OF INLINED script.js (MODIFIED - Added Trailer Logic) ---
        (function() {
            'use strict';
 
            // ===========================================================
-           // JAVASCRIPT SECTION (Updated - No Suggestions, API Focus)
+           // JAVASCRIPT SECTION (Updated - Added Trailer Logic)
            // ===========================================================
            const config = {
                HDR_LOGO_URL: "https://as1.ftcdn.net/v2/jpg/05/32/83/72/1000_F_532837228_v8CGZRU0jy39uCtqFRnJz6xDntrGuLLx.webp",
@@ -1497,11 +1530,9 @@
                LOCAL_STORAGE_KEY: 'cinemaGharState_v10_db', // Updated key slightly
                PLAYER_VOLUME_KEY: 'cinemaGharPlayerVolume',
                PLAYER_SPEED_KEY: 'cinemaGharPlayerSpeed',
-               SEARCH_DEBOUNCE_DELAY: 300, // Still used for search triggering if needed, but not suggestions
-               // SUGGESTIONS_DEBOUNCE_DELAY: 250, // REMOVED
-               // MAX_SUGGESTIONS: 50, // REMOVED
-               UPDATES_PREVIEW_INITIAL_COUNT: 10, // Initial count for "Recently Added"
-               UPDATES_PREVIEW_LOAD_MORE_COUNT: 10, // How many to load on "Show More"
+               SEARCH_DEBOUNCE_DELAY: 300,
+               UPDATES_PREVIEW_INITIAL_COUNT: 10,
+               UPDATES_PREVIEW_LOAD_MORE_COUNT: 10,
                MOVIE_DATA_API_URL: '/api/movies' // Your API endpoint
            };
 
@@ -1513,7 +1544,6 @@
            const sharedItemView = document.getElementById('shared-item-view');
            const sharedItemContent = document.getElementById('shared-item-content');
            const searchInput = document.getElementById('mainSearchInput');
-           // const suggestionsContainer = document.getElementById('searchInputSuggestions'); // REMOVED
            const qualityFilterSelect = document.getElementById('mainQualityFilterSelect');
            const mainErrorArea = document.getElementById('main-error-area');
            const updatesPreviewSection = document.getElementById('updates-preview-section');
@@ -1552,7 +1582,6 @@
            const pageFooter = document.getElementById('page-footer');
 
            // --- State Variables ---
-           // let localSuggestionData = []; // REMOVED
            let currentViewData = []; // Data for the *currently rendered* table page
            let weeklyUpdatesData = []; // Holds processed data for the updates preview (MASTER LIST)
            let updatesPreviewShownCount = 0; // Tracks how many are *currently rendered* in the preview
@@ -1560,7 +1589,6 @@
            let activeTableActionRow = null;
            let activePreviewActionRow = null;
            let copyFeedbackTimeout;
-           // let suggestionDebounceTimeout; // REMOVED
            let searchAbortController = null;
            let isDirectShareLoad = false;
            let currentViewMode = 'homepage';
@@ -1589,9 +1617,6 @@
            function extractSizeData(inputString) { if (!inputString) return { value: 0, unit: '', display: 'N/A', bytes: 0 }; const r = /(?<size>[\d.]+)\s?(?<unit>GB|MB)/i; const m = String(inputString).match(r); if (m?.groups?.size && m?.groups?.unit) { const value = parseFloat(m.groups.size); const unit = m.groups.unit.toUpperCase(); if (!isNaN(value)) { const bytes = unit === 'GB' ? value * 1024 * 1024 * 1024 : value * 1024 * 1024; return { value: value, unit: unit, display: `${value} ${unit}`, bytes: isNaN(bytes) ? 0 : bytes }; } } return { value: 0, unit: '', display: 'N/A', bytes: 0 }; }
            function getMimeTypeFromUrl(url) { if (!url) return 'video/*'; const m = url.match(/\.([a-zA-Z0-9]+)(?:[?#]|$)/); if (!m) return 'video/*'; const ext = m[1].toLowerCase(); const mimeMap = { 'mkv': 'video/x-matroska', 'mp4': 'video/mp4', 'mov': 'video/quicktime', 'avi': 'video/x-msvideo', 'webm': 'video/webm', 'wmv': 'video/x-ms-wmv', 'flv': 'video/x-flv', 'ts': 'video/mp2t', 'm4v': 'video/x-m4v', 'ogv': 'video/ogg' }; return mimeMap[ext] || 'video/*'; }
            function handleVideoError(event) { console.error("HTML5 Video Error:", event, videoElement?.error); let msg = "An unknown error occurred while trying to play the video."; if (videoElement?.error) { switch (videoElement.error.code) { case MediaError.MEDIA_ERR_ABORTED: msg = 'Playback was aborted.'; break; case MediaError.MEDIA_ERR_NETWORK: msg = 'A network error caused the video download to fail.'; break; case MediaError.MEDIA_ERR_DECODE: msg = 'Video decoding error (unsupported codec or corrupt file?).'; break; case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: msg = 'Video format not supported or server/network failed.'; break; default: msg = `An unknown video error occurred (Code: ${videoElement.error.code}).`; break; } } if (audioWarningDiv) { audioWarningDiv.innerHTML = `<strong>Playback Error:</strong> ${sanitize(msg)} <br>Consider using 'Copy URL' with an external player (VLC/MX) or 'Open Externally' (Android).`; audioWarningDiv.style.display = 'block'; } } if (videoElement) { videoElement.addEventListener('error', handleVideoError); }
-           // function extractQualityFromFilename(filename) { /* ... Keep existing function ... */ } // Keep if used internally, maybe less critical now?
-           // function normalizeTextForSearch(text) { /* ... Keep existing function ... */ } // Still needed for search terms
-           // function escapeRegExp(string) { /* ... Keep existing function ... */ } // Keep for safety if used
            async function copyToClipboard(text, feedbackSpan) { console.log("Attempting to copy:", text); let success = false; if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) { try { await navigator.clipboard.writeText(text); success = true; console.log("navigator.clipboard.writeText SUCCEEDED"); } catch (err) { console.error("Async clipboard write failed:", err); success = false; } } if (!success) { console.warn("Using fallback copy method (execCommand)."); const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.top = "-9999px"; textArea.style.left = "-9999px"; textArea.style.opacity = "0"; textArea.setAttribute("readonly", ""); document.body.appendChild(textArea); try { textArea.select(); textArea.setSelectionRange(0, textArea.value.length); success = document.execCommand('copy'); console.log("Fallback execCommand result:", success); } catch (err) { console.error('Fallback copy execCommand failed:', err); success = false; } finally { document.body.removeChild(textArea); } } if (success) { console.log("Copy successful!"); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copied!', false); } } else { console.error("Copy FAILED."); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copy Failed!', true); } else { alert("Copy failed. Please try again or copy manually. Check console for errors (F12)."); } } return success; }
 
            // --- Data Preprocessing ---
@@ -1621,15 +1646,217 @@
                    console.warn(`Invalid date format received for movie ID ${processed.id}, filename "${processed.displayFilename}":`, tsString);
                }
                processed.numericId = typeof processed.id === 'number' ? processed.id : Infinity; // For ID sorting
-               // Search text removed as suggestions are disabled
-               // processed.searchText = normalizeTextForSearch(`${processed.id || ''} ${processed.displayFilename}`);
                processed.isSeries = !!movie.is_series; // Convert DB boolean/null to true/false
+               processed.languages = movie.languages || 'N/A'; // Ensure languages field exists
                return processed;
            }
 
-           // --- HTML Generation (Largely Unchanged - uses processed data) ---
-           function createActionContentHTML(movie) { const displayFilename = movie.displayFilename; const displaySize = movie.sizeData.display; const displayQuality = movie.displayQuality; const streamTitle = (displayFilename || '').split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim() + (displayQuality !== 'N/A' ? ` (${displayQuality})` : ''); const timestampString = movie.last_updated_ts; const formattedDateRelative = TimeAgo.format(timestampString); const dateObject = timestampString ? new Date(timestampString) : null; const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A'; let hdrLogoHtml = ''; let fourkLogoHtml = ''; const lowerFilename = (displayFilename || '').toLowerCase(); if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; } if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; } const escapedStreamTitle = streamTitle.replace(/'/g, "\\'"); const escapedFilename = displayFilename.replace(/'/g, "\\'"); const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : ''; const escapedId = movie.id ? String(movie.id).replace(/'/g, "\\'") : ''; let actionButtonsHTML = ''; if (movie.url && movie.url.toLowerCase() !== 'null') { actionButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play here</button>`; actionButtonsHTML += `<a class="button download-button" href="${sanitize(movie.url)}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`; actionButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`; if (navigator.userAgent.toLowerCase().includes("android")) { actionButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Open Externally (Android)</button>`; } } if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`; if (movie.gdflix_link) actionButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX</a>`; if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud</a>`; if (movie.filepress_link) actionButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`; if (movie.gdtot_link) actionButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`; if (movie.id) { actionButtonsHTML += `<button class="button share-button" data-action="share" data-id="${escapedId}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share Post</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`; } if (!actionButtonsHTML) { actionButtonsHTML = '<span style="color: var(--text-muted); font-style: italic; text-align: center; width: 100%; display: block; padding: 10px 0;">No stream/download actions available</span>'; } const actionContentHTML = ` <div class="action-info"> <span class="info-item"><strong>Filename:</strong> ${displayFilename}</span> <span class="info-item"><strong>Quality:</strong> ${displayQuality} ${fourkLogoHtml}${hdrLogoHtml}</span> <span class="info-item"><strong>Size:</strong> ${displaySize}</span> <span class="info-item"><strong>Language:</strong> ${sanitize(movie.languages || 'N/A')}</span> <span class="info-item"><strong>Updated:</strong> ${formattedDateFull} (${formattedDateRelative})</span> ${movie.originalFilename ? `<span class="info-item"><strong>Original Name:</strong> ${sanitize(movie.originalFilename)}</span>` : ''} </div> <div class="action-buttons-container"> ${actionButtonsHTML} </div>`; return actionContentHTML; }
-           function createMovieTableRowHTML(movie, dataIndex, actionRowId) { const displayFilename = movie.displayFilename; const displaySize = movie.sizeData.display; const displayQuality = movie.displayQuality; const timestampString = movie.last_updated_ts; const formattedDateRelative = TimeAgo.format(timestampString); const dateObject = timestampString ? new Date(timestampString) : null; const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A'; let hdrLogoHtml = ''; let fourkLogoHtml = ''; const lowerFilename = (displayFilename || '').toLowerCase(); if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; } if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; } const mainRowHTML = ` <tr class="movie-data-row" data-index="${dataIndex}" data-action-row-id="${actionRowId}"> <td class="col-id">${sanitize(movie.id || 'N/A')}</td> <td class="col-filename" title="Click to view details: ${displayFilename}"> ${displayFilename}${fourkLogoHtml}${hdrLogoHtml} </td> <td class="col-size">${displaySize}</td> <td class="col-quality">${displayQuality}</td> <td class="col-updated" title="${formattedDateFull}">${formattedDateRelative}</td> <td class="col-view"> <button class="button view-button" aria-expanded="false">View</button> </td> </tr>`; return mainRowHTML; }
+            // --- NEW Trailer Search Query Generator ---
+            function generateTrailerSearchQuery(movie) {
+                if (!movie || !movie.displayFilename) {
+                    return null;
+                }
+
+                let filename = movie.displayFilename;
+                const language = movie.languages || '';
+                const isSeries = movie.isSeries;
+
+                // --- Regex Definitions ---
+                const yearRegex = /(\(?\d{4}\)?)/;
+                const seasonRegex = /[ ._(-]?[Ss](\d{1,2})([ ._)-]|$)/i;
+                const episodeRegex = /[ ._(-]?[Ee]\d{1,3}([ ._)-]|$)/i; // More flexible episode match
+                // Combine various quality/source/audio/other tags to remove
+                const tagsToRemoveRegex = /\b(1080p|720p|480p|2160p|4k|UHD|HD|SD|BluRay|Blu-Ray|BDRip|BRRip|WEB-DL|WEBDL|WEB|WEBrip|WEB-Rip|HDTV|HDTVRip|DVDRip|DVDScr|DVD|HC|HDRip|TC|TS|CAM|REMUX|REMASTERED|EXTENDED|UNRATED|PROPER|REPACK|READNFO|COMPLETE|DDP?5\.1|DDP|ATMOS|TrueHD|DTS-HD|DTS-X|DTS|MA|AAC|AC3|HEVC|x265|h265|x264|h264|Multi|Dual[ ._-]?Audio|Hindi|English|Esub|Subs?|Dubbed|Org|Aud|RlsBB|PSA|Pahe|TGx|YTS|AMZN|NF|DSNP|HMAX|\[.*?\]|\(.*?\)|\s-\s.*$)/gi; // Added more tags and bracket/parenthesis removal
+
+                // --- Extraction ---
+                let year = '';
+                const yearMatch = filename.match(yearRegex);
+                if (yearMatch) {
+                    year = yearMatch[0].replace(/[()]/g, ''); // Extract year and remove parenthesis
+                }
+
+                let seasonNumber = '';
+                let seasonString = '';
+                if (isSeries) {
+                    const seasonMatch = filename.match(seasonRegex);
+                    if (seasonMatch && seasonMatch[1]) {
+                        seasonNumber = parseInt(seasonMatch[1], 10);
+                        if (!isNaN(seasonNumber)) {
+                           seasonString = `Season ${seasonNumber}`;
+                        }
+                    }
+                }
+
+                // --- Clean Title ---
+                let cleanedTitle = filename;
+                // Remove year first to avoid confusion with other numbers
+                if (year) {
+                    cleanedTitle = cleanedTitle.replace(yearRegex, ' ');
+                }
+                 // Remove season/episode patterns
+                if (isSeries) {
+                    cleanedTitle = cleanedTitle.replace(seasonRegex, ' ');
+                    cleanedTitle = cleanedTitle.replace(episodeRegex, ' '); // Remove episode too
+                }
+                // Remove all known tags
+                cleanedTitle = cleanedTitle.replace(tagsToRemoveRegex, ' ');
+                // Replace separators with spaces and clean up
+                cleanedTitle = cleanedTitle.replace(/[._-]+/g, ' ').trim(); // Replace separators
+                cleanedTitle = cleanedTitle.replace(/\s+/g, ' ').trim(); // Collapse multiple spaces
+
+                 // Basic check if cleaning resulted in empty string
+                if (!cleanedTitle) {
+                    // Fallback: use the part before the first year or season tag found
+                    let fallbackTitle = movie.displayFilename;
+                    const firstYearIndex = fallbackTitle.search(yearRegex);
+                    const firstSeasonIndex = isSeries ? fallbackTitle.search(seasonRegex) : -1;
+                    let cutIndex = -1;
+                    if (firstYearIndex !== -1 && (firstSeasonIndex === -1 || firstYearIndex < firstSeasonIndex)) {
+                        cutIndex = firstYearIndex;
+                    } else if (firstSeasonIndex !== -1) {
+                        cutIndex = firstSeasonIndex;
+                    }
+                    if (cutIndex !== -1) {
+                         fallbackTitle = fallbackTitle.substring(0, cutIndex).trim();
+                    }
+                    // Final cleanup for fallback
+                    fallbackTitle = fallbackTitle.replace(/[._-]+/g, ' ').replace(/\s+/g, ' ').trim();
+                    cleanedTitle = fallbackTitle || "Unknown Title"; // Use fallback or generic default
+                     console.warn("Filename cleaning resulted in empty string, using fallback:", cleanedTitle, "Original:", movie.displayFilename);
+                }
+
+
+                // --- Assemble Query ---
+                const queryParts = [cleanedTitle];
+                if (year) {
+                    queryParts.push(year);
+                }
+                if (seasonString) {
+                    queryParts.push(seasonString);
+                }
+                if (language && language.toLowerCase().includes('hindi')) {
+                    queryParts.push('Hindi');
+                }
+                queryParts.push('Official Trailer');
+
+                const searchQuery = queryParts.join(' ');
+                const youtubeUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+
+                console.log("Generated Trailer Query:", searchQuery, "URL:", youtubeUrl);
+                return youtubeUrl;
+            }
+
+           // --- HTML Generation ---
+           function createActionContentHTML(movie) {
+               const displayFilename = movie.displayFilename;
+               const displaySize = movie.sizeData.display;
+               const displayQuality = movie.displayQuality;
+               const streamTitle = (displayFilename || '').split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim() + (displayQuality !== 'N/A' ? ` (${displayQuality})` : '');
+               const timestampString = movie.last_updated_ts;
+               const formattedDateRelative = TimeAgo.format(timestampString);
+               const dateObject = timestampString ? new Date(timestampString) : null;
+               const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A';
+
+               let hdrLogoHtml = '';
+               let fourkLogoHtml = '';
+               const lowerFilename = (displayFilename || '').toLowerCase();
+               if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) {
+                   fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`;
+               }
+               if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) {
+                   hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`;
+               }
+
+               // --- Generate Trailer Button ---
+               const trailerUrl = generateTrailerSearchQuery(movie);
+               let trailerButtonHTML = '';
+               if (trailerUrl) {
+                   trailerButtonHTML = `
+                       <a href="${sanitize(trailerUrl)}" class="button trailer-button" target="_blank" rel="noopener noreferrer" title="Search YouTube for Trailer">
+                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
+                               <path d="M21.582,6.186c-0.23-0.854-0.908-1.533-1.762-1.763C18.15,4,12,4,12,4S5.85,4,4.18,4.423 c-0.854,0.23-1.532,0.909-1.762,1.763C2,7.851,2,12,2,12s0,4.149,0.418,5.814c0.23,0.854,0.908,1.533,1.762,1.763 C5.85,20,12,20,12,20s6.15,0,7.82-0.423c0.854-0.23,1.532-0.909,1.762-1.763C22,16.149,22,12,22,12S22,7.851,21.582,6.186z M10,15.5V8.5l6,3.5L10,15.5z"/>
+                           </svg>
+                           Watch Trailer
+                       </a>`;
+               }
+               // --- Escape data for buttons ---
+               const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
+               const escapedFilename = displayFilename.replace(/'/g, "\\'");
+               const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : '';
+               const escapedId = movie.id ? String(movie.id).replace(/'/g, "\\'") : '';
+
+               // --- Action Buttons HTML ---
+               let actionButtonsHTML = '';
+               if (movie.url && movie.url.toLowerCase() !== 'null') {
+                   actionButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play here</button>`;
+                   actionButtonsHTML += `<a class="button download-button" href="${sanitize(movie.url)}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`;
+                   actionButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`;
+                   if (navigator.userAgent.toLowerCase().includes("android")) {
+                       actionButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Open Externally (Android)</button>`;
+                   }
+               }
+               if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
+               if (movie.gdflix_link) actionButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX</a>`;
+               if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud</a>`;
+               if (movie.filepress_link) actionButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
+               if (movie.gdtot_link) actionButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
+               if (movie.id) {
+                   actionButtonsHTML += `<button class="button share-button" data-action="share" data-id="${escapedId}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share Post</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`;
+               }
+               if (!actionButtonsHTML) {
+                   actionButtonsHTML = '<span style="color: var(--text-muted); font-style: italic; text-align: center; width: 100%; display: block; padding: 10px 0;">No stream/download actions available</span>';
+               }
+
+               // --- Combine Action Info and Buttons ---
+               const actionContentHTML = `
+                   <div class="action-info">
+                       <span class="info-item"><strong>Filename:</strong> ${displayFilename} ${trailerButtonHTML}</span>
+                       <span class="info-item"><strong>Quality:</strong> ${displayQuality} ${fourkLogoHtml}${hdrLogoHtml}</span>
+                       <span class="info-item"><strong>Size:</strong> ${displaySize}</span>
+                       <span class="info-item"><strong>Language:</strong> ${sanitize(movie.languages || 'N/A')}</span>
+                       <span class="info-item"><strong>Updated:</strong> ${formattedDateFull} (${formattedDateRelative})</span>
+                       ${movie.originalFilename ? `<span class="info-item"><strong>Original Name:</strong> ${sanitize(movie.originalFilename)}</span>` : ''}
+                   </div>
+                   <div class="action-buttons-container">
+                       ${actionButtonsHTML}
+                   </div>`;
+               return actionContentHTML;
+           }
+
+           function createMovieTableRowHTML(movie, dataIndex, actionRowId) {
+               const displayFilename = movie.displayFilename;
+               const displaySize = movie.sizeData.display;
+               const displayQuality = movie.displayQuality;
+               const timestampString = movie.last_updated_ts;
+               const formattedDateRelative = TimeAgo.format(timestampString);
+               const dateObject = timestampString ? new Date(timestampString) : null;
+               const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A';
+
+               let hdrLogoHtml = '';
+               let fourkLogoHtml = '';
+               const lowerFilename = (displayFilename || '').toLowerCase();
+               if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) {
+                   fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`;
+               }
+               if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) {
+                   hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`;
+               }
+
+               const mainRowHTML = `
+                   <tr class="movie-data-row" data-index="${dataIndex}" data-action-row-id="${actionRowId}">
+                       <td class="col-id">${sanitize(movie.id || 'N/A')}</td>
+                       <td class="col-filename" title="Click to view details: ${displayFilename}">
+                           ${displayFilename}${fourkLogoHtml}${hdrLogoHtml}
+                       </td>
+                       <td class="col-size">${displaySize}</td>
+                       <td class="col-quality">${displayQuality}</td>
+                       <td class="col-updated" title="${formattedDateFull}">${formattedDateRelative}</td>
+                       <td class="col-view">
+                           <button class="button view-button" aria-expanded="false">View</button>
+                       </td>
+                   </tr>`;
+               return mainRowHTML;
+           }
 
            // --- View Control ---
            function setViewMode(mode) { console.log("Setting view mode to:", mode); const previousMode = currentViewMode; currentViewMode = mode; if (mode !== previousMode) { closePlayerIfNeeded(null); } container.classList.toggle('results-active', mode === 'search'); container.classList.toggle('shared-view-active', mode === 'shared'); const showHomepage = mode === 'homepage'; const showSearch = mode === 'search'; const showShared = mode === 'shared'; if (searchFocusArea) searchFocusArea.style.display = (showHomepage || showSearch) ? 'flex' : 'none'; if (resultsArea) resultsArea.style.display = showSearch ? 'block' : 'none'; if (sharedItemView) sharedItemView.style.display = showShared ? 'block' : 'none'; if (updatesPreviewSection) updatesPreviewSection.style.display = showHomepage ? 'block' : 'none'; if (pageFooter) pageFooter.style.display = (showHomepage || showSearch) ? 'flex' : 'none'; if (showHomepage) { if (searchInput) searchInput.value = ''; currentState.searchTerm = ''; activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = ''; closeActiveActionRow('table', null); closeActiveActionRow('preview', null); // Load updates if not already loaded/loading
@@ -1650,7 +1877,7 @@
           }
            window.resetToHomepage = function(event) { const triggerElement = event?.target; const wasInSharedView = (currentViewMode === 'shared'); if (!wasInSharedView && window.history.pushState) { const cleanUrl = window.location.origin + window.location.pathname; window.history.pushState({ path: cleanUrl }, '', cleanUrl); } else if (!wasInSharedView) { window.location.hash = ''; } isDirectShareLoad = false; if (wasInSharedView) { console.log("Returning from shared view, performing full page reload to reset."); window.location.href = window.location.origin + window.location.pathname; } else { lastFocusedElement = triggerElement; setViewMode('homepage'); if (searchInput) { setTimeout(() => searchInput.focus(), 100); } } }
 
-           // --- Search Logic (No Suggestions) ---
+           // --- Search Logic ---
            window.handleSearchSubmit = function() {
                const searchTerm = searchInput.value.trim();
                console.log("Handling search submit for:", searchTerm);
@@ -2028,7 +2255,6 @@
                 spanElement.classList.remove('show', 'error'); setTimeout(() => { // Reset text after fade out
                     if (!spanElement.classList.contains('show')) { spanElement.style.display = 'none'; spanElement.textContent = spanElement.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; } }, 300); }, 2500); }
            function clearCopyFeedback() { clearTimeout(copyFeedbackTimeout); document.querySelectorAll('.copy-feedback.show').forEach(span => { span.classList.remove('show', 'error'); span.style.display = 'none'; span.textContent = span.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; }); }
-           // function highlightVlcText() { /* ... Keep existing function ... */ } // Keep if needed
            function handlePlayerKeyboardShortcuts(event) { if (!videoContainer || videoContainer.style.display !== 'flex' || !videoElement) return; // Ignore if player not visible
             const targetTagName = event.target.tagName.toLowerCase(); if (targetTagName === 'input' || targetTagName === 'select' || targetTagName === 'textarea') return; // Ignore if typing in form fields
             const key = event.key; let prevented = false; switch (key) { case ' ': case 'k': togglePlayPause(); prevented = true; break; case 'ArrowLeft': seekVideo(-10); prevented = true; break; case 'ArrowRight': seekVideo(10); prevented = true; break; case 'ArrowUp': setVolume(Math.min(videoElement.volume + 0.05, 1)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'ArrowDown': setVolume(Math.max(videoElement.volume - 0.05, 0)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'm': toggleMute(); prevented = true; break; case 'f': toggleFullscreen(); prevented = true; break; } if (prevented) event.preventDefault(); // Prevent default browser action (e.g., space scrolling)
@@ -2091,12 +2317,15 @@
             } }
 
            // --- Event Handling Setup ---
-           function handleActionClick(event) { const target = event.target; const button = target.closest('.action-buttons-container .button'); if (button) { const action = button.dataset.action; const url = button.dataset.url; const title = button.dataset.title; const filename = button.dataset.filename; const id = button.dataset.id; lastFocusedElement = button; // Store button for focus return
-             if (action === 'play' && url && title) { event.preventDefault(); streamVideo(title, url, filename); } else if (action === 'copy-vlc' && url) { event.preventDefault(); copyVLCLink(button, url); } else if (action === 'open-intent' && url) { event.preventDefault(); openWithIntent(url); } else if (action === 'share' && id) { event.preventDefault(); handleShareClick(button); } } }
+           function handleActionClick(event) { const target = event.target; const button = target.closest('.action-buttons-container .button'); // Exclude trailer button here
+             if (button && !button.classList.contains('trailer-button')) { const action = button.dataset.action; const url = button.dataset.url; const title = button.dataset.title; const filename = button.dataset.filename; const id = button.dataset.id; lastFocusedElement = button; // Store button for focus return
+             if (action === 'play' && url && title) { event.preventDefault(); streamVideo(title, url, filename); } else if (action === 'copy-vlc' && url) { event.preventDefault(); copyVLCLink(button, url); } else if (action === 'open-intent' && url) { event.preventDefault(); openWithIntent(url); } else if (action === 'share' && id) { event.preventDefault(); handleShareClick(button); } } // Handle trailer button click separately (it's an <a> tag)
+             const trailerLink = target.closest('.action-info .trailer-button'); if (trailerLink) { // Don't prevent default, let the link work
+                console.log('Trailer link clicked:', trailerLink.href); lastFocusedElement = trailerLink; } }
            function handleContentClick(event) { const target = event.target; const viewButton = target.closest('.view-button'); const filenameLink = target.closest('td.col-filename, .preview-col-filename'); // Handle clicks on "View" button or filename link to toggle action rows
             if (viewButton || filenameLink) { event.preventDefault(); const mainRowOrItem = target.closest('tr.movie-data-row, div.update-item'); if (mainRowOrItem) { lastFocusedElement = viewButton || filenameLink; // Store clicked element
                  if (mainRowOrItem.matches('tr.movie-data-row')) { toggleTableActions(mainRowOrItem, lastFocusedElement); } else if (mainRowOrItem.matches('div.update-item')) { togglePreviewActions(mainRowOrItem, lastFocusedElement); } } return; // Stop further processing for these clicks
-            } // Delegate other action button clicks (Play, Copy, Share, etc.)
+            } // Delegate other action button clicks (Play, Copy, Share, Trailer etc.)
             handleActionClick(event); // Handle player close button click
             if (target.matches('.close-btn') && target.closest('#videoContainer')) { lastFocusedElement = target; // Store close button
              closePlayer(lastFocusedElement); return; } }
