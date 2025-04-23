@@ -10,47 +10,27 @@ const pool = new Pool({
         rejectUnauthorized: false // Required for Neon connections
     },
     // Optional: Configure pool size
-    // max: 10, // Consider adjusting based on expected load & Neon plan
+    // max: 20,
     // idleTimeoutMillis: 30000,
-    // connectionTimeoutMillis: 5000, // Increase slightly maybe
+    // connectionTimeoutMillis: 2000,
 });
 
-// Function to safely map sort keys from frontend to DB columns/expressions
+// Function to safely map sort keys from frontend to DB columns
 const mapSortColumn = (key) => {
     const mapping = {
         id: 'original_id',
-        filename: 'lower(filename)', // Use lower() for case-insensitive sort (requires index for performance)
-        size: 'size_bytes',         // Assuming size_bytes column exists and is numeric
+        filename: 'lower(filename)', // Sort case-insensitively
+        size: 'size_bytes',
         quality: 'quality',
-        lastUpdated: 'last_updated_ts',
+        lastUpdated: 'last_updated_ts', // Maps to the timestamp column
     };
-    // IMPORTANT: Default sort MUST be a valid column name or expression from your DB
+    // IMPORTANT: Default sort MUST be a valid column name from your DB
     return mapping[key] || 'last_updated_ts'; // Default sort
 };
 
-// Define the columns needed by the frontend to avoid SELECT *
-const neededColumns = [
-    'original_id',
-    'filename',
-    'size_display', // Used directly
-    'size_bytes',   // Used for sorting by size
-    'quality',
-    'last_updated_ts',
-    'is_series',
-    'url',
-    'telegram_link',
-    'gdflix_link',
-    'hubcloud_link',
-    'filepress_link',
-    'gdtot_link',
-    'languages',
-    'originalFilename' // Check if you have this column
-].join(', ');
-
-
 export default async function handler(request, response) {
-    // Set CORS headers - Adjust '*' in production for security
-    response.setHeader('Access-Control-Allow-Origin', '*');
+    // Set CORS headers
+    response.setHeader('Access-Control-Allow-Origin', '*'); // Adjust in production
     response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -67,97 +47,60 @@ export default async function handler(request, response) {
 
     try {
         console.log('API Request Query:', request.query);
+
+        // --- Parse Query Parameters ---
         const {
-            mode,           // New parameter to control API behavior
-            term,           // Used for suggestions mode
             search,
             quality,
             type,
-            sort = 'lastUpdated',
-            sortDir = 'desc',
+            sort = 'lastUpdated', // Default sort for API requests
+            sortDir = 'desc',     // Default direction for API requests
             page = 1,
-            limit = 50,     // Default limit for search results
+            limit = 50,
             id,
         } = request.query;
 
-        client = await pool.connect();
-        console.log('Database client connected.');
-
-        // --- Mode: Suggestions ---
-        if (mode === 'suggestions') {
-            const searchTerm = String(term || '').trim();
-            if (!searchTerm || searchTerm.length < 2) {
-                return response.status(200).json({ suggestions: [] });
-            }
-            // Use ILIKE for case-insensitive search. Requires pg_trgm index for performance.
-            const suggestionSql = `
-                SELECT filename
-                FROM movies
-                WHERE filename ILIKE $1
-                ORDER BY last_updated_ts DESC -- Prioritize recent items in suggestions
-                LIMIT 15`; // Limit suggestions fetched
-            const suggestionParams = [`%${searchTerm}%`];
-            console.log('Executing Suggestion SQL:', suggestionSql, suggestionParams);
-            const result = await client.query(suggestionSql, suggestionParams);
-            // Return just an array of filenames
-            return response.status(200).json({ suggestions: result.rows.map(r => r.filename) });
-        }
-
-        // --- Mode: Qualities ---
-        if (mode === 'qualities') {
-            const qualitySql = `
-                SELECT DISTINCT quality
-                FROM movies
-                WHERE quality IS NOT NULL AND quality <> ''
-                ORDER BY quality ASC`;
-            console.log('Executing Quality SQL:', qualitySql);
-            const result = await client.query(qualitySql);
-            // Return just an array of quality strings
-             return response.status(200).json({ qualities: result.rows.map(r => r.quality) });
-        }
-
-        // --- Default Mode: Fetch Movie Data (Search / Filter / Updates / Single Item) ---
         const currentPage = Math.max(1, parseInt(page, 10));
-        // Allow slightly higher limit for updates preview initial load if requested
-        const requestedLimit = Math.max(1, parseInt(limit, 10));
-        const currentLimit = Math.min(100, requestedLimit); // Cap limit generally, but allow up to 100
+        const currentLimit = Math.max(1, Math.min(100, parseInt(limit, 10)));
         const offset = (currentPage - 1) * currentLimit;
         const sortColumn = mapSortColumn(sort);
         const sortDirection = sortDir?.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
+        // --- Build SQL Query ---
+        // **IMPORTANT**: Ensure 'last_updated_ts' column exists and is populated correctly in your 'movies' table.
+        // It should ideally be a TIMESTAMP or TIMESTAMPTZ type.
         let baseQuery = 'FROM movies WHERE 1=1';
         const queryParams = [];
         let paramIndex = 1;
 
-        // Handle single item fetch by ID
         if (id) {
             baseQuery += ` AND original_id = $${paramIndex++}`;
             queryParams.push(id);
             console.log(`Fetching single item by ID: ${id}`);
-        }
-        // Handle search and filters (only if not fetching by ID)
-        else {
+        } else {
+            // Apply search filter
             if (search) {
-                const searchTerm = String(search).trim();
-                 // Numeric ID search takes precedence
-                if (/^\d+$/.test(searchTerm)) {
+                const searchTerm = search.trim();
+                const isNumericSearch = /^\d+$/.test(searchTerm);
+                if (isNumericSearch) {
                     baseQuery += ` AND original_id = $${paramIndex++}`;
                     queryParams.push(parseInt(searchTerm, 10));
-                     console.log(`Numeric search detected. Querying for original_id: ${searchTerm}`);
-                } else if (searchTerm.length > 0) {
-                    // Use ILIKE for general search (case-insensitive)
+                    console.log(`Numeric search detected. Querying for original_id: ${searchTerm}`);
+                } else {
                     baseQuery += ` AND filename ILIKE $${paramIndex++}`;
                     queryParams.push(`%${searchTerm}%`);
                     console.log(`Text search detected. Querying filename ILIKE: %${searchTerm}%`);
                 }
             }
 
+            // Apply quality filter
             if (quality) {
                 baseQuery += ` AND quality = $${paramIndex++}`;
                 queryParams.push(quality);
                 console.log(`Applying quality filter: ${quality}`);
             }
 
+            // Apply type filter
             if (type === 'movies') {
                 baseQuery += ` AND is_series = FALSE`;
                 console.log(`Applying type filter: movies`);
@@ -167,11 +110,14 @@ export default async function handler(request, response) {
             }
         }
 
-        // --- Execute Queries (Count and Data) ---
-        let totalItems = 1; // Default for single item fetch
+        // --- Execute Queries ---
+        client = await pool.connect();
+        console.log('Database client connected.');
 
         // 1. Count Query (only if not fetching single ID)
+        let totalItems = 1;
         if (!id) {
+            // **Ensure WHERE clause matches the data query for accurate count**
             const countSql = `SELECT COUNT(*) ${baseQuery}`;
             console.log('Executing Count SQL:', countSql, queryParams);
             const countResult = await client.query(countSql, queryParams);
@@ -179,17 +125,17 @@ export default async function handler(request, response) {
             console.log('Total items found for query:', totalItems);
         }
 
-        // 2. Data Query (Using specific columns)
-        let dataSql = `SELECT ${neededColumns} ${baseQuery}`;
-
+        // 2. Data Query
+        // **Selecting specific columns is better practice, but ensure 'last_updated_ts' is included**
+        // Example: SELECT original_id, filename, size_display, size_bytes, quality, last_updated_ts, is_series, url, telegram_link, ... etc.
+        let dataSql = `SELECT * ${baseQuery}`; // Select all columns for now
         if (!id) {
-            // Apply sorting and pagination only for list views
-             // Ensure sortColumn is safe via mapSortColumn
+            // Make sure sortColumn is a valid column or expression
+            // ** Ensure last_updated_ts is a valid column for sorting **
             dataSql += ` ORDER BY ${sortColumn} ${sortDirection}, original_id ${sortDirection}`; // Secondary sort for stability
             dataSql += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
             queryParams.push(currentLimit, offset);
         } else {
-            // Ensure only one result for ID fetch
             dataSql += ` LIMIT 1`;
         }
 
@@ -209,20 +155,18 @@ export default async function handler(request, response) {
             page: currentPage,
             totalPages: totalPages,
             limit: currentLimit,
-             // Echo back request parameters for context if needed
             filters: { search, quality, type },
-            sorting: { sort: sort, sortDir: sortDir }
+            sorting: { sort: sort, sortDir: sortDir } // Use original frontend keys
         });
 
     } catch (error) {
         console.error('API Database Error:', error);
-        // Basic error check (could be more specific)
-        if (error.message.includes('column') || error.message.includes('relation')) {
-             console.error("Potential SQL error: Check column names, table names, and SQL syntax.");
+        // Check if the error is related to the 'last_updated_ts' column
+        if (error.message.includes('last_updated_ts')) {
+             console.error("Potential issue with 'last_updated_ts' column. Ensure it exists and is a sortable type (TIMESTAMP/TIMESTAMPTZ).");
         }
         response.status(500).json({
             error: 'Failed to fetch movie data from database.',
-            // Provide more detail only in development for security
             details: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
         });
     } finally {
