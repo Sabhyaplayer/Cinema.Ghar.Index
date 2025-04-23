@@ -8,8 +8,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Product+Sans:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Link to External Stylesheet -->
+    <!-- Link to the external CSS file -->
     <link rel="stylesheet" href="/style.css">
+
+    <!-- REMOVED inline <style> block -->
 
 </head>
 <body>
@@ -36,7 +38,8 @@
       <!-- Search Input -->
       <div class="search-input-wrapper">
           <input type="search" id="mainSearchInput" placeholder="Search your movie, series, or file" autocomplete="off" aria-label="Search for movies, series, or files"/>
-          <div id="searchInputSuggestions"></div> <!-- Suggestions populated by JS via API -->
+          <!-- Suggestions will be absolutely positioned -->
+          <div id="searchInputSuggestions"></div>
           <button class="button" id="searchSubmitButton" onclick="handleSearchSubmit()">Search</button>
       </div>
       <!-- Optional buttons -->
@@ -70,7 +73,7 @@
               <label for="mainQualityFilterSelect">Filter by Quality:</label>
               <select id="mainQualityFilterSelect">
                   <option value="">All Qualities</option>
-                  <!-- Options populated by JS via API -->
+                  <!-- Options populated by JS -->
               </select>
           </div>
           <!-- Add more filters here if needed -->
@@ -228,7 +231,9 @@
 
 </div> <!-- End #cinemaghar-container -->
 
-<!-- Load External JavaScript Deferred -->
+<!-- REMOVED inline <script> block -->
+
+<!-- Load the external JavaScript file using defer -->
 <script src="/script.js" defer></script>
 
 </body>
