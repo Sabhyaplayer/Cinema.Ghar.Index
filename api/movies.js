@@ -3,13 +3,12 @@ import pkg from 'pg';
 
 const { Pool } = pkg;
 
-// Use Vercel's environment variable for the connection string
 const pool = new Pool({
     connectionString: process.env.POSTGRES_URL,
     ssl: {
-        rejectUnauthorized: false // Required for Neon/Vercel Postgres connections
+        rejectUnauthorized: false
     },
-    // Optional: Configure pool size
+    // Optional: Pool configuration
     // max: 10,
     // idleTimeoutMillis: 30000,
     // connectionTimeoutMillis: 5000,
@@ -17,37 +16,36 @@ const pool = new Pool({
 
 /**
  * Maps frontend sort keys to actual database column names or expressions.
- * Verify these column names match your 'movies' table schema exactly!
  */
 const mapSortColumn = (key) => {
     const mapping = {
         id: 'original_id',
-        filename: 'lower(filename)', // Keep sorting case-insensitive if desired
+        filename: 'lower(filename)',
         size: 'size_bytes',
         quality: 'quality',
-        lastUpdated: 'last_updated_ts', // CRITICAL: Assumes 'last_updated_ts' column exists (TIMESTAMP/TIMESTAMPTZ type)
+        lastUpdated: 'last_updated_ts', // CRITICAL: Assumes 'last_updated_ts' TIMESTAMP/TIMESTAMPTZ column exists
     };
     return mapping[key] || 'last_updated_ts'; // Default sort
 };
 
 /**
- * Normalizes text for searching by converting to lowercase,
- * replacing common separators (._-) with spaces, and collapsing multiple spaces.
+ * Normalizes text for searching by converting to lowercase and REMOVING
+ * common separators (._-) and spaces.
  * @param {string} text - The input text.
- * @returns {string} The normalized text.
+ * @returns {string} The normalized text with separators and spaces removed.
  */
-const normalizeSearchText = (text) => {
+const normalizeSearchTextForComparison = (text) => {
     if (!text) return '';
     return String(text)
         .toLowerCase()
-        .replace(/[._-]+/g, ' ') // Replace separators with a single space
-        .replace(/\s+/g, ' ')     // Collapse multiple spaces into one
-        .trim();                  // Trim leading/trailing spaces
+        // Remove periods, underscores, hyphens, AND spaces
+        .replace(/[._\s-]+/g, '') // Changed: Now removes spaces too (\s)
+        .trim(); // Keep trim just in case, though replace should handle most cases
 };
 
 
 export default async function handler(request, response) {
-    // Set CORS headers
+    // CORS Headers
     response.setHeader('Access-Control-Allow-Origin', '*'); // Adjust in production
     response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -66,16 +64,10 @@ export default async function handler(request, response) {
     try {
         console.log('API Request Received. Query:', request.query);
 
-        // --- Parse and Validate Query Parameters ---
         const {
-            search,
-            quality,
-            type,
-            sort = 'lastUpdated',
-            sortDir = 'desc',
-            page = 1,
-            limit = 50,
-            id,
+            search, quality, type,
+            sort = 'lastUpdated', sortDir = 'desc',
+            page = 1, limit = 50, id,
         } = request.query;
 
         const currentPage = Math.max(1, parseInt(page, 10) || 1);
@@ -93,60 +85,35 @@ export default async function handler(request, response) {
 
         // --- Filtering Logic ---
         if (id) {
-            // Fetch specific item by ID
             baseQuery += ` AND original_id = $${paramIndex++}`;
             queryParams.push(id);
             console.log(`Filtering by specific original_id: ${id}`);
         } else {
-            // Apply search filter (if ID is not specified)
             if (search) {
                 const searchTerm = search.trim();
-                // Check if search term looks like a numeric ID FIRST
                 const isNumericSearch = /^\d+$/.test(searchTerm);
                 if (isNumericSearch) {
-                    // Search by 'original_id' if it's numeric
                     baseQuery += ` AND original_id = $${paramIndex++}`;
                     queryParams.push(parseInt(searchTerm, 10));
                     console.log(`Numeric search detected. Querying for original_id: ${searchTerm}`);
                 } else {
-                    // *** IMPROVED TEXT SEARCH ***
-                    // Normalize the search term entered by the user
-                    const normalizedSearchTerm = normalizeSearchText(searchTerm);
+                    // *** NEW NORMALIZED TEXT SEARCH ***
+                    // Normalize the user's search term (remove spaces, dots, etc.)
+                    const normalizedSearchTerm = normalizeSearchTextForComparison(searchTerm);
 
                     if (normalizedSearchTerm) {
-                        // Normalize the 'filename' column *in the SQL query* for comparison
-                        // This replaces . _ - with spaces, converts to lower, collapses spaces
-                        const normalizedDbFilename = `trim(regexp_replace(lower(filename), '[._-]+', ' ', 'g'))`;
+                        // Normalize the 'filename' column IN THE SQL QUERY similarly
+                        // (lowercase, remove . _ - AND spaces \s)
+                        // Use 'g' flag to replace all occurrences
+                        const normalizedDbFilename = `regexp_replace(lower(filename), '[._\\s-]+', '', 'g')`;
 
-                        // Use ILIKE with wildcards for flexible matching on the normalized strings
+                        // Compare the completely normalized strings using ILIKE
                         baseQuery += ` AND ${normalizedDbFilename} ILIKE $${paramIndex++}`;
-                        queryParams.push(`%${normalizedSearchTerm}%`); // Match anywhere in the normalized name
-                        console.log(`Normalized text search detected. Querying normalized filename ILIKE: %${normalizedSearchTerm}%`);
-
-                        // --- Alternative: Split words (more complex, keep previous simpler version if preferred) ---
-                        /*
-                        const searchWords = normalizedSearchTerm.split(' ').filter(w => w.length > 1); // Split into words, ignore very short ones
-                        if (searchWords.length > 0) {
-                            const searchConditions = searchWords.map((word, index) => {
-                                queryParams.push(`%${word}%`); // Add word for parameter binding
-                                // Check if the normalized filename contains the current word
-                                return `${normalizedDbFilename} ILIKE $${paramIndex + index}`;
-                            }).join(' AND '); // Require ALL words to be present
-
-                            baseQuery += ` AND (${searchConditions})`;
-                            paramIndex += searchWords.length; // Increment paramIndex by the number of words added
-                            console.log(`Normalized multi-word search. Querying for words: ${searchWords.join(', ')}`);
-                        } else if (normalizedSearchTerm) {
-                             // Fallback to single term search if no valid words after split
-                             baseQuery += ` AND ${normalizedDbFilename} ILIKE $${paramIndex++}`;
-                             queryParams.push(`%${normalizedSearchTerm}%`);
-                             console.log(`Normalized single-term search fallback. Querying normalized filename ILIKE: %${normalizedSearchTerm}%`);
-                        }
-                        */
-                        // --- End Alternative ---
+                        queryParams.push(`%${normalizedSearchTerm}%`); // Match anywhere
+                        console.log(`Normalized text search. Comparing normalized filename with: %${normalizedSearchTerm}%`);
                     }
                 }
-            } // End if (search)
+            }
 
             // Apply quality filter
             if (quality) {
@@ -169,7 +136,7 @@ export default async function handler(request, response) {
         client = await pool.connect();
         console.log('Database client connected successfully.');
 
-        // 1. Count Query (only for paginated results)
+        // 1. Count Query
         let totalItems = 1;
         if (!id) {
             const countSql = `SELECT COUNT(*) ${baseQuery}`;
@@ -180,12 +147,10 @@ export default async function handler(request, response) {
         }
 
         // 2. Data Query
-        let dataSql = `SELECT * ${baseQuery}`; // Select all columns for simplicity
+        let dataSql = `SELECT * ${baseQuery}`; // Select all columns
 
         if (!id) {
-            // Add ORDER BY, LIMIT, OFFSET for pagination
-            // Note: Sorting happens *after* filtering
-            dataSql += ` ORDER BY ${sortColumn} ${sortDirection}, original_id ${sortDirection}`; // Stable sort
+            dataSql += ` ORDER BY ${sortColumn} ${sortDirection}, original_id ${sortDirection}`;
             dataSql += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
             queryParams.push(currentLimit, offset);
         } else {
@@ -215,11 +180,10 @@ export default async function handler(request, response) {
     } catch (error) {
         console.error('!!! API Database Error:', error);
         if (error.message && error.message.includes('last_updated_ts')) {
-             console.error(">>> Potential issue with 'last_updated_ts' column. Ensure it exists and is a sortable type (e.g., TIMESTAMP, TIMESTAMPTZ). <<<");
+             console.error(">>> Potential issue with 'last_updated_ts' column. Check schema. <<<");
         }
-         // Log the failing SQL and params if possible (be careful with sensitive data in production logs)
-        console.error("Failing SQL (approximate):", error.query || "N/A"); // Some drivers might attach query to error
-        console.error("Failing Params (approximate):", queryParams); // Log params used
+        console.error("Failing SQL (approximate):", error.query || "N/A");
+        console.error("Failing Params (approximate):", queryParams);
 
         response.status(500).json({
             error: 'Failed to fetch movie data from database.',
