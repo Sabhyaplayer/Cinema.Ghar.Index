@@ -50,6 +50,8 @@
           --button-primary-hover: var(--primary-hover); /* Added for Search button */
           --button-share-bg: #6f42c1; /* Bootstrap purple for share */
           --button-share-hover: #5a349b;
+          --button-youtube-bg: #FF0000; /* YouTube Red */
+          --button-youtube-hover: #cc0000;
 
           --border-radius-sm: 0.375rem; /* 4px -> MODIFIED TO 0.375rem (6px) */
           --border-radius-md: 0.5rem;
@@ -822,11 +824,18 @@
       #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) {
           display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; margin: 2px 0; color: white !important; border: none; border-radius: var(--border-radius-sm); /* Match box theme */ text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; white-space: nowrap; line-height: 1.4; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm);
       }
-      /* MODIFIED: Added span style for emojis */
+      /* MODIFIED: Added span style for emojis AND SVG */
       #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) span[aria-hidden="true"] {
           margin-right: 0.5em;
           font-size: 1.1em; /* Slightly larger emoji */
           line-height: 1; /* Ensure alignment */
+      }
+      /* Style for SVGs inside buttons */
+      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) svg {
+          width: 1.1em; /* Control SVG size */
+          height: 1.1em;
+          margin-right: 0.5em;
+          fill: currentColor; /* Use button text color (usually white) */
       }
 
       #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):hover {
@@ -851,6 +860,10 @@
       /* Share Button Style */
       #cinemaghar-container .share-button { background-color: var(--button-share-bg); border-radius: var(--border-radius-sm); }
       #cinemaghar-container .share-button:hover { background-color: var(--button-share-hover); }
+      /* YouTube Trailer Button Style */
+      #cinemaghar-container .youtube-button { background-color: var(--button-youtube-bg); border-radius: var(--border-radius-sm); }
+      #cinemaghar-container .youtube-button:hover { background-color: var(--button-youtube-hover); }
+      #cinemaghar-container .youtube-button svg { fill: white; } /* Ensure SVG is white */
 
 
       /* --- Copy Feedback (Shared Class) --- */
@@ -1218,7 +1231,19 @@
          #cinemaghar-container .action-info strong { display: inline-block; min-width: 65px; font-weight: 600; margin-right: 5px; }
          #cinemaghar-container .action-info .quality-logo { height: 0.9em; vertical-align: baseline; }
          #cinemaghar-container .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
-         #cinemaghar-container .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; }
+         /* Action buttons container on mobile - ensure all buttons are full width */
+         #cinemaghar-container .action-buttons-container .button:not(.view-button):not(.copy-feedback + .button), /* Exclude buttons that might have feedback */
+         #cinemaghar-container .action-buttons-container .button.copy-feedback + .button, /* Include buttons preceded by feedback */
+         #cinemaghar-container .action-buttons-container .youtube-button,
+         #cinemaghar-container .action-buttons-container .share-button,
+         #cinemaghar-container .action-buttons-container .vlc-button {
+             font-size: 13px;
+             padding: 10px 15px;
+             width: 100%;
+             max-width: none;
+             margin: 0;
+             box-sizing: border-box;
+         }
          /* Explicitly style action row view button for mobile (make it full width like others) */
          #cinemaghar-container .action-row .action-buttons-container .view-button {
              width: 100%;
@@ -1628,7 +1653,7 @@
             function escapeRegExp(string) { /* ... */ return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
             async function copyToClipboard(text, feedbackSpan) { /* ... */ console.log("Attempting to copy:", text); let success = false; if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) { try { await navigator.clipboard.writeText(text); success = true; console.log("navigator.clipboard.writeText SUCCEEDED"); } catch (err) { console.error("Async clipboard write failed:", err); success = false; } } if (!success) { console.warn("Using fallback copy method (execCommand)."); const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.top = "-9999px"; textArea.style.left = "-9999px"; textArea.style.opacity = "0"; textArea.setAttribute("readonly", ""); document.body.appendChild(textArea); try { textArea.select(); textArea.setSelectionRange(0, textArea.value.length); success = document.execCommand('copy'); console.log("Fallback execCommand result:", success); } catch (err) { console.error('Fallback copy execCommand failed:', err); success = false; } finally { document.body.removeChild(textArea); } } if (success) { console.log("Copy successful!"); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copied!', false); } } else { console.error("Copy FAILED."); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copy Failed!', true); } else { alert("Copy failed. Please try again or copy manually. Check console for errors (F12)."); } } return success; }
 
-           // --- Data Preprocessing ---
+           // --- Data Preprocessing (***MODIFIED***) ---
            function preprocessMovieData(movie) {
                const processed = { ...movie };
                processed.id = movie.original_id;
@@ -1641,7 +1666,6 @@
                if (processed.displayQuality && processed.displayQuality !== 'N/A') {
                    uniqueQualities.add(processed.displayQuality);
                }
-               // Ensure timestamp parsing is robust
                const tsString = movie.last_updated_ts;
                let dateObject = null;
                if (tsString) {
@@ -1654,10 +1678,57 @@
                processed.numericId = typeof processed.id === 'number' ? processed.id : Infinity;
                processed.searchText = normalizeTextForSearch(`${processed.id || ''} ${processed.displayFilename}`);
                processed.isSeries = !!movie.is_series;
+
+               // *** Attempt to extract Title, Year, Season for Trailer Link ***
+               processed.extractedTitle = null;
+               processed.extractedYear = null;
+               processed.extractedSeason = null;
+
+               const filename = processed.displayFilename;
+               if (filename) {
+                   // Try extracting Season first (more specific)
+                   const seasonMatch = filename.match(/[. ]S(\d{1,2})(?:E\d{1,2}|[. ])/i);
+                   if (seasonMatch && seasonMatch[1]) {
+                       processed.extractedSeason = parseInt(seasonMatch[1], 10);
+                       // If season found, assume it's a series (even if flag is missing)
+                       processed.isSeries = true;
+                       // Try to get title before Sxx
+                       const titleEndIndex = seasonMatch.index;
+                       processed.extractedTitle = filename.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
+                   }
+
+                   // If not series or season not found, try extracting year
+                   if (!processed.extractedSeason) {
+                       const yearMatch = filename.match(/[.(_[](\d{4})[.)_\]]/); // Look for 4 digits surrounded by separators/brackets
+                       if (yearMatch && yearMatch[1]) {
+                           const year = parseInt(yearMatch[1], 10);
+                           if (year > 1900 && year < 2050) { // Basic sanity check for year
+                               processed.extractedYear = year;
+                               // If year found, assume title is before it
+                               const titleEndIndex = yearMatch.index;
+                               processed.extractedTitle = filename.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
+                           }
+                       }
+                   }
+
+                   // Fallback: If no year/season found, take the first part as title
+                   if (!processed.extractedTitle) {
+                       processed.extractedTitle = filename.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
+                   }
+
+                   // Clean up common extra info from title (like quality tags if they got included)
+                   if (processed.extractedTitle) {
+                        processed.extractedTitle = processed.extractedTitle
+                           .replace(/ (1080p|720p|2160p|4k|web-?dl|bluray|hdtv|dvdrip|hdr|x265|hevc)$/i, '') // Remove common quality tags at the end
+                           .trim();
+                   }
+               }
+               // ***************************************************************
+
                return processed;
            }
 
-           // --- HTML Generation (Largely Unchanged - uses processed data) ---
+           // --- HTML Generation (***MODIFIED*** for Trailer Button) ---
            function createActionContentHTML(movie) {
                const displayFilename = movie.displayFilename;
                const displaySize = movie.sizeData.display;
@@ -1675,24 +1746,62 @@
                const escapedFilename = displayFilename.replace(/'/g, "\\'");
                const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : '';
                const escapedId = movie.id ? String(movie.id).replace(/'/g, "\\'") : '';
+
+               // *** Trailer Link Logic ***
+               let youtubeTrailerButtonHTML = '';
+               const titleForSearch = movie.extractedTitle || streamTitle; // Use extracted title if available
+               const yearForSearch = movie.extractedYear;
+               const seasonForSearch = movie.extractedSeason;
+               const languages = (movie.languages || '').toLowerCase();
+               const includesHindi = languages.includes('hindi');
+
+               if (titleForSearch) {
+                   let searchTerms = [titleForSearch];
+                   if (movie.isSeries && seasonForSearch) {
+                       searchTerms.push(`Season ${seasonForSearch}`);
+                   } else if (!movie.isSeries && yearForSearch) {
+                       searchTerms.push(String(yearForSearch));
+                   }
+                   searchTerms.push("Official Trailer");
+                   if (includesHindi) {
+                       searchTerms.push("Hindi");
+                   }
+                   const youtubeSearchQuery = encodeURIComponent(searchTerms.join(' '));
+                   const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${youtubeSearchQuery}`;
+
+                   // YouTube SVG Icon Path (Simple)
+                   const youtubeIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.267,4,12,4,12,4S5.733,4,4.186,4.418 c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.734,2,12,2,12s0,4.266,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768 C5.733,20,12,20,12,20s6.267,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.266,22,12,22,12S22,7.734,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"></path></svg>`;
+
+                   youtubeTrailerButtonHTML = `<a href="${youtubeSearchUrl}" target="_blank" rel="noopener noreferrer" class="button youtube-button">${youtubeIconSVG} Watch Trailer</a>`;
+               }
+               // *************************
+
+
                let actionButtonsHTML = '';
                if (movie.url && movie.url.toLowerCase() !== 'null') {
                    actionButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play here</button>`;
+               }
+
+               // *** Add Trailer button here ***
+               actionButtonsHTML += youtubeTrailerButtonHTML;
+
+               if (movie.url && movie.url.toLowerCase() !== 'null') {
                    actionButtonsHTML += `<a class="button download-button" href="${sanitize(movie.url)}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`;
                    actionButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`;
-                   // --- MODIFICATION HERE ---
                    if (navigator.userAgent.toLowerCase().includes("android")) {
                        actionButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play in VLC or MX Player</button>`;
                    }
-                   // --- END MODIFICATION ---
                }
+
                if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
                if (movie.gdflix_link) actionButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX</a>`;
                if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud</a>`;
                if (movie.filepress_link) actionButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
                if (movie.gdtot_link) actionButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
                if (movie.id) { actionButtonsHTML += `<button class="button share-button" data-action="share" data-id="${escapedId}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share Post</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`; }
+
                if (!actionButtonsHTML) { actionButtonsHTML = '<span style="color: var(--text-muted); font-style: italic; text-align: center; width: 100%; display: block; padding: 10px 0;">No stream/download actions available</span>'; }
+
                const actionContentHTML = `
                    <div class="action-info">
                        <span class="info-item"><strong>Filename:</strong> ${displayFilename}</span>
@@ -1955,8 +2064,47 @@
            function displayLoadError(message) { /* ... Keep existing function ... */ const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (sharedItemContent) sharedItemContent.innerHTML = ''; if (sharedItemView) sharedItemView.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'shared-view-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
            async function initializeApp() { /* ... Keep existing function ... */ const urlParams = new URLSearchParams(window.location.search); const shareId = urlParams.get('shareId'); isDirectShareLoad = !!shareId; if (pageLoader) pageLoader.style.display = 'flex'; if (isDirectShareLoad) { console.log("Direct share link detected for ID:", shareId); } else { console.log("Preparing homepage view (pre-data)."); if (searchFocusArea) searchFocusArea.style.display = 'flex'; if (pageFooter) pageFooter.style.display = 'flex'; if (resultsArea) resultsArea.style.display = 'none'; if (sharedItemView) sharedItemView.style.display = 'none'; const defaultMessageHTML = `<tr><td colspan="6" class="status-message">Enter search term above.</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) mapping.tableBody.innerHTML = defaultMessageHTML; if (mapping?.pagination) mapping.pagination.style.display = 'none'; }); } loadStateFromLocalStorage(); try { if (shareId) { await displaySharedItem(shareId); fetchApiData({limit: 100, sort: 'quality', sortDir: 'asc'}).then(data => { if (data && data.items) { populateQualityFilter(data.items.map(preprocessMovieData)); } }).catch(e => console.warn("Background quality fetch failed", e)); } else { await loadUpdatesPreview(); console.log("Fetching initial data for suggestions..."); const suggestionData = await fetchApiData({ limit: 5000, sort: 'lastUpdated', sortDir: 'desc' }); if(suggestionData && suggestionData.items) { localSuggestionData = suggestionData.items.map(preprocessMovieData); console.log(`Loaded ${localSuggestionData.length} items for suggestions.`); populateQualityFilter(localSuggestionData); } else { console.warn("Could not load initial data for suggestions/quality filter."); } setViewMode('homepage'); } if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); } } catch (error) { console.error('FATAL: Failed during app initialization:', error); displayLoadError(`Error initializing app: ${error.message}. Try refreshing.`); } finally { if (pageLoader) pageLoader.style.display = 'none'; } }
 
-           // --- Event Handling Setup (Unchanged) ---
-           function handleActionClick(event) { /* ... */ const target = event.target; const button = target.closest('.action-buttons-container .button'); if (button) { const action = button.dataset.action; const url = button.dataset.url; const title = button.dataset.title; const filename = button.dataset.filename; const id = button.dataset.id; lastFocusedElement = button; if (action === 'play' && url && title) { event.preventDefault(); streamVideo(title, url, filename); } else if (action === 'copy-vlc' && url) { event.preventDefault(); copyVLCLink(button, url); } else if (action === 'open-intent' && url) { event.preventDefault(); openWithIntent(url); } else if (action === 'share' && id) { event.preventDefault(); handleShareClick(button); } } }
+           // --- Event Handling Setup (Unchanged - handleActionClick already delegates) ---
+           function handleActionClick(event) { /* ... */ const target = event.target; const button = target.closest('.action-buttons-container .button'); // This already covers <a> tags styled as buttons
+                if (button) {
+                   const action = button.dataset.action;
+                   const url = button.dataset.url;
+                   const title = button.dataset.title;
+                   const filename = button.dataset.filename;
+                   const id = button.dataset.id;
+                   lastFocusedElement = button;
+
+                   // Check if it's our new trailer button (which is an <a> tag)
+                   if (button.classList.contains('youtube-button')) {
+                       // Let the browser handle the click (open link in new tab)
+                       console.log("Trailer button clicked, letting browser handle href.");
+                       return;
+                   }
+
+                   // Handle existing actions
+                   if (action === 'play' && url && title) {
+                       event.preventDefault();
+                       streamVideo(title, url, filename);
+                   } else if (action === 'copy-vlc' && url) {
+                       event.preventDefault();
+                       copyVLCLink(button, url);
+                   } else if (action === 'open-intent' && url) {
+                       event.preventDefault();
+                       openWithIntent(url);
+                   } else if (action === 'share' && id) {
+                       event.preventDefault();
+                       handleShareClick(button);
+                   } else if (button.tagName === 'A' && button.href && button.target === '_blank') {
+                        // Allow other external links (like download, telegram) to proceed
+                        console.log("External link button clicked, letting browser handle href.");
+                        return;
+                   } else {
+                       // If it's a button without a specific action handled here, prevent default if needed
+                       // This part might not be necessary unless you have other button types
+                       // event.preventDefault(); // Be cautious adding this
+                   }
+               }
+           }
            function handleContentClick(event) { /* ... */ const target = event.target; const viewButton = target.closest('.view-button'); const filenameLink = target.closest('td.col-filename, .preview-col-filename'); if (viewButton || filenameLink) { event.preventDefault(); const mainRowOrItem = target.closest('tr.movie-data-row, div.update-item'); if (mainRowOrItem) { lastFocusedElement = viewButton || filenameLink; if (mainRowOrItem.matches('tr.movie-data-row')) { toggleTableActions(mainRowOrItem, lastFocusedElement); } else if (mainRowOrItem.matches('div.update-item')) { togglePreviewActions(mainRowOrItem, lastFocusedElement); } } return; } handleActionClick(event); if (target.matches('.close-btn') && target.closest('#videoContainer')) { lastFocusedElement = target; closePlayer(lastFocusedElement); return; } }
            document.addEventListener('DOMContentLoaded', async () => { await initializeApp(); if (searchInput) { searchInput.addEventListener('input', handleSearchInput); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); handleSearchSubmit(); } else if (event.key === 'Escape') { suggestionsContainer.style.display = 'none'; } }); searchInput.addEventListener('search', handleSearchClear); searchInput.addEventListener('blur', () => { setTimeout(() => { const searchButton = document.getElementById('searchSubmitButton'); if (document.activeElement !== searchInput && !suggestionsContainer.contains(document.activeElement) && document.activeElement !== searchButton) { suggestionsContainer.style.display = 'none'; } }, 150); }); } if (qualityFilterSelect) { qualityFilterSelect.addEventListener('change', triggerFilterChange); } if (resultsArea) { resultsArea.addEventListener('click', (event) => { if (event.target.closest('th.sortable')) { handleSort(event); } else { handleContentClick(event); } }); } if (updatesPreviewList) { updatesPreviewList.addEventListener('click', handleContentClick); } if (sharedItemView) { sharedItemView.addEventListener('click', handleContentClick); } if (videoContainer) { videoContainer.addEventListener('click', handleContentClick); } document.addEventListener('keydown', handlePlayerKeyboardShortcuts); document.addEventListener('click', (event) => { if (searchInput && suggestionsContainer && suggestionsContainer.style.display === 'block') { const searchWrapper = searchInput.closest('.search-input-wrapper'); if (searchWrapper && !searchWrapper.contains(event.target)) { suggestionsContainer.style.display = 'none'; } } if (videoContainer && videoContainer.style.display !== 'none' && !videoContainer.contains(event.target)) { const logicalParent = videoContainer.parentElement?.closest('.action-row, .preview-action-row, #shared-item-content'); const triggerElement = logicalParent?.previousElementSibling; const triggerButton = logicalParent?.querySelector(`[data-action-row-id="${logicalParent.id}"] .view-button`); if ((!logicalParent || !logicalParent.contains(event.target)) && (!triggerElement || !triggerElement.contains(event.target)) && (!triggerButton || !triggerButton.contains(event.target)) ) { console.log("Clicked outside player's logical container and trigger. Closing player."); closePlayer(event.target); } } }, false); });
 
