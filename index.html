@@ -10,8 +10,6 @@
 
     <style>
       /* --- START OF INLINED style.css --- */
-      /* --- PASTE YOUR ENTIRE style.css HERE --- */
-      /* (Your existing CSS is quite long, paste it fully here) */
       :root {
           --primary-color: #0d6efd; /* Bootstrap blue */
           --primary-hover: #0b5ed7;
@@ -50,6 +48,8 @@
           --button-primary-hover: var(--primary-hover); /* Added for Search button */
           --button-share-bg: #6f42c1; /* Bootstrap purple for share */
           --button-share-hover: #5a349b;
+          --button-trailer-bg: #E50914; /* YouTube Red */
+          --button-trailer-hover: #c40812;
 
           --border-radius-sm: 0.375rem; /* 4px -> MODIFIED TO 0.375rem (6px) */
           --border-radius-md: 0.5rem;
@@ -298,37 +298,6 @@
           pointer-events: none;
           z-index: 2;
       }
-
-      /* Search Suggestions */
-      #searchInputSuggestions {
-          position: absolute;
-          top: calc(100% + 1px); /* Position below input */
-          left: 0;
-          width: 100%; /* Full width of wrapper */
-          max-width: 100%;
-          background-color: var(--container-bg);
-          border: 1px solid var(--border-color); /* Match input border */
-          border-top: none;
-          border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm); /* Match box shape */
-          box-shadow: var(--shadow-md); /* Consistent shadow */
-          z-index: 10;
-          max-height: 350px;
-          overflow-y: auto;
-          display: none;
-      }
-      #searchInputSuggestions div {
-          padding: 10px 18px 10px 45px; /* Match input padding */
-          font-size: 15px; /* Slightly smaller than input */
-          cursor: pointer;
-          border: none;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          text-align: left;
-      }
-      #searchInputSuggestions div:last-child { border-bottom: none; }
-      #searchInputSuggestions div:hover { background-color: var(--suggestion-hover-bg); }
-      #searchInputSuggestions div strong { font-weight: 600; color: var(--primary-color); }
 
       /* Buttons below search bar */
       .search-actions {
@@ -796,6 +765,49 @@
       #cinemaghar-container #shared-item-content .action-info strong {
           color: var(--text-color); font-weight: 600; margin-right: 8px; display: inline-block; min-width: 90px;
       }
+      /* Style for filename text within the info item */
+      #cinemaghar-container .action-info .filename-text {
+           /* Allow word wrap for long filenames */
+           word-break: break-word;
+           white-space: normal;
+           /* Adjust vertical alignment slightly if needed with trailer button */
+           vertical-align: middle;
+           display: inline-block; /* Needed for vertical align and margin */
+           margin-right: 8px; /* Space before trailer button */
+      }
+      /* Style for Trailer Button */
+      #cinemaghar-container .trailer-button {
+           display: inline-flex;
+           align-items: center;
+           justify-content: center;
+           padding: 4px 10px; /* Smaller padding */
+           margin-left: 8px; /* Space after filename text */
+           font-size: 12px; /* Smaller font */
+           font-weight: 500;
+           color: white !important;
+           background-color: var(--button-trailer-bg);
+           border: none;
+           border-radius: var(--border-radius-sm);
+           text-decoration: none;
+           line-height: 1; /* Ensure icon aligns well */
+           vertical-align: middle; /* Align with text */
+           cursor: pointer;
+           transition: background-color 0.2s ease, transform 0.1s ease;
+           white-space: nowrap; /* Prevent wrapping */
+           box-shadow: var(--shadow-sm);
+      }
+      #cinemaghar-container .trailer-button:hover {
+           background-color: var(--button-trailer-hover);
+           transform: translateY(-1px);
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      #cinemaghar-container .trailer-button svg {
+           width: 1.1em; /* Slightly larger */
+           height: 1.1em;
+           margin-right: 5px;
+           fill: white;
+           vertical-align: text-bottom;
+      }
       #cinemaghar-container .action-info .quality-logo,
       #cinemaghar-container .preview-action-row .action-info .quality-logo,
       #cinemaghar-container #shared-item-content .action-info .quality-logo {
@@ -818,21 +830,21 @@
 
 
       /* --- Buttons General Styling --- */
-      /* Excludes search button, footer buttons, preview view button, table view button, back button */
-      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) {
+      /* Excludes search button, footer buttons, preview view button, table view button, back button, trailer button */
+      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):not(.trailer-button) {
           display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; margin: 2px 0; color: white !important; border: none; border-radius: var(--border-radius-sm); /* Match box theme */ text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; white-space: nowrap; line-height: 1.4; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm);
       }
       /* MODIFIED: Added span style for emojis */
-      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) span[aria-hidden="true"] {
+      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):not(.trailer-button) span[aria-hidden="true"] {
           margin-right: 0.5em;
           font-size: 1.1em; /* Slightly larger emoji */
           line-height: 1; /* Ensure alignment */
       }
 
-      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):hover {
+      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):not(.trailer-button):hover {
           opacity: 0.9; filter: brightness(1.1); box-shadow: 0 3px 7px rgba(0,0,0,0.12); transform: translateY(-1px);
       }
-      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):active {
+      #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):not(.trailer-button):active {
           filter: brightness(0.9); transform: translateY(0); box-shadow: var(--shadow-sm);
       }
 
@@ -1054,15 +1066,6 @@
          }
         .search-input-wrapper::before { left: 12px; width: 16px; height: 16px; opacity: 0.6; } /* Adjust icon */
 
-        /* Search Suggestions Mobile */
-        #searchInputSuggestions {
-            width: 100%;
-            max-width: 100%;
-            top: calc(100% + 1px); /* Smaller gap */
-            border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
-        }
-        #searchInputSuggestions div { padding: 9px 15px 9px 40px; font-size: 14px; } /* Adjust padding */
-
         .search-actions { gap: 10px; margin-bottom: 25px; margin-top: 15px; }
         #cinemaghar-container .search-actions .button { padding: 9px 16px; font-size: 13px; }
 
@@ -1095,7 +1098,7 @@
         #cinemaghar-container .preview-action-row .action-info strong { min-width: 65px; margin-right: 5px; }
         #cinemaghar-container .preview-action-row .action-info .quality-logo { height: 0.9em; }
         #cinemaghar-container .preview-action-row .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
-        #cinemaghar-container .preview-action-row .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; }
+        #cinemaghar-container .preview-action-row .action-buttons-container .button:not(.view-button):not(.trailer-button) { font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; }
         #cinemaghar-container .preview-action-row .action-buttons-container .view-button { width: 100%; } /* Make table view button full width too */
 
 
@@ -1129,13 +1132,27 @@
          #shared-item-content .action-info strong {
             min-width: 65px; margin-right: 5px;
         }
+         #cinemaghar-container .action-info .filename-text {
+            max-width: calc(100% - 100px); /* Adjust based on trailer button size */
+            margin-right: 4px;
+         }
+         #cinemaghar-container .trailer-button {
+            padding: 3px 8px; /* Slightly smaller */
+            font-size: 11px;
+            margin-left: 4px;
+         }
+         #cinemaghar-container .trailer-button svg {
+            width: 1em;
+            height: 1em;
+            margin-right: 3px;
+         }
          #shared-item-content .action-info .quality-logo {
             height: 0.9em;
         }
          #shared-item-content .action-buttons-container {
             flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px;
         }
-         #shared-item-content .action-buttons-container .button {
+         #shared-item-content .action-buttons-container .button:not(.trailer-button) {
             font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; box-sizing: border-box;
          }
          /* Shared item copy feedback spacing */
@@ -1218,7 +1235,7 @@
          #cinemaghar-container .action-info strong { display: inline-block; min-width: 65px; font-weight: 600; margin-right: 5px; }
          #cinemaghar-container .action-info .quality-logo { height: 0.9em; vertical-align: baseline; }
          #cinemaghar-container .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
-         #cinemaghar-container .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; }
+         #cinemaghar-container .action-buttons-container .button:not(.view-button):not(.trailer-button) { font-size: 13px; padding: 10px 15px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; }
          /* Explicitly style action row view button for mobile (make it full width like others) */
          #cinemaghar-container .action-row .action-buttons-container .view-button {
              width: 100%;
@@ -1228,7 +1245,7 @@
              box-sizing: border-box;
              min-width: unset; /* Override specific min-width */
           }
-         #cinemaghar-container .preview-action-row .action-buttons-container .button { /* Apply full width to preview buttons too */
+         #cinemaghar-container .preview-action-row .action-buttons-container .button:not(.trailer-button) { /* Apply full width to preview buttons too */
              font-size: 13px;
              padding: 10px 15px;
              width: 100%;
@@ -1323,7 +1340,7 @@
       <!-- Search Input -->
       <div class="search-input-wrapper">
           <input type="search" id="mainSearchInput" placeholder="Search your movie, series, or file" autocomplete="off" aria-label="Search for movies, series, or files"/>
-          <div id="searchInputSuggestions"></div>
+          <!-- Suggestions div removed -->
           <button class="button" id="searchSubmitButton" onclick="handleSearchSubmit()">Search</button>
       </div>
       <!-- Optional buttons -->
@@ -1515,28 +1532,26 @@
 
 </div> <!-- End #cinemaghar-container -->
 
-<!-- START OF INLINED SCRIPT BLOCK (MODIFIED FOR API FETCH & UPDATES FIX) -->
+<!-- START OF INLINED SCRIPT BLOCK -->
 <script>
-       // --- START OF INLINED script.js (MODIFIED FOR SERVER-SIDE DATA & UPDATES FIX) ---
+       // --- START OF INLINED script.js ---
        (function() {
            'use strict';
 
            // ===========================================================
-           // JAVASCRIPT SECTION (Updated for Server-Side Data Loading)
+           // JAVASCRIPT SECTION
            // ===========================================================
            const config = {
                HDR_LOGO_URL: "https://as1.ftcdn.net/v2/jpg/05/32/83/72/1000_F_532837228_v8CGZRU0jy39uCtqFRnJz6xDntrGuLLx.webp",
                FOURK_LOGO_URL: "https://i.pinimg.com/736x/85/c4/b0/85c4b0a2fb8612825d0cd2f53460925f.jpg",
                ITEMS_PER_PAGE: 50,
-               LOCAL_STORAGE_KEY: 'cinemaGharState_v9_db',
+               LOCAL_STORAGE_KEY: 'cinemaGharState_v10_db', // Updated key slightly
                PLAYER_VOLUME_KEY: 'cinemaGharPlayerVolume',
                PLAYER_SPEED_KEY: 'cinemaGharPlayerSpeed',
                SEARCH_DEBOUNCE_DELAY: 300,
-               SUGGESTIONS_DEBOUNCE_DELAY: 250,
-               MAX_SUGGESTIONS: 50,
                UPDATES_PREVIEW_INITIAL_COUNT: 10, // Initial count for "Recently Added"
                UPDATES_PREVIEW_LOAD_MORE_COUNT: 10, // How many to load on "Show More"
-               MOVIE_DATA_API_URL: '/api/movies'
+               MOVIE_DATA_API_URL: '/api/movies' // Your API endpoint
            };
 
            // --- DOM Element References ---
@@ -1547,7 +1562,6 @@
            const sharedItemView = document.getElementById('shared-item-view');
            const sharedItemContent = document.getElementById('shared-item-content');
            const searchInput = document.getElementById('mainSearchInput');
-           const suggestionsContainer = document.getElementById('searchInputSuggestions');
            const qualityFilterSelect = document.getElementById('mainQualityFilterSelect');
            const mainErrorArea = document.getElementById('main-error-area');
            const updatesPreviewSection = document.getElementById('updates-preview-section');
@@ -1586,15 +1600,13 @@
            const pageFooter = document.getElementById('page-footer');
 
            // --- State Variables ---
-           let localSuggestionData = [];
-           let currentViewData = [];
+           let currentViewData = []; // Data for the *currently rendered* table page
            let weeklyUpdatesData = []; // Holds processed data for the updates preview (MASTER LIST)
            let updatesPreviewShownCount = 0; // Tracks how many are *currently rendered* in the preview
-           let uniqueQualities = new Set();
+           let uniqueQualities = new Set(); // Populated from initial updates load
            let activeTableActionRow = null;
            let activePreviewActionRow = null;
            let copyFeedbackTimeout;
-           let suggestionDebounceTimeout;
            let searchAbortController = null;
            let isDirectShareLoad = false;
            let currentViewMode = 'homepage';
@@ -1604,7 +1616,7 @@
            let currentState = {
                searchTerm: '',
                qualityFilter: '',
-               typeFilter: '',
+               typeFilter: '', // 'movies', 'series', or ''
                sortColumn: 'lastUpdated',
                sortDirection: 'desc',
                currentPage: 1,
@@ -1617,27 +1629,27 @@
                series: { button: seriesTabButton, panel: seriesTabPanel, tableBody: seriesTableBody, pagination: seriesPaginationControls, typeFilter: 'series', tableHead: seriesTableHead }
            };
 
-           // --- Utility Functions (Keep ALL existing utility functions: sanitize, TimeAgo, etc.) ---
-            const sanitize = (str) => { /* ... */ if (str === null || typeof str === 'undefined') return ""; const temp = document.createElement('div'); temp.textContent = String(str); return temp.innerHTML; };
-            const TimeAgo = { MINUTE: 60, HOUR: 3600, DAY: 86400, WEEK: 604800, MONTH: 2592000, YEAR: 31536000, format: (isoString) => { if (!isoString) return 'N/A'; try { const date = new Date(isoString); const seconds = Math.floor((new Date() - date) / 1000); if (isNaN(seconds) || seconds < 0) { console.warn(`TimeAgo: Invalid seconds calculation for ${isoString}. Parsed date: ${date}. Returning full date.`); return TimeAgo.formatFullDate(date); } if (seconds < 2) return "just now"; if (seconds < TimeAgo.MINUTE) return `${seconds} sec${seconds > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.HOUR) return `${Math.floor(seconds / TimeAgo.MINUTE)} min${Math.floor(seconds / TimeAgo.MINUTE) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY) return `${Math.floor(seconds / TimeAgo.HOUR)} hr${Math.floor(seconds / TimeAgo.HOUR) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY * 2) return "Yesterday"; if (seconds < TimeAgo.WEEK) return `${Math.floor(seconds / TimeAgo.DAY)} days ago`; if (seconds < TimeAgo.MONTH) return `${Math.floor(seconds / TimeAgo.WEEK)} wk${Math.floor(seconds / TimeAgo.WEEK) > 1 ? 's' : ''} ago`; return TimeAgo.formatFullDate(date, true); } catch (e) { console.error("Date Format Error (TimeAgo):", isoString, e); return 'Invalid Date'; } }, formatFullDate: (date, short = false) => { if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid Date'; const optsDate = short ? { year: '2-digit', month: 'numeric', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' }; const optsTime = { hour: 'numeric', minute: '2-digit', hour12: true }; try { return `${date.toLocaleDateString(undefined, optsDate)}${short ? '' : ', ' + date.toLocaleTimeString(undefined, optsTime)}`; } catch (e) { console.error("toLocaleDateString/Time failed:", e); return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; } } };
-            function extractSizeData(inputString) { /* ... */ if (!inputString) return { value: 0, unit: '', display: 'N/A', bytes: 0 }; const r = /(?<size>[\d.]+)\s?(?<unit>GB|MB)/i; const m = String(inputString).match(r); if (m?.groups?.size && m?.groups?.unit) { const value = parseFloat(m.groups.size); const unit = m.groups.unit.toUpperCase(); if (!isNaN(value)) { const bytes = unit === 'GB' ? value * 1024 * 1024 * 1024 : value * 1024 * 1024; return { value: value, unit: unit, display: `${value} ${unit}`, bytes: isNaN(bytes) ? 0 : bytes }; } } return { value: 0, unit: '', display: 'N/A', bytes: 0 }; }
-            function getMimeTypeFromUrl(url) { /* ... */ if (!url) return 'video/*'; const m = url.match(/\.([a-zA-Z0-9]+)(?:[?#]|$)/); if (!m) return 'video/*'; const ext = m[1].toLowerCase(); const mimeMap = { 'mkv': 'video/x-matroska', 'mp4': 'video/mp4', 'mov': 'video/quicktime', 'avi': 'video/x-msvideo', 'webm': 'video/webm', 'wmv': 'video/x-ms-wmv', 'flv': 'video/x-flv', 'ts': 'video/mp2t', 'm4v': 'video/x-m4v', 'ogv': 'video/ogg' }; return mimeMap[ext] || 'video/*'; }
-            function handleVideoError(event) { /* ... */ console.error("HTML5 Video Error:", event, videoElement?.error); let msg = "An unknown error occurred while trying to play the video."; if (videoElement?.error) { switch (videoElement.error.code) { case MediaError.MEDIA_ERR_ABORTED: msg = 'Playback was aborted.'; break; case MediaError.MEDIA_ERR_NETWORK: msg = 'A network error caused the video download to fail.'; break; case MediaError.MEDIA_ERR_DECODE: msg = 'Video decoding error (unsupported codec or corrupt file?).'; break; case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: msg = 'Video format not supported or server/network failed.'; break; default: msg = `An unknown video error occurred (Code: ${videoElement.error.code}).`; break; } } if (audioWarningDiv) { audioWarningDiv.innerHTML = `<strong>Playback Error:</strong> ${sanitize(msg)} <br>Consider using 'Copy URL' with an external player (VLC/MX) or 'Open Externally' (Android).`; audioWarningDiv.style.display = 'block'; } } if (videoElement) { videoElement.addEventListener('error', handleVideoError); }
-            function extractQualityFromFilename(filename) { /* ... */ if (!filename) return null; const safeFilename = String(filename); const patterns = [ /(?:^|\.|\[|\(|\s|_|-)((?:4k|2160p|1080p|720p|480p))(?=$|\.|\]|\)|\s|_|-)/i, /(?:^|\.|\[|\(|\s|_-)(WEB-?DL|WEBRip|BluRay|BDRip|BRRip|HDTV|HDRip|DVDrip|DVDScr|HDCAM|HC|TC|TS|CAM)(?=$|\.|\]|\)|\s|_|-)/i, /(?:^|\.|\[|\(|\s|_-)(HDR|DV|Dolby.?Vision|HEVC|x265)(?=$|\.|\]|\)|\s|_|-)/i ]; let foundQuality = null; for (const regex of patterns) { const match = safeFilename.match(regex); if (match && match[1]) { let quality = match[1].toUpperCase(); quality = quality.replace(/WEB-?DL/i, 'WEBDL'); quality = quality.replace(/BLURAY/i, 'BluRay'); quality = quality.replace(/DVDRIP/i, 'DVD'); quality = quality.replace(/DOLBY.?VISION/i, 'Dolby Vision'); if (quality === '2160P') quality = '4K'; if (patterns.indexOf(regex) < 2) return quality; if (patterns.indexOf(regex) === 2 && !foundQuality) foundQuality = quality; } } return foundQuality; }
-            function normalizeTextForSearch(text) { /* ... */ if (!text) return ""; return String(text) .toLowerCase() .replace(/[.\-_\(\)\[\]]/g, '') .replace(/\s+/g, ' ') .trim(); }
-            function escapeRegExp(string) { /* ... */ return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-            async function copyToClipboard(text, feedbackSpan) { /* ... */ console.log("Attempting to copy:", text); let success = false; if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) { try { await navigator.clipboard.writeText(text); success = true; console.log("navigator.clipboard.writeText SUCCEEDED"); } catch (err) { console.error("Async clipboard write failed:", err); success = false; } } if (!success) { console.warn("Using fallback copy method (execCommand)."); const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.top = "-9999px"; textArea.style.left = "-9999px"; textArea.style.opacity = "0"; textArea.setAttribute("readonly", ""); document.body.appendChild(textArea); try { textArea.select(); textArea.setSelectionRange(0, textArea.value.length); success = document.execCommand('copy'); console.log("Fallback execCommand result:", success); } catch (err) { console.error('Fallback copy execCommand failed:', err); success = false; } finally { document.body.removeChild(textArea); } } if (success) { console.log("Copy successful!"); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copied!', false); } } else { console.error("Copy FAILED."); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copy Failed!', true); } else { alert("Copy failed. Please try again or copy manually. Check console for errors (F12)."); } } return success; }
+           // --- Utility Functions ---
+           const sanitize = (str) => { if (str === null || typeof str === 'undefined') return ""; const temp = document.createElement('div'); temp.textContent = String(str); return temp.innerHTML; };
+           const TimeAgo = { MINUTE: 60, HOUR: 3600, DAY: 86400, WEEK: 604800, MONTH: 2592000, YEAR: 31536000, format: (isoString) => { if (!isoString) return 'N/A'; try { const date = new Date(isoString); const seconds = Math.floor((new Date() - date) / 1000); if (isNaN(seconds) || seconds < 0) { console.warn(`TimeAgo: Invalid seconds calculation for ${isoString}. Parsed date: ${date}. Returning full date.`); return TimeAgo.formatFullDate(date); } if (seconds < 2) return "just now"; if (seconds < TimeAgo.MINUTE) return `${seconds} sec${seconds > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.HOUR) return `${Math.floor(seconds / TimeAgo.MINUTE)} min${Math.floor(seconds / TimeAgo.MINUTE) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY) return `${Math.floor(seconds / TimeAgo.HOUR)} hr${Math.floor(seconds / TimeAgo.HOUR) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY * 2) return "Yesterday"; if (seconds < TimeAgo.WEEK) return `${Math.floor(seconds / TimeAgo.DAY)} days ago`; if (seconds < TimeAgo.MONTH) return `${Math.floor(seconds / TimeAgo.WEEK)} wk${Math.floor(seconds / TimeAgo.WEEK) > 1 ? 's' : ''} ago`; return TimeAgo.formatFullDate(date, true); } catch (e) { console.error("Date Format Error (TimeAgo):", isoString, e); return 'Invalid Date'; } }, formatFullDate: (date, short = false) => { if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid Date'; const optsDate = short ? { year: '2-digit', month: 'numeric', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' }; const optsTime = { hour: 'numeric', minute: '2-digit', hour12: true }; try { return `${date.toLocaleDateString(undefined, optsDate)}${short ? '' : ', ' + date.toLocaleTimeString(undefined, optsTime)}`; } catch (e) { console.error("toLocaleDateString/Time failed:", e); return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; } } };
+           function extractSizeData(inputString) { if (!inputString) return { value: 0, unit: '', display: 'N/A', bytes: 0 }; const r = /(?<size>[\d.]+)\s?(?<unit>GB|MB)/i; const m = String(inputString).match(r); if (m?.groups?.size && m?.groups?.unit) { const value = parseFloat(m.groups.size); const unit = m.groups.unit.toUpperCase(); if (!isNaN(value)) { const bytes = unit === 'GB' ? value * 1024 * 1024 * 1024 : value * 1024 * 1024; return { value: value, unit: unit, display: `${value} ${unit}`, bytes: isNaN(bytes) ? 0 : bytes }; } } return { value: 0, unit: '', display: 'N/A', bytes: 0 }; }
+           function getMimeTypeFromUrl(url) { if (!url) return 'video/*'; const m = url.match(/\.([a-zA-Z0-9]+)(?:[?#]|$)/); if (!m) return 'video/*'; const ext = m[1].toLowerCase(); const mimeMap = { 'mkv': 'video/x-matroska', 'mp4': 'video/mp4', 'mov': 'video/quicktime', 'avi': 'video/x-msvideo', 'webm': 'video/webm', 'wmv': 'video/x-ms-wmv', 'flv': 'video/x-flv', 'ts': 'video/mp2t', 'm4v': 'video/x-m4v', 'ogv': 'video/ogg' }; return mimeMap[ext] || 'video/*'; }
+           function handleVideoError(event) { console.error("HTML5 Video Error:", event, videoElement?.error); let msg = "An unknown error occurred while trying to play the video."; if (videoElement?.error) { switch (videoElement.error.code) { case MediaError.MEDIA_ERR_ABORTED: msg = 'Playback was aborted.'; break; case MediaError.MEDIA_ERR_NETWORK: msg = 'A network error caused the video download to fail.'; break; case MediaError.MEDIA_ERR_DECODE: msg = 'Video decoding error (unsupported codec or corrupt file?).'; break; case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: msg = 'Video format not supported or server/network failed.'; break; default: msg = `An unknown video error occurred (Code: ${videoElement.error.code}).`; break; } } if (audioWarningDiv) { audioWarningDiv.innerHTML = `<strong>Playback Error:</strong> ${sanitize(msg)} <br>Consider using 'Copy URL' with an external player (VLC/MX) or 'Open Externally' (Android).`; audioWarningDiv.style.display = 'block'; } } if (videoElement) { videoElement.addEventListener('error', handleVideoError); }
+           async function copyToClipboard(text, feedbackSpan) { console.log("Attempting to copy:", text); let success = false; if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) { try { await navigator.clipboard.writeText(text); success = true; console.log("navigator.clipboard.writeText SUCCEEDED"); } catch (err) { console.error("Async clipboard write failed:", err); success = false; } } if (!success) { console.warn("Using fallback copy method (execCommand)."); const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.top = "-9999px"; textArea.style.left = "-9999px"; textArea.style.opacity = "0"; textArea.setAttribute("readonly", ""); document.body.appendChild(textArea); try { textArea.select(); textArea.setSelectionRange(0, textArea.value.length); success = document.execCommand('copy'); console.log("Fallback execCommand result:", success); } catch (err) { console.error('Fallback copy execCommand failed:', err); success = false; } finally { document.body.removeChild(textArea); } } if (success) { console.log("Copy successful!"); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copied!', false); } } else { console.error("Copy FAILED."); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copy Failed!', true); } else { alert("Copy failed. Please try again or copy manually. Check console for errors (F12)."); } } return success; }
 
            // --- Data Preprocessing ---
            function preprocessMovieData(movie) {
-               const processed = { ...movie };
-               processed.id = movie.original_id;
-               processed.displayFilename = sanitize(movie.filename || '');
+               const processed = { ...movie }; // Shallow copy of raw API data
+               processed.id = movie.original_id; // Map DB's original_id to frontend's id
+               processed.filename = movie.filename || ''; // Keep original filename for parsing
+               processed.displayFilename = sanitize(processed.filename); // Sanitize for display
                processed.sizeData = extractSizeData(movie.size_display);
+               // Ensure size_bytes is available, calculate if missing but display exists
                if (!processed.size_bytes && processed.sizeData.bytes > 0) {
                     processed.size_bytes = processed.sizeData.bytes;
                }
                processed.displayQuality = sanitize(movie.quality || 'N/A');
+               // Populate unique qualities Set (used for filter dropdown)
                if (processed.displayQuality && processed.displayQuality !== 'N/A') {
                    uniqueQualities.add(processed.displayQuality);
                }
@@ -1647,33 +1659,266 @@
                if (tsString) {
                    try { dateObject = new Date(tsString); } catch(e) { console.warn("Date parse error in preprocessMovieData:", e); }
                }
+               // Store timestamp for sorting, handle invalid dates gracefully
                processed.lastUpdatedTimestamp = (dateObject && !isNaN(dateObject)) ? dateObject.getTime() : 0;
                if (processed.lastUpdatedTimestamp === 0 && tsString) {
                    console.warn(`Invalid date format received for movie ID ${processed.id}, filename "${processed.displayFilename}":`, tsString);
                }
-               processed.numericId = typeof processed.id === 'number' ? processed.id : Infinity;
-               processed.searchText = normalizeTextForSearch(`${processed.id || ''} ${processed.displayFilename}`);
-               processed.isSeries = !!movie.is_series;
+               processed.numericId = typeof processed.id === 'number' ? processed.id : Infinity; // For ID sorting
+               processed.isSeries = !!movie.is_series; // Convert DB boolean/null to true/false
+               processed.languages = movie.languages || ''; // Store languages
+               processed.originalFilename = movie.original_filename || ''; // Store original filename if available
                return processed;
            }
 
-           // --- HTML Generation (Largely Unchanged - uses processed data) ---
-           function createActionContentHTML(movie) { /* ... Keep existing function ... */ const displayFilename = movie.displayFilename; const displaySize = movie.sizeData.display; const displayQuality = movie.displayQuality; const streamTitle = (displayFilename || '').split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim() + (displayQuality !== 'N/A' ? ` (${displayQuality})` : ''); const timestampString = movie.last_updated_ts; const formattedDateRelative = TimeAgo.format(timestampString); const dateObject = timestampString ? new Date(timestampString) : null; const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A'; let hdrLogoHtml = ''; let fourkLogoHtml = ''; const lowerFilename = (displayFilename || '').toLowerCase(); if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; } if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; } const escapedStreamTitle = streamTitle.replace(/'/g, "\\'"); const escapedFilename = displayFilename.replace(/'/g, "\\'"); const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : ''; const escapedId = movie.id ? String(movie.id).replace(/'/g, "\\'") : ''; let actionButtonsHTML = ''; if (movie.url && movie.url.toLowerCase() !== 'null') { actionButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play here</button>`; actionButtonsHTML += `<a class="button download-button" href="${sanitize(movie.url)}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`; actionButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`; if (navigator.userAgent.toLowerCase().includes("android")) { actionButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Open Externally (Android)</button>`; } } if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`; if (movie.gdflix_link) actionButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX</a>`; if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud</a>`; if (movie.filepress_link) actionButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`; if (movie.gdtot_link) actionButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`; if (movie.id) { actionButtonsHTML += `<button class="button share-button" data-action="share" data-id="${escapedId}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share Post</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`; } if (!actionButtonsHTML) { actionButtonsHTML = '<span style="color: var(--text-muted); font-style: italic; text-align: center; width: 100%; display: block; padding: 10px 0;">No stream/download actions available</span>'; } const actionContentHTML = ` <div class="action-info"> <span class="info-item"><strong>Filename:</strong> ${displayFilename}</span> <span class="info-item"><strong>Quality:</strong> ${displayQuality} ${fourkLogoHtml}${hdrLogoHtml}</span> <span class="info-item"><strong>Size:</strong> ${displaySize}</span> <span class="info-item"><strong>Language:</strong> ${sanitize(movie.languages || 'N/A')}</span> <span class="info-item"><strong>Updated:</strong> ${formattedDateFull} (${formattedDateRelative})</span> ${movie.originalFilename ? `<span class="info-item"><strong>Original Name:</strong> ${sanitize(movie.originalFilename)}</span>` : ''} </div> <div class="action-buttons-container"> ${actionButtonsHTML} </div>`; return actionContentHTML; }
-           function createMovieTableRowHTML(movie, dataIndex, actionRowId) { /* ... Keep existing function ... */ const displayFilename = movie.displayFilename; const displaySize = movie.sizeData.display; const displayQuality = movie.displayQuality; const timestampString = movie.last_updated_ts; const formattedDateRelative = TimeAgo.format(timestampString); const dateObject = timestampString ? new Date(timestampString) : null; const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A'; let hdrLogoHtml = ''; let fourkLogoHtml = ''; const lowerFilename = (displayFilename || '').toLowerCase(); if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; } if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; } const mainRowHTML = ` <tr class="movie-data-row" data-index="${dataIndex}" data-action-row-id="${actionRowId}"> <td class="col-id">${sanitize(movie.id || 'N/A')}</td> <td class="col-filename" title="Click to view details: ${displayFilename}"> ${displayFilename}${fourkLogoHtml}${hdrLogoHtml} </td> <td class="col-size">${displaySize}</td> <td class="col-quality">${displayQuality}</td> <td class="col-updated" title="${formattedDateFull}">${formattedDateRelative}</td> <td class="col-view"> <button class="button view-button" aria-expanded="false">View</button> </td> </tr>`; return mainRowHTML; }
+           // --- Trailer Query Generation ---
+           function generateTrailerSearchQuery(filename, languages, isSeries) {
+                if (!filename) return '';
 
-           // --- View Control (Largely Unchanged) ---
-           function setViewMode(mode) { /* ... Keep existing function ... */ console.log("Setting view mode to:", mode); const previousMode = currentViewMode; currentViewMode = mode; if (mode !== previousMode) { closePlayerIfNeeded(null); } container.classList.toggle('results-active', mode === 'search'); container.classList.toggle('shared-view-active', mode === 'shared'); const showHomepage = mode === 'homepage'; const showSearch = mode === 'search'; const showShared = mode === 'shared'; if (searchFocusArea) searchFocusArea.style.display = (showHomepage || showSearch) ? 'flex' : 'none'; if (resultsArea) resultsArea.style.display = showSearch ? 'block' : 'none'; if (sharedItemView) sharedItemView.style.display = showShared ? 'block' : 'none'; if (updatesPreviewSection) updatesPreviewSection.style.display = showHomepage ? 'block' : 'none'; if (pageFooter) pageFooter.style.display = (showHomepage || showSearch) ? 'flex' : 'none'; if (showHomepage) { if (searchInput) searchInput.value = ''; currentState.searchTerm = ''; if (suggestionsContainer) suggestionsContainer.style.display = 'none'; activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = ''; closeActiveActionRow('table', null); closeActiveActionRow('preview', null); if (weeklyUpdatesData.length > 0) { displayInitialUpdates(); } else if (localSuggestionData.length > 0) { if (updatesPreviewList) updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none'; } else { if (updatesPreviewList) updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; } document.title = "Cinema Ghar Index"; } else if (showSearch) { closeActiveActionRow('preview', null); document.title = "Cinema Ghar Index"; } else if (showShared) { closeActiveActionRow('table', null); closeActiveActionRow('preview', null); } saveStateToLocalStorage(); }
-           window.resetToHomepage = function(event) { /* ... Keep existing function ... */ const triggerElement = event?.target; const wasInSharedView = (currentViewMode === 'shared'); if (!wasInSharedView && window.history.pushState) { const cleanUrl = window.location.origin + window.location.pathname; window.history.pushState({ path: cleanUrl }, '', cleanUrl); } else if (!wasInSharedView) { window.location.hash = ''; } isDirectShareLoad = false; if (wasInSharedView) { console.log("Returning from shared view, performing full page reload to reset."); window.location.href = window.location.origin + window.location.pathname; } else { lastFocusedElement = triggerElement; setViewMode('homepage'); if (searchInput) { setTimeout(() => searchInput.focus(), 100); } } }
+                let baseName = filename;
+                let year = '';
+                let season = '';
+                const langLower = (languages || '').toLowerCase();
+                const hasHindi = langLower.includes('hindi');
 
-           // --- Search and Suggestions Logic (Largely Unchanged - still uses local data) ---
-           function handleSearchInput() { /* ... */ clearTimeout(suggestionDebounceTimeout); const searchTerm = searchInput.value.trim(); if (searchTerm.length < 2) { suggestionsContainer.style.display = 'none'; return; } suggestionDebounceTimeout = setTimeout(() => { fetchAndDisplaySuggestions(searchTerm); }, config.SUGGESTIONS_DEBOUNCE_DELAY); }
-           function fetchAndDisplaySuggestions(term) { /* ... */ const normalizedTerm = normalizeTextForSearch(term); if (!normalizedTerm) { suggestionsContainer.style.display = 'none'; return; } const matchingItems = localSuggestionData.filter(movie => movie.searchText.includes(normalizedTerm)).slice(0, config.MAX_SUGGESTIONS); suggestionsContainer.innerHTML = ''; if (matchingItems.length > 0) { const fragment = document.createDocumentFragment(); matchingItems.forEach(item => { const div = document.createElement('div'); let displayText = item.displayFilename; let highlighted = false; if (term.length > 0) { try { const safeTerm = escapeRegExp(term); const regex = new RegExp(`(${safeTerm})`, 'i'); if ((item.displayFilename || '').match(regex)) { div.innerHTML = (item.displayFilename || '').replace(regex, '<strong>$1</strong>'); highlighted = true; } } catch (e) { console.warn("Regex error during highlighting:", e); } } if (!highlighted) { div.textContent = item.displayFilename; } div.title = item.displayFilename; div.onclick = () => selectSuggestion(item.displayFilename); fragment.appendChild(div); }); suggestionsContainer.appendChild(fragment); suggestionsContainer.style.display = 'block'; } else { suggestionsContainer.style.display = 'none'; } }
-           function selectSuggestion(selectedValue) { /* ... */ searchInput.value = selectedValue; suggestionsContainer.style.display = 'none'; handleSearchSubmit(); }
-           window.handleSearchSubmit = function() { /* ... */ if (suggestionsContainer) { suggestionsContainer.style.display = 'none'; } const searchTerm = searchInput.value.trim(); console.log("Handling search submit for:", searchTerm); if (searchInput) { searchInput.blur(); } if (searchTerm.length === 0 && currentViewMode !== 'homepage') { resetToHomepage(); return; } if (searchTerm.length === 0 && currentViewMode === 'homepage') { return; } setViewMode('search'); activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.searchTerm = searchTerm; currentState.qualityFilter = qualityFilterSelect.value || ''; currentState.typeFilter = ''; updateActiveTabAndPanel(); showLoadingStateInTables(`Searching for "${sanitize(searchTerm)}"...`); fetchAndRenderResults(); }
-           function handleSearchClear() { /* ... */ clearTimeout(suggestionDebounceTimeout); suggestionsContainer.style.display = 'none'; if (currentViewMode !== 'homepage') { setTimeout(() => { if (searchInput.value.trim() === '') { console.log("Search input cleared via 'x', resetting to homepage."); resetToHomepage(); } }, 100); } else { currentState.searchTerm = ''; saveStateToLocalStorage(); } }
-           function showLoadingStateInTables(message = 'Loading...') { /* ... */ const loadingHTML = `<tr><td colspan="6" class="loading-message" role="status" aria-live="polite"><div class="spinner"></div>${sanitize(message)}</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) { mapping.tableBody.innerHTML = loadingHTML; } if (mapping?.pagination) { mapping.pagination.style.display = 'none'; } }); }
+                // Clean separators
+                baseName = baseName.replace(/[\._\-\[\]\(\)]+/g, ' ').trim();
 
-           // --- Updates Preview Logic (API Fetch & Display - REVISED) ---
+                // --- Extract Year (primarily for movies) ---
+                const yearMatch = baseName.match(/\b(19\d{2}|20\d{2})\b/);
+                if (yearMatch) {
+                    const potentialYear = parseInt(yearMatch[1], 10);
+                    // Basic sanity check for year
+                    if (potentialYear > 1900 && potentialYear <= new Date().getFullYear() + 1) {
+                        year = yearMatch[1];
+                        // Remove year and subsequent content from baseName for cleaner title
+                        baseName = baseName.substring(0, yearMatch.index).trim();
+                    }
+                }
+
+                // --- Extract Season (primarily for series) ---
+                const seasonMatch = filename.match(/S(\d{1,2})(?:E\d{1,2})?/i); // Match SXX or SXXEXX
+                if (isSeries && seasonMatch) {
+                    season = `Season ${parseInt(seasonMatch[1], 10)}`;
+                    // Try to clean up the baseName for series (stop before season marker)
+                     const seasonIndex = filename.toUpperCase().indexOf(seasonMatch[0].toUpperCase());
+                     if (seasonIndex > 0) {
+                         baseName = filename.substring(0, seasonIndex).replace(/[\._\-\[\]\(\)]+/g, ' ').trim();
+                     } else {
+                         // Fallback if season marker is at the beginning or not found as expected
+                         baseName = baseName.split(seasonMatch[0])[0].trim();
+                     }
+                } else if (isSeries) {
+                    // If isSeries is true but no SXX found, try a broader approach
+                    // (this might be less accurate)
+                    baseName = baseName.replace(/\b(?:S\d{1,2})?E\d{1,3}\b/i, ''); // Remove EP numbering
+                }
+
+                // --- Remove common clutter ---
+                baseName = baseName
+                    .replace(/\b(1080p|720p|2160p|4k|480p|HD|BluRay|WEBDL|WEB Rip|HDRip|HDTV|DvdRip|BrRip|BdRip|HC|HDTS|CAM|TS|EXTENDED|REMASTERED|UNCUT|PROPER|REPACK|HEVC|x265|x264|AAC|DDP5 1|AC3|Dual Audio|Multi Audio)\b/gi, '')
+                    .replace(/ {2,}/g, ' ') // Remove multiple spaces
+                    .trim();
+
+                // --- Construct Query ---
+                const queryParts = [];
+                if (baseName) {
+                    queryParts.push(baseName);
+                }
+                if (isSeries && season) {
+                    queryParts.push(season);
+                } else if (!isSeries && year) {
+                    queryParts.push(year);
+                }
+                queryParts.push("Official Trailer");
+                if (hasHindi) {
+                    queryParts.push("Hindi");
+                }
+
+                return queryParts.join(' ');
+            }
+
+           // --- HTML Generation ---
+           function createActionContentHTML(movie) {
+               const displayFilename = movie.displayFilename;
+               const displaySize = movie.sizeData.display;
+               const displayQuality = movie.displayQuality;
+               const streamTitle = (displayFilename || '').split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim() + (displayQuality !== 'N/A' ? ` (${displayQuality})` : '');
+               const timestampString = movie.last_updated_ts;
+               const formattedDateRelative = TimeAgo.format(timestampString);
+               const dateObject = timestampString ? new Date(timestampString) : null;
+               const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A';
+
+               let hdrLogoHtml = '';
+               let fourkLogoHtml = '';
+               const lowerFilename = (displayFilename || '').toLowerCase();
+               if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) {
+                   fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`;
+               }
+               if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) {
+                   hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`;
+               }
+
+               // --- Trailer Button Logic ---
+               const trailerQuery = generateTrailerSearchQuery(movie.filename || movie.originalFilename, movie.languages, movie.isSeries);
+               let trailerButtonHTML = '';
+               if (trailerQuery) {
+                   const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(trailerQuery)}`;
+                   trailerButtonHTML = `
+                       <a href="${youtubeSearchUrl}" target="_blank" rel="noopener noreferrer" class="button trailer-button" title="Search YouTube for '${sanitize(trailerQuery)}'">
+                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.582,6.186c-0.23-0.854-0.906-1.531-1.76-1.76C18.268,4,12,4,12,4S5.732,4,4.178,4.426 c-0.854,0.23-1.531,0.906-1.76,1.76C2,7.732,2,12,2,12s0,4.268,0.418,5.814c0.23,0.854,0.906,1.531,1.76,1.76 C5.732,20,12,20,12,20s6.268,0,7.822-0.426c0.854-0.23,1.531-0.906,1.76-1.76C22,16.268,22,12,22,12S22,7.732,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"></path></svg>
+                           <span>Trailer</span>
+                       </a>`;
+               }
+               // --- End Trailer Button Logic ---
+
+               const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
+               const escapedFilename = displayFilename.replace(/'/g, "\\'");
+               const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : '';
+               const escapedId = movie.id ? String(movie.id).replace(/'/g, "\\'") : '';
+
+               let actionButtonsHTML = '';
+               if (movie.url && movie.url.toLowerCase() !== 'null') {
+                   actionButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play here</button>`;
+                   actionButtonsHTML += `<a class="button download-button" href="${sanitize(movie.url)}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`;
+                   actionButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`;
+                   if (navigator.userAgent.toLowerCase().includes("android")) {
+                       actionButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Open Externally (Android)</button>`;
+                   }
+               }
+               if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
+               if (movie.gdflix_link) actionButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX</a>`;
+               if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud</a>`;
+               if (movie.filepress_link) actionButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
+               if (movie.gdtot_link) actionButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
+               if (movie.id) {
+                   actionButtonsHTML += `<button class="button share-button" data-action="share" data-id="${escapedId}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share Post</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`;
+               }
+
+               if (!actionButtonsHTML) {
+                   actionButtonsHTML = '<span style="color: var(--text-muted); font-style: italic; text-align: center; width: 100%; display: block; padding: 10px 0;">No stream/download actions available</span>';
+               }
+
+               const actionContentHTML = `
+                 <div class="action-info">
+                    <span class="info-item">
+                        <strong>Filename:</strong>
+                        <span class="filename-text">${displayFilename}</span>
+                        ${trailerButtonHTML}
+                    </span>
+                    <span class="info-item"><strong>Quality:</strong> ${displayQuality} ${fourkLogoHtml}${hdrLogoHtml}</span>
+                    <span class="info-item"><strong>Size:</strong> ${displaySize}</span>
+                    <span class="info-item"><strong>Language:</strong> ${sanitize(movie.languages || 'N/A')}</span>
+                    <span class="info-item"><strong>Updated:</strong> ${formattedDateFull} (${formattedDateRelative})</span>
+                    ${movie.originalFilename ? `<span class="info-item"><strong>Original Name:</strong> ${sanitize(movie.originalFilename)}</span>` : ''}
+                 </div>
+                 <div class="action-buttons-container">
+                    ${actionButtonsHTML}
+                 </div>`;
+               return actionContentHTML;
+           }
+
+           function createMovieTableRowHTML(movie, dataIndex, actionRowId) {
+               const displayFilename = movie.displayFilename;
+               const displaySize = movie.sizeData.display;
+               const displayQuality = movie.displayQuality;
+               const timestampString = movie.last_updated_ts;
+               const formattedDateRelative = TimeAgo.format(timestampString);
+               const dateObject = timestampString ? new Date(timestampString) : null;
+               const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A';
+
+               let hdrLogoHtml = '';
+               let fourkLogoHtml = '';
+               const lowerFilename = (displayFilename || '').toLowerCase();
+               if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) {
+                   fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`;
+               }
+               if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) {
+                   hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`;
+               }
+
+               const mainRowHTML = `
+                 <tr class="movie-data-row" data-index="${dataIndex}" data-action-row-id="${actionRowId}">
+                    <td class="col-id">${sanitize(movie.id || 'N/A')}</td>
+                    <td class="col-filename" title="Click to view details: ${displayFilename}">
+                        ${displayFilename}${fourkLogoHtml}${hdrLogoHtml}
+                    </td>
+                    <td class="col-size">${displaySize}</td>
+                    <td class="col-quality">${displayQuality}</td>
+                    <td class="col-updated" title="${formattedDateFull}">${formattedDateRelative}</td>
+                    <td class="col-view">
+                       <button class="button view-button" aria-expanded="false">View</button>
+                    </td>
+                 </tr>`;
+               return mainRowHTML;
+           }
+
+           // --- View Control ---
+           function setViewMode(mode) { console.log("Setting view mode to:", mode); const previousMode = currentViewMode; currentViewMode = mode; if (mode !== previousMode) { closePlayerIfNeeded(null); } container.classList.toggle('results-active', mode === 'search'); container.classList.toggle('shared-view-active', mode === 'shared'); const showHomepage = mode === 'homepage'; const showSearch = mode === 'search'; const showShared = mode === 'shared'; if (searchFocusArea) searchFocusArea.style.display = (showHomepage || showSearch) ? 'flex' : 'none'; if (resultsArea) resultsArea.style.display = showSearch ? 'block' : 'none'; if (sharedItemView) sharedItemView.style.display = showShared ? 'block' : 'none'; if (updatesPreviewSection) updatesPreviewSection.style.display = showHomepage ? 'block' : 'none'; if (pageFooter) pageFooter.style.display = (showHomepage || showSearch) ? 'flex' : 'none'; if (showHomepage) { if (searchInput) searchInput.value = ''; currentState.searchTerm = ''; activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = ''; closeActiveActionRow('table', null); closeActiveActionRow('preview', null); // Load updates if not already loaded/loading
+             if (weeklyUpdatesData.length === 0 && updatesPreviewList && !updatesPreviewList.querySelector('.loading-inline-spinner')) {
+                 loadUpdatesPreview(); // Reload updates if returning to homepage and they aren't there
+             } else if (weeklyUpdatesData.length > 0 && updatesPreviewList && updatesPreviewList.children.length === 0) {
+                 displayInitialUpdates(); // Re-render if data exists but list is empty
+             }
+             document.title = "Cinema Ghar Index";
+            } else if (showSearch) {
+                closeActiveActionRow('preview', null);
+                document.title = "Search Results - Cinema Ghar Index";
+            } else if (showShared) {
+                closeActiveActionRow('table', null);
+                closeActiveActionRow('preview', null);
+            }
+            saveStateToLocalStorage();
+          }
+           window.resetToHomepage = function(event) { const triggerElement = event?.target; const wasInSharedView = (currentViewMode === 'shared'); if (!wasInSharedView && window.history.pushState) { const cleanUrl = window.location.origin + window.location.pathname; window.history.pushState({ path: cleanUrl }, '', cleanUrl); } else if (!wasInSharedView) { window.location.hash = ''; } isDirectShareLoad = false; if (wasInSharedView) { console.log("Returning from shared view, performing full page reload to reset."); window.location.href = window.location.origin + window.location.pathname; } else { lastFocusedElement = triggerElement; setViewMode('homepage'); if (searchInput) { setTimeout(() => searchInput.focus(), 100); } } }
+
+           // --- Search Logic ---
+           window.handleSearchSubmit = function() {
+               const searchTerm = searchInput.value.trim();
+               console.log("Handling search submit for:", searchTerm);
+               if (searchInput) {
+                   searchInput.blur(); // Remove focus from input
+               }
+               // If search is empty, reset to homepage if not already there
+               if (searchTerm.length === 0 && currentViewMode !== 'homepage') {
+                   resetToHomepage();
+                   return;
+               }
+               // If search is empty and already on homepage, do nothing
+               if (searchTerm.length === 0 && currentViewMode === 'homepage') {
+                   return;
+               }
+
+               // Proceed with search
+               setViewMode('search');
+               activeResultsTab = 'allFiles'; // Default to 'All Files' tab on new search
+               currentState.currentPage = 1;
+               currentState.searchTerm = searchTerm;
+               currentState.qualityFilter = qualityFilterSelect.value || ''; // Use current filter value
+               currentState.typeFilter = ''; // Reset type filter for 'All Files' tab
+
+               updateActiveTabAndPanel(); // Visually switch tab
+               showLoadingStateInTables(`Searching for "${sanitize(searchTerm)}"...`);
+               fetchAndRenderResults(); // Fetch data from API
+           }
+           function handleSearchClear() {
+               // Called when user clears search via the 'x' button (if browser provides one)
+               if (currentViewMode !== 'homepage') {
+                   // Use setTimeout to allow the input value to update fully before checking
+                   setTimeout(() => {
+                       if (searchInput.value.trim() === '') {
+                           console.log("Search input cleared via 'x', resetting to homepage.");
+                           resetToHomepage();
+                       }
+                   }, 50); // Small delay
+               } else {
+                   currentState.searchTerm = '';
+                   saveStateToLocalStorage();
+               }
+           }
+           function showLoadingStateInTables(message = 'Loading...') { const loadingHTML = `<tr><td colspan="6" class="loading-message" role="status" aria-live="polite"><div class="spinner"></div>${sanitize(message)}</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) { mapping.tableBody.innerHTML = loadingHTML; } if (mapping?.pagination) { mapping.pagination.style.display = 'none'; } }); }
+
+           // --- Updates Preview Logic (API Fetch & Display) ---
            async function loadUpdatesPreview() {
                if (isDirectShareLoad || !updatesPreviewSection || !updatesPreviewList || !showMoreUpdatesButton) return;
 
@@ -1681,10 +1926,11 @@
                showMoreUpdatesButton.style.display = 'none';
                updatesPreviewShownCount = 0;
                weeklyUpdatesData = []; // Clear previous updates data
+               uniqueQualities.clear(); // Clear qualities before loading new ones
 
                try {
                    const params = {
-                       sort: 'lastUpdated',
+                       sort: 'lastUpdated', // IMPORTANT: Matches API default/expectation
                        sortDir: 'desc',
                        limit: config.UPDATES_PREVIEW_INITIAL_COUNT,
                        page: 1
@@ -1695,15 +1941,18 @@
                        // Process the fetched items and store in the master list
                        weeklyUpdatesData = data.items.map(preprocessMovieData);
                        displayInitialUpdates(); // Render the first batch from weeklyUpdatesData
+                       populateQualityFilter(); // Populate filter based on these initial items
                        console.log(`Loaded initial ${weeklyUpdatesData.length} updates. Total pages from API: ${data.totalPages}`);
                    } else {
                        updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>';
                        showMoreUpdatesButton.style.display = 'none';
+                       populateQualityFilter(); // Still call to ensure dropdown is reset/empty
                    }
                } catch (error) {
                    console.error("Failed to load updates preview:", error);
                    updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Could not load updates. ${error.message}</div>`;
                    showMoreUpdatesButton.style.display = 'none';
+                   populateQualityFilter(); // Still call to ensure dropdown is reset/empty
                }
            }
            function displayInitialUpdates() { // Renders from weeklyUpdatesData
@@ -1722,11 +1971,10 @@
                appendUpdatesToPreview(0, initialCount); // Append from the master list
                updatesPreviewShownCount = initialCount; // Set count to what's actually rendered
 
-               // Check if potentially more items exist (based on initial fetch size)
-               // A more accurate check will happen in appendMoreUpdates using totalPages
+               // Show "Show More" button only if the initial fetch brought back a full page's worth
                const potentiallyMore = weeklyUpdatesData.length >= config.UPDATES_PREVIEW_INITIAL_COUNT;
 
-               if (potentiallyMore) { // Show button if we loaded a full page initially
+               if (potentiallyMore) {
                    showMoreUpdatesButton.style.display = 'block';
                    showMoreUpdatesButton.disabled = false;
                    showMoreUpdatesButton.textContent = "Show More";
@@ -1734,22 +1982,25 @@
                    showMoreUpdatesButton.style.display = 'none';
                }
            }
-           window.appendMoreUpdates = async function() { // *** REVISED ***
+           window.appendMoreUpdates = async function() { // Fetches next page of updates
                if (!updatesPreviewList || !showMoreUpdatesButton) return;
 
                showMoreUpdatesButton.disabled = true;
                showMoreUpdatesButton.textContent = "Loading...";
 
                // Calculate next page based on *total items already in the master list*
-               const currentPage = Math.floor(weeklyUpdatesData.length / config.UPDATES_PREVIEW_LOAD_MORE_COUNT);
-               const nextPage = currentPage + 1;
-               console.log(`Attempting to load page ${nextPage} for updates preview.`);
+               // Use LOAD_MORE_COUNT to determine page size for subsequent loads
+               const currentPageCount = weeklyUpdatesData.length;
+               const itemsPerPageForNextLoad = config.UPDATES_PREVIEW_LOAD_MORE_COUNT;
+               const nextPage = Math.floor(currentPageCount / itemsPerPageForNextLoad) + 1; // Calculate next page number
+
+               console.log(`Attempting to load page ${nextPage} for updates preview (limit: ${itemsPerPageForNextLoad}).`);
 
                try {
                    const params = {
                        sort: 'lastUpdated',
                        sortDir: 'desc',
-                       limit: config.UPDATES_PREVIEW_LOAD_MORE_COUNT, // Use LOAD_MORE count
+                       limit: itemsPerPageForNextLoad, // Use LOAD_MORE count
                        page: nextPage
                    };
                    const data = await fetchApiData(params);
@@ -1767,12 +2018,14 @@
                        // Update the shown count based on the *total* length of the master list
                        updatesPreviewShownCount = weeklyUpdatesData.length;
 
-                       console.log(`Loaded ${newItems.length} more updates. Total now: ${updatesPreviewShownCount}. Current API page: ${data.page}, Total API pages: ${data.totalPages}`);
+                       populateQualityFilter(); // Update filter with any new qualities found
+
+                       console.log(`Loaded ${newItems.length} more updates. Total now: ${updatesPreviewShownCount}. Current API page fetched: ${data.page}, Total API pages: ${data.totalPages}`);
 
                        // Use totalPages from API response to determine if more exist
                        if (data.page >= data.totalPages) {
                            showMoreUpdatesButton.textContent = "All Updates Shown";
-                           // Keep disabled, hide after a delay?
+                           // Optionally hide after a delay:
                            // setTimeout(() => { showMoreUpdatesButton.style.display = 'none'; }, 2000);
                        } else {
                            showMoreUpdatesButton.disabled = false;
@@ -1781,7 +2034,7 @@
                    } else {
                        console.log("No more updates found from API.");
                        showMoreUpdatesButton.textContent = "No More Updates";
-                       // Keep disabled, hide after a delay?
+                       // Optionally hide after a delay:
                        // setTimeout(() => { showMoreUpdatesButton.style.display = 'none'; }, 2000);
                    }
                } catch (error) {
@@ -1790,7 +2043,7 @@
                    showMoreUpdatesButton.disabled = false; // Re-enable after error
                }
            }
-           function appendUpdatesToPreview(startIndex, endIndex) { // *** REVISED DATE LOGIC ***
+           function appendUpdatesToPreview(startIndex, endIndex) { // Renders a slice of weeklyUpdatesData
                if (!updatesPreviewList) return;
                const fragment = document.createDocumentFragment();
                // Slice from the MASTER weeklyUpdatesData list
@@ -1811,12 +2064,10 @@
                    if (movie.displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
                    if ((movie.displayQuality || '').includes('HDR') || (movie.displayQuality || '').includes('DOLBY VISION') || movie.displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
 
-                   // *** Robust Date Handling ***
                    const timestampString = movie.last_updated_ts; // Original string from API
-                   const formattedDateRelative = TimeAgo.format(timestampString); // Use TimeAgo.format directly, it handles null/invalid
+                   const formattedDateRelative = TimeAgo.format(timestampString); // Use TimeAgo.format directly
                    const dateObject = timestampString ? new Date(timestampString) : null;
                    const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A';
-                   // ***************************
 
                    itemDiv.innerHTML = `
                        <div class="preview-col-id" title="ID: ${sanitize(movie.id || 'N/A')}">${sanitize(movie.id || 'N/A')}</div>
@@ -1824,7 +2075,7 @@
                            ${sanitize(movie.displayFilename)}${fourkLogoHtml}${hdrLogoHtml}
                        </div>
                        <div class="preview-col-date" title="${formattedDateFull}">
-                           ${formattedDateRelative} <!-- This will now correctly show "X time ago" or "N/A" -->
+                           ${formattedDateRelative}
                        </div>
                        <div class="preview-col-view">
                            <button class="button view-button" aria-expanded="false">View</button>
@@ -1832,7 +2083,7 @@
                    `;
                    fragment.appendChild(itemDiv);
 
-                   // Action Row creation (unchanged)
+                   // Action Row creation (empty placeholder)
                    const actionRowDiv = document.createElement('div');
                    actionRowDiv.id = actionRowId;
                    actionRowDiv.className = 'preview-action-row';
@@ -1840,80 +2091,265 @@
                    fragment.appendChild(actionRowDiv);
                });
 
+               // Remove initial loader if this is the first append operation
                const initialLoader = updatesPreviewList.querySelector('.loading-inline-spinner');
                if (initialLoader && startIndex === 0) { initialLoader.remove(); }
+
                updatesPreviewList.appendChild(fragment);
            }
 
-
            // --- Filtering, Sorting (Trigger API Fetch) ---
-           function triggerFilterChange() { /* ... */ if (!qualityFilterSelect || currentViewMode !== 'search') return; const newQualityFilter = qualityFilterSelect.value; if (newQualityFilter !== currentState.qualityFilter) { currentState.qualityFilter = newQualityFilter; currentState.currentPage = 1; closePlayerIfNeeded(null); showLoadingStateInTables(`Applying filter: ${sanitize(newQualityFilter || 'All Qualities')}...`); fetchAndRenderResults(); } }
-           function handleSort(event) { /* ... */ const header = event.target.closest('th.sortable'); if (!header || currentViewMode !== 'search') return; const sortKey = header.dataset.sortKey; if (!sortKey) return; const oldSortColumn = currentState.sortColumn; const oldSortDirection = currentState.sortDirection; if (currentState.sortColumn === sortKey) { currentState.sortDirection = currentState.sortDirection === 'asc' ? 'desc' : 'asc'; } else { currentState.sortColumn = sortKey; currentState.sortDirection = ['filename', 'quality'].includes(sortKey) ? 'asc' : 'desc'; } if (oldSortColumn !== currentState.sortColumn || oldSortDirection !== currentState.sortDirection) { currentState.currentPage = 1; closePlayerIfNeeded(null); showLoadingStateInTables(`Sorting by ${sanitize(sortKey)} (${currentState.sortDirection})...`); fetchAndRenderResults(); } }
+           function triggerFilterChange() { if (!qualityFilterSelect || currentViewMode !== 'search') return; const newQualityFilter = qualityFilterSelect.value; if (newQualityFilter !== currentState.qualityFilter) { currentState.qualityFilter = newQualityFilter; currentState.currentPage = 1; // Reset to page 1 on filter change
+             closePlayerIfNeeded(null); showLoadingStateInTables(`Applying filter: ${sanitize(newQualityFilter || 'All Qualities')}...`); fetchAndRenderResults(); } }
+           function handleSort(event) { const header = event.target.closest('th.sortable'); if (!header || currentViewMode !== 'search') return; const sortKey = header.dataset.sortKey; if (!sortKey) return; const oldSortColumn = currentState.sortColumn; const oldSortDirection = currentState.sortDirection; if (currentState.sortColumn === sortKey) { currentState.sortDirection = currentState.sortDirection === 'asc' ? 'desc' : 'asc'; } else { currentState.sortColumn = sortKey; // Default sort directions for specific columns
+             currentState.sortDirection = ['filename', 'quality'].includes(sortKey) ? 'asc' : 'desc'; } if (oldSortColumn !== currentState.sortColumn || oldSortDirection !== currentState.sortDirection) { currentState.currentPage = 1; // Reset to page 1 on sort change
+             closePlayerIfNeeded(null); showLoadingStateInTables(`Sorting by ${sanitize(sortKey)} (${currentState.sortDirection})...`); fetchAndRenderResults(); } }
 
            // --- Rendering Logic (Uses API response) ---
-           function renderActiveResultsView(apiResponse) { /* ... */ if (currentViewMode !== 'search' || !tabMappings[activeResultsTab]) { if (currentViewMode === 'search') { showLoadingStateInTables('Enter search term above.'); } return; } console.log(`Rendering results for tab: ${activeResultsTab}`, apiResponse); console.time("renderActiveResultsView"); const { tableBody, pagination, tableHead } = tabMappings[activeResultsTab]; if (!tableBody || !pagination) { console.error("Missing table body or pagination controls for tab:", activeResultsTab); console.timeEnd("renderActiveResultsView"); return; } const itemsToRender = apiResponse.items || []; const totalItems = apiResponse.totalItems || 0; const currentPage = apiResponse.page || 1; const totalPages = apiResponse.totalPages || 1; currentViewData = itemsToRender.map(preprocessMovieData); let tableHtml = ''; if (totalItems === 0) { let message = `No ${tabMappings[activeResultsTab].typeFilter || 'files'} found`; if (currentState.searchTerm) message += ` matching "${sanitize(currentState.searchTerm)}"`; if (currentState.qualityFilter) message += ` with quality "${sanitize(currentState.qualityFilter)}"`; message += '.'; tableHtml = `<tr><td colspan="6" class="status-message">${message}</td></tr>`; } else { currentViewData.forEach((movie, indexOnPage) => { const uniqueIdPart = movie.id ? String(movie.id).replace(/[^a-zA-Z0-9-_]/g, '') : `gen-${indexOnPage}`; const actionRowId = `${activeResultsTab}-actions-${uniqueIdPart}-${indexOnPage}`; tableHtml += createMovieTableRowHTML(movie, indexOnPage, actionRowId); }); } tableBody.innerHTML = tableHtml; renderPaginationControls(pagination, totalItems, currentPage, totalPages); updateActiveTabAndPanel(); if (tableHead) updateSortIndicators(tableHead); updateFilterIndicator(); closeActiveActionRow('table', null); console.timeEnd("renderActiveResultsView"); }
-           function renderPaginationControls(targetContainer, totalItems, currentPage, totalPages) { /* ... */ if (!targetContainer) return; if (totalItems === 0 || totalPages <= 1) { targetContainer.innerHTML = ''; targetContainer.style.display = 'none'; return; } targetContainer.dataset.totalPages = totalPages; targetContainer.innerHTML = ''; let paginationHTML = ''; const maxPagesToShow = 5; const halfPages = Math.floor(maxPagesToShow / 2); paginationHTML += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled title="First page"' : 'title="Previous page"'}>« Prev</button>`; let startPage, endPage; if (totalPages <= maxPagesToShow + 2) { startPage = 1; endPage = totalPages; } else { startPage = Math.max(2, currentPage - halfPages); endPage = Math.min(totalPages - 1, currentPage + halfPages); if (currentPage - halfPages < 2) { endPage = Math.min(totalPages - 1, maxPagesToShow); } if (currentPage + halfPages > totalPages - 1) { startPage = Math.max(2, totalPages - maxPagesToShow + 1); } } if (startPage > 1) { paginationHTML += `<button onclick="changePage(1)" title="Page 1">1</button>`; if (startPage > 2) { paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`; } } for (let i = startPage; i <= endPage; i++) { paginationHTML += (i === currentPage) ? `<span class="current-page">${i}</span>` : `<button onclick="changePage(${i})" title="Page ${i}">${i}</button>`; } if (endPage < totalPages) { if (endPage < totalPages - 1) { paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`; } paginationHTML += `<button onclick="changePage(${totalPages})" title="Page ${totalPages}">${totalPages}</button>`; } paginationHTML += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled title="Last page"' : 'title="Next page"'}>Next »</button>`; targetContainer.innerHTML = paginationHTML; targetContainer.style.display = 'block'; }
-           function updateSortIndicators(tableHeadElement) { /* ... */ if (!tableHeadElement) return; tableHeadElement.querySelectorAll('th.sortable').forEach(th => { th.classList.remove('sort-asc', 'sort-desc'); const sortKey = th.dataset.sortKey; if (sortKey === currentState.sortColumn) { const directionClass = currentState.sortDirection === 'asc' ? 'sort-asc' : 'sort-desc'; th.classList.add(directionClass); th.setAttribute('aria-sort', currentState.sortDirection === 'asc' ? 'ascending' : 'descending'); } else { th.removeAttribute('aria-sort'); } }); }
-           function updateFilterIndicator() { /* ... */ if(qualityFilterSelect) { qualityFilterSelect.classList.toggle('filter-active', !!currentState.qualityFilter); } }
-           function updateActiveTabAndPanel() { /* ... */ Object.keys(tabMappings).forEach(tabId => { const mapping = tabMappings[tabId]; const isActive = tabId === activeResultsTab; if (mapping?.button) mapping.button.classList.toggle('active', isActive); if (mapping?.panel) mapping.panel.classList.toggle('active', isActive); }); }
+           function renderActiveResultsView(apiResponse) { if (currentViewMode !== 'search' || !tabMappings[activeResultsTab]) { if (currentViewMode === 'search') { showLoadingStateInTables('Enter search term above.'); } return; } console.log(`Rendering results for tab: ${activeResultsTab}`, apiResponse); console.time("renderActiveResultsView"); const { tableBody, pagination, tableHead } = tabMappings[activeResultsTab]; if (!tableBody || !pagination) { console.error("Missing table body or pagination controls for tab:", activeResultsTab); console.timeEnd("renderActiveResultsView"); return; } const itemsToRender = apiResponse.items || []; const totalItems = apiResponse.totalItems || 0; const currentPage = apiResponse.page || 1; const totalPages = apiResponse.totalPages || 1; // Preprocess items from the API response for this specific page view
+            currentViewData = itemsToRender.map(preprocessMovieData); // Overwrite with current page's data
+            let tableHtml = ''; if (totalItems === 0) { let message = `No ${tabMappings[activeResultsTab].typeFilter || 'files'} found`; if (currentState.searchTerm) message += ` matching "${sanitize(currentState.searchTerm)}"`; if (currentState.qualityFilter) message += ` with quality "${sanitize(currentState.qualityFilter)}"`; message += '.'; tableHtml = `<tr><td colspan="6" class="status-message">${message}</td></tr>`; } else { // Generate HTML for each item in the current page's data
+               currentViewData.forEach((movie, indexOnPage) => { const uniqueIdPart = movie.id ? String(movie.id).replace(/[^a-zA-Z0-9-_]/g, '') : `gen-${indexOnPage}`; const actionRowId = `${activeResultsTab}-actions-${uniqueIdPart}-${indexOnPage}`; tableHtml += createMovieTableRowHTML(movie, indexOnPage, actionRowId); }); } tableBody.innerHTML = tableHtml; renderPaginationControls(pagination, totalItems, currentPage, totalPages); updateActiveTabAndPanel(); if (tableHead) updateSortIndicators(tableHead); updateFilterIndicator(); closeActiveActionRow('table', null); console.timeEnd("renderActiveResultsView"); }
+           function renderPaginationControls(targetContainer, totalItems, currentPage, totalPages) { if (!targetContainer) return; if (totalItems === 0 || totalPages <= 1) { targetContainer.innerHTML = ''; targetContainer.style.display = 'none'; return; } targetContainer.dataset.totalPages = totalPages; targetContainer.innerHTML = ''; let paginationHTML = ''; const maxPagesToShow = 5; // Number of page buttons to show (excluding prev/next/first/last)
+            const halfPages = Math.floor(maxPagesToShow / 2); // Add "Prev" button
+            paginationHTML += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled title="First page"' : 'title="Previous page"'}>« Prev</button>`; // Determine page range to display
+            let startPage, endPage; if (totalPages <= maxPagesToShow + 2) { // Show all pages if few enough
+                startPage = 1; endPage = totalPages; } else { // Calculate start/end pages with ellipsis logic
+                startPage = Math.max(2, currentPage - halfPages); endPage = Math.min(totalPages - 1, currentPage + halfPages); // Adjust range if near the beginning or end
+                if (currentPage - halfPages < 2) { endPage = Math.min(totalPages - 1, maxPagesToShow); } if (currentPage + halfPages > totalPages - 1) { startPage = Math.max(2, totalPages - maxPagesToShow + 1); } } // Add first page button and ellipsis if needed
+            if (startPage > 1) { paginationHTML += `<button onclick="changePage(1)" title="Page 1">1</button>`; if (startPage > 2) { paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`; } } // Add page number buttons in the calculated range
+            for (let i = startPage; i <= endPage; i++) { paginationHTML += (i === currentPage) ? `<span class="current-page">${i}</span>` : `<button onclick="changePage(${i})" title="Page ${i}">${i}</button>`; } // Add last page button and ellipsis if needed
+            if (endPage < totalPages) { if (endPage < totalPages - 1) { paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`; } paginationHTML += `<button onclick="changePage(${totalPages})" title="Page ${totalPages}">${totalPages}</button>`; } // Add "Next" button
+            paginationHTML += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled title="Last page"' : 'title="Next page"'}>Next »</button>`; targetContainer.innerHTML = paginationHTML; targetContainer.style.display = 'block'; }
+           function updateSortIndicators(tableHeadElement) { if (!tableHeadElement) return; tableHeadElement.querySelectorAll('th.sortable').forEach(th => { th.classList.remove('sort-asc', 'sort-desc'); const sortKey = th.dataset.sortKey; if (sortKey === currentState.sortColumn) { const directionClass = currentState.sortDirection === 'asc' ? 'sort-asc' : 'sort-desc'; th.classList.add(directionClass); th.setAttribute('aria-sort', currentState.sortDirection === 'asc' ? 'ascending' : 'descending'); } else { th.removeAttribute('aria-sort'); } }); }
+           function updateFilterIndicator() { if(qualityFilterSelect) { qualityFilterSelect.classList.toggle('filter-active', !!currentState.qualityFilter); } }
+           function updateActiveTabAndPanel() { Object.keys(tabMappings).forEach(tabId => { const mapping = tabMappings[tabId]; const isActive = tabId === activeResultsTab; if (mapping?.button) mapping.button.classList.toggle('active', isActive); if (mapping?.panel) mapping.panel.classList.toggle('active', isActive); }); }
 
            // --- Pagination and Tab Switching (Trigger API Fetch) ---
-           window.changePage = function(newPage) { /* ... */ if (currentViewMode !== 'search' || newPage < 1 || newPage === currentState.currentPage) { return; } const currentPagination = tabMappings[activeResultsTab]?.pagination; if(currentPagination && currentPagination.dataset.totalPages) { const totalP = parseInt(currentPagination.dataset.totalPages, 10); if(newPage > totalP) { console.log(`Change page request to ${newPage} denied, exceeds total pages (${totalP}).`); return; } } currentState.currentPage = newPage; closePlayerIfNeeded(null); fetchAndRenderResults().then(() => { const activeTableBody = tabMappings[activeResultsTab]?.tableBody; scrollToTopOfActiveTable(activeTableBody); }); saveStateToLocalStorage(); }
-           function scrollToTopOfActiveTable(tableBodyElement) { /* ... */ if (!tableBodyElement) return; const tableContainer = tableBodyElement.closest('.table-container'); if (tableContainer) { const searchBarArea = container.querySelector('#search-focus-area'); const backButtonElem = resultsArea.querySelector('#backToHomeButtonResults'); const filterArea = resultsArea.querySelector('.results-filter-area'); const tabNav = resultsArea.querySelector('.tab-navigation'); let stickyHeaderHeight = 0; if (container.classList.contains('results-active')) { stickyHeaderHeight = (searchBarArea?.offsetHeight || 0) + (backButtonElem?.offsetHeight || 0) + (backButtonElem ? parseFloat(getComputedStyle(backButtonElem).marginBottom) : 0) + (filterArea?.offsetHeight || 0) + (tabNav?.offsetHeight || 0); } const elementTop = tableContainer.getBoundingClientRect().top + window.pageYOffset; const scrollPosition = elementTop - stickyHeaderHeight - 20; window.scrollTo({ top: scrollPosition, behavior: 'smooth' }); } }
-           window.switchTab = function(tabId) { /* ... */ if (currentViewMode !== 'search' || tabId === activeResultsTab || !tabMappings[tabId]) { return; } activeResultsTab = tabId; currentState.currentPage = 1; currentState.typeFilter = tabMappings[tabId].typeFilter; closePlayerIfNeeded(null); closeActiveActionRow('table', null); updateActiveTabAndPanel(); showLoadingStateInTables(`Loading ${tabMappings[tabId].typeFilter || 'all files'}...`); fetchAndRenderResults(); saveStateToLocalStorage(); }
+           window.changePage = function(newPage) { if (currentViewMode !== 'search' || newPage < 1 || newPage === currentState.currentPage) { return; } const currentPagination = tabMappings[activeResultsTab]?.pagination; if(currentPagination && currentPagination.dataset.totalPages) { const totalP = parseInt(currentPagination.dataset.totalPages, 10); if(newPage > totalP) { console.log(`Change page request to ${newPage} denied, exceeds total pages (${totalP}).`); return; } } currentState.currentPage = newPage; closePlayerIfNeeded(null); fetchAndRenderResults().then(() => { const activeTableBody = tabMappings[activeResultsTab]?.tableBody; scrollToTopOfActiveTable(activeTableBody); }); saveStateToLocalStorage(); }
+           function scrollToTopOfActiveTable(tableBodyElement) { if (!tableBodyElement) return; const tableContainer = tableBodyElement.closest('.table-container'); if (tableContainer) { const searchBarArea = container.querySelector('#search-focus-area'); const backButtonElem = resultsArea.querySelector('#backToHomeButtonResults'); const filterArea = resultsArea.querySelector('.results-filter-area'); const tabNav = resultsArea.querySelector('.tab-navigation'); let stickyHeaderHeight = 0; if (container.classList.contains('results-active')) { stickyHeaderHeight = (searchBarArea?.offsetHeight || 0) + (backButtonElem?.offsetHeight || 0) + (backButtonElem ? parseFloat(getComputedStyle(backButtonElem).marginBottom) : 0) + (filterArea?.offsetHeight || 0) + (tabNav?.offsetHeight || 0); } const elementTop = tableContainer.getBoundingClientRect().top + window.pageYOffset; const scrollPosition = elementTop - stickyHeaderHeight - 20; // Add small buffer
+                window.scrollTo({ top: scrollPosition, behavior: 'smooth' }); } }
+           window.switchTab = function(tabId) { if (currentViewMode !== 'search' || tabId === activeResultsTab || !tabMappings[tabId]) { return; } activeResultsTab = tabId; currentState.currentPage = 1; // Reset page on tab switch
+            currentState.typeFilter = tabMappings[tabId].typeFilter; // Set type filter for API
+            closePlayerIfNeeded(null); closeActiveActionRow('table', null); updateActiveTabAndPanel(); showLoadingStateInTables(`Loading ${tabMappings[tabId].typeFilter || 'all files'}...`); fetchAndRenderResults(); saveStateToLocalStorage(); }
 
            // --- Action Row Logic (Uses currentViewData or weeklyUpdatesData) ---
-           function closeActiveActionRow(type = 'any', elementToFocusAfter = null) { /* ... Keep existing function ... */ let rowToClose = null; let mainElement = null; let buttonElement = null; if ((type === 'table' || type === 'any') && activeTableActionRow) { rowToClose = activeTableActionRow; mainElement = rowToClose.previousElementSibling; if (mainElement) buttonElement = mainElement.querySelector('.view-button'); activeTableActionRow = null; } else if ((type === 'preview' || type === 'any') && activePreviewActionRow) { rowToClose = activePreviewActionRow; mainElement = rowToClose.previousElementSibling; if (mainElement) buttonElement = mainElement.querySelector('.view-button'); activePreviewActionRow = null; } if (rowToClose && rowToClose.style.display !== 'none') { const isPlayerInside = videoContainer?.parentElement === rowToClose || (rowToClose.matches('tr.action-row') && videoContainer?.parentElement === rowToClose.querySelector('td')) || (rowToClose.matches('.preview-action-row') && videoContainer?.parentElement === rowToClose); if (isPlayerInside) { closePlayer(elementToFocusAfter || buttonElement || mainElement); } rowToClose.style.display = 'none'; if (mainElement) mainElement.classList.remove('active-main-row'); if (buttonElement) { buttonElement.textContent = 'View'; buttonElement.setAttribute('aria-expanded', 'false'); } if (rowToClose.classList.contains('preview-action-row')) { rowToClose.innerHTML = ''; } else if (rowToClose.matches('tr.action-row')) { if (rowToClose.parentElement) { rowToClose.remove(); } } if (!isPlayerInside && elementToFocusAfter && typeof elementToFocusAfter.focus === 'function') { setTimeout(() => elementToFocusAfter.focus(), 50); } } }
-           function toggleTableActions(mainRowElement, triggerElement = null) { /* ... */ if (!mainRowElement || !mainRowElement.matches('.movie-data-row')) return; const targetRowId = mainRowElement.dataset.actionRowId; const dataIndex = parseInt(mainRowElement.dataset.index, 10); if (!targetRowId || isNaN(dataIndex) || dataIndex < 0 || dataIndex >= currentViewData.length) { console.error("Invalid data attributes or index on table row:", mainRowElement, dataIndex, currentViewData.length); return; } const buttonElement = mainRowElement.querySelector('.view-button'); if (!buttonElement) { console.error("Could not find view button in row:", mainRowElement); return; } const isCurrentlyAssociatedActiveRow = activeTableActionRow && activeTableActionRow.id === targetRowId; const elementToFocusAfterClose = triggerElement || buttonElement; if (!isCurrentlyAssociatedActiveRow) { closePlayerIfNeeded(elementToFocusAfterClose); closeActiveActionRow('any', elementToFocusAfterClose); } if (isCurrentlyAssociatedActiveRow) { closeActiveActionRow('table', elementToFocusAfterClose); } else { const movie = currentViewData[dataIndex]; if (!movie) { console.error("Movie data not found for index:", dataIndex); return; } let targetRow = document.getElementById(targetRowId); const actionHTML = createActionContentHTML(movie); const colspanValue = mainRowElement.cells.length || 6; if (!targetRow) { targetRow = document.createElement('tr'); targetRow.id = targetRowId; targetRow.className = 'action-row'; targetRow.innerHTML = `<td colspan="${colspanValue}">${actionHTML}</td>`; mainRowElement.parentNode.insertBefore(targetRow, mainRowElement.nextSibling); } else { targetRow.innerHTML = `<td colspan="${colspanValue}">${actionHTML}</td>`; } targetRow.style.display = 'table-row'; buttonElement.textContent = 'Hide'; buttonElement.setAttribute('aria-expanded', 'true'); mainRowElement.classList.add('active-main-row'); activeTableActionRow = targetRow; focusFirstElementInContainer(targetRow); scrollToRowIfNeeded(mainRowElement); } }
-           function togglePreviewActions(mainItemDiv, triggerElement = null) { /* ... */ if (!mainItemDiv || !mainItemDiv.matches('.update-item')) return; const movieIndex = parseInt(mainItemDiv.dataset.index, 10); const targetRowId = mainItemDiv.dataset.actionRowId; if (isNaN(movieIndex) || !targetRowId || movieIndex < 0 || movieIndex >= weeklyUpdatesData.length) { console.error("Invalid data attributes or index on preview item.", mainItemDiv, movieIndex, weeklyUpdatesData.length); return; } const targetRowDiv = document.getElementById(targetRowId); const buttonElement = mainItemDiv.querySelector('.view-button'); if (!targetRowDiv || !buttonElement) { console.error("Target action div or button not found.", targetRowId); return; } const isCurrentlyAssociatedActiveRow = activePreviewActionRow && activePreviewActionRow.id === targetRowId; const elementToFocusAfterClose = triggerElement || buttonElement; if (!isCurrentlyAssociatedActiveRow) { closePlayerIfNeeded(elementToFocusAfterClose); closeActiveActionRow('any', elementToFocusAfterClose); } if (isCurrentlyAssociatedActiveRow) { closeActiveActionRow('preview', elementToFocusAfterClose); } else { const movie = weeklyUpdatesData[movieIndex]; if (!movie) { console.error("Movie data not found for preview index:", movieIndex); return; } const actionContentHTML = createActionContentHTML(movie); targetRowDiv.innerHTML = actionContentHTML; targetRowDiv.style.display = 'block'; buttonElement.textContent = 'Hide'; buttonElement.setAttribute('aria-expanded', 'true'); mainItemDiv.classList.add('active-main-row'); activePreviewActionRow = targetRowDiv; focusFirstElementInContainer(targetRowDiv); scrollToRowIfNeeded(mainItemDiv); } }
-           function scrollToRowIfNeeded(mainElement) { /* ... */ setTimeout(() => { mainElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100); }
-           function focusFirstElementInContainer(containerElement) { /* ... */ if (!containerElement) return; const firstFocusable = containerElement.querySelector('button, a[href]'); if (firstFocusable) { setTimeout(() => firstFocusable.focus(), 50); } }
+           function closeActiveActionRow(type = 'any', elementToFocusAfter = null) { let rowToClose = null; let mainElement = null; let buttonElement = null; // Close table action row if requested or 'any'
+            if ((type === 'table' || type === 'any') && activeTableActionRow) { rowToClose = activeTableActionRow; mainElement = rowToClose.previousElementSibling; if (mainElement) buttonElement = mainElement.querySelector('.view-button'); activeTableActionRow = null; } // Close preview action row if requested or 'any'
+            else if ((type === 'preview' || type === 'any') && activePreviewActionRow) { rowToClose = activePreviewActionRow; mainElement = rowToClose.previousElementSibling; if (mainElement) buttonElement = mainElement.querySelector('.view-button'); activePreviewActionRow = null; } if (rowToClose && rowToClose.style.display !== 'none') { // Check if player is inside the row being closed
+                const isPlayerInside = videoContainer?.parentElement === rowToClose || (rowToClose.matches('tr.action-row') && videoContainer?.parentElement === rowToClose.querySelector('td')) || (rowToClose.matches('.preview-action-row') && videoContainer?.parentElement === rowToClose); // Close player if it's inside
+                if (isPlayerInside) { closePlayer(elementToFocusAfter || buttonElement || mainElement); } // Hide the action row itself
+                rowToClose.style.display = 'none'; // Reset the main row's appearance
+                if (mainElement) mainElement.classList.remove('active-main-row'); if (buttonElement) { buttonElement.textContent = 'View'; buttonElement.setAttribute('aria-expanded', 'false'); } // Clear content for preview rows, remove table rows
+                if (rowToClose.classList.contains('preview-action-row')) { rowToClose.innerHTML = ''; } else if (rowToClose.matches('tr.action-row')) { if (rowToClose.parentElement) { rowToClose.remove(); } } // Return focus if needed and player wasn't closed (player close handles focus)
+                if (!isPlayerInside && elementToFocusAfter && typeof elementToFocusAfter.focus === 'function') { setTimeout(() => elementToFocusAfter.focus(), 50); } } }
+           function toggleTableActions(mainRowElement, triggerElement = null) { if (!mainRowElement || !mainRowElement.matches('.movie-data-row')) return; const targetRowId = mainRowElement.dataset.actionRowId; const dataIndex = parseInt(mainRowElement.dataset.index, 10); // Validate data index against the currently displayed page data (currentViewData)
+            if (!targetRowId || isNaN(dataIndex) || dataIndex < 0 || dataIndex >= currentViewData.length) { console.error("Invalid data attributes or index on table row:", mainRowElement, dataIndex, currentViewData.length); return; } const buttonElement = mainRowElement.querySelector('.view-button'); if (!buttonElement) { console.error("Could not find view button in row:", mainRowElement); return; } const isCurrentlyAssociatedActiveRow = activeTableActionRow && activeTableActionRow.id === targetRowId; const elementToFocusAfterClose = triggerElement || buttonElement; // Close any active row/player *before* opening a new one
+            if (!isCurrentlyAssociatedActiveRow) { closePlayerIfNeeded(elementToFocusAfterClose); closeActiveActionRow('any', elementToFocusAfterClose); } if (isCurrentlyAssociatedActiveRow) { // If clicking the button for the already open row, just close it
+                closeActiveActionRow('table', elementToFocusAfterClose); } else { // Open a new action row
+                const movie = currentViewData[dataIndex]; // Get data for this row
+                if (!movie) { console.error("Movie data not found for index:", dataIndex); return; } let targetRow = document.getElementById(targetRowId); // Find or create the action row TR element
+                const actionHTML = createActionContentHTML(movie); const colspanValue = mainRowElement.cells.length || 6; if (!targetRow) { // Create if doesn't exist
+                    targetRow = document.createElement('tr'); targetRow.id = targetRowId; targetRow.className = 'action-row'; targetRow.innerHTML = `<td colspan="${colspanValue}">${actionHTML}</td>`; mainRowElement.parentNode.insertBefore(targetRow, mainRowElement.nextSibling); } else { // Update content if already exists but hidden
+                    targetRow.innerHTML = `<td colspan="${colspanValue}">${actionHTML}</td>`; } targetRow.style.display = 'table-row'; // Show it
+                buttonElement.textContent = 'Hide'; buttonElement.setAttribute('aria-expanded', 'true'); mainRowElement.classList.add('active-main-row'); activeTableActionRow = targetRow; // Set as the active one
+                focusFirstElementInContainer(targetRow); // Focus first button/link
+                scrollToRowIfNeeded(mainRowElement); // Scroll into view
+            } }
+           function togglePreviewActions(mainItemDiv, triggerElement = null) { if (!mainItemDiv || !mainItemDiv.matches('.update-item')) return; const movieIndex = parseInt(mainItemDiv.dataset.index, 10); const targetRowId = mainItemDiv.dataset.actionRowId; // Validate data index against the full updates list (weeklyUpdatesData)
+            if (isNaN(movieIndex) || !targetRowId || movieIndex < 0 || movieIndex >= weeklyUpdatesData.length) { console.error("Invalid data attributes or index on preview item.", mainItemDiv, movieIndex, weeklyUpdatesData.length); return; } const targetRowDiv = document.getElementById(targetRowId); const buttonElement = mainItemDiv.querySelector('.view-button'); if (!targetRowDiv || !buttonElement) { console.error("Target action div or button not found.", targetRowId); return; } const isCurrentlyAssociatedActiveRow = activePreviewActionRow && activePreviewActionRow.id === targetRowId; const elementToFocusAfterClose = triggerElement || buttonElement; // Close any active row/player before opening
+            if (!isCurrentlyAssociatedActiveRow) { closePlayerIfNeeded(elementToFocusAfterClose); closeActiveActionRow('any', elementToFocusAfterClose); } if (isCurrentlyAssociatedActiveRow) { // Close if clicking the open one
+                closeActiveActionRow('preview', elementToFocusAfterClose); } else { // Open new one
+                const movie = weeklyUpdatesData[movieIndex]; // Get data from the master list
+                if (!movie) { console.error("Movie data not found for preview index:", movieIndex); return; } const actionContentHTML = createActionContentHTML(movie); targetRowDiv.innerHTML = actionContentHTML; // Populate content
+                targetRowDiv.style.display = 'block'; // Show it
+                buttonElement.textContent = 'Hide'; buttonElement.setAttribute('aria-expanded', 'true'); mainItemDiv.classList.add('active-main-row'); activePreviewActionRow = targetRowDiv; // Set as active
+                focusFirstElementInContainer(targetRowDiv); // Focus first button/link
+                scrollToRowIfNeeded(mainItemDiv); // Scroll into view
+            } }
+           function scrollToRowIfNeeded(mainElement) { setTimeout(() => { mainElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100); }
+           function focusFirstElementInContainer(containerElement) { if (!containerElement) return; const firstFocusable = containerElement.querySelector('button, a[href]'); if (firstFocusable) { setTimeout(() => firstFocusable.focus(), 50); } }
 
-           // --- Share Logic (Unchanged) ---
-           async function handleShareClick(buttonElement) { /* ... */ const itemId = buttonElement.dataset.id; const itemTitle = buttonElement.dataset.title || "Cinema Ghar Item"; const itemFilename = buttonElement.dataset.filename || ""; if (!itemId) { console.error("Share failed: Item ID missing."); alert("Cannot share this item (missing ID)."); return; } const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${encodeURIComponent(itemId)}`; const shareText = `Check out: ${itemTitle}\n${itemFilename ? `(${itemFilename})\n` : ''}`; const feedbackSpan = buttonElement.nextElementSibling; if (!feedbackSpan || !feedbackSpan.classList.contains('copy-feedback')) { console.warn("Share fallback feedback span not found next to button:", buttonElement); } if (navigator.share) { try { await navigator.share({ title: itemTitle, text: shareText, url: shareUrl, }); console.log('Successful share'); } catch (error) { console.error('Error sharing:', error); if (error.name !== 'AbortError') { if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Share failed!', true); } else { alert(`Share failed: ${error.message}`); } } } } else { console.log('Web Share API not supported, falling back to copy.'); await copyToClipboard(shareUrl, feedbackSpan); } }
+           // --- Share Logic ---
+           async function handleShareClick(buttonElement) { const itemId = buttonElement.dataset.id; const itemTitle = buttonElement.dataset.title || "Cinema Ghar Item"; const itemFilename = buttonElement.dataset.filename || ""; if (!itemId) { console.error("Share failed: Item ID missing."); alert("Cannot share this item (missing ID)."); return; } const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${encodeURIComponent(itemId)}`; const shareText = `Check out: ${itemTitle}\n${itemFilename ? `(${itemFilename})\n` : ''}`; const feedbackSpan = buttonElement.nextElementSibling; if (!feedbackSpan || !feedbackSpan.classList.contains('copy-feedback')) { console.warn("Share fallback feedback span not found next to button:", buttonElement); } if (navigator.share) { try { await navigator.share({ title: itemTitle, text: shareText, url: shareUrl, }); console.log('Successful share'); } catch (error) { console.error('Error sharing:', error); if (error.name !== 'AbortError') { // Don't show error if user cancelled
+                    if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Share failed!', true); } else { alert(`Share failed: ${error.message}`); } } } } else { console.log('Web Share API not supported, falling back to copy.'); await copyToClipboard(shareUrl, feedbackSpan); } }
 
            // --- Shared Item Display Logic (Fetches via API) ---
-           async function displaySharedItem(shareId) { /* ... */ if (!shareId || !sharedItemView || !sharedItemContent) return; sharedItemContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading shared item...</span></div>`; setViewMode('shared'); try { const params = { id: shareId }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { const sharedMovieRaw = data.items[0]; const sharedMovie = preprocessMovieData(sharedMovieRaw); console.log("Displaying shared item:", sharedMovie.displayFilename); const actionHTML = createActionContentHTML(sharedMovie); sharedItemContent.innerHTML = actionHTML; document.title = `${sharedMovie.displayFilename || 'Shared Item'} - Cinema Ghar`; if (videoContainer) videoContainer.style.display = 'none'; } else { console.error("Shared item not found via API for ID:", shareId); sharedItemContent.innerHTML = `<div class="error-message" role="alert">Error: Shared item with ID ${sanitize(shareId)} was not found. It might have been removed or the link is incorrect.</div>`; document.title = "Item Not Found - Cinema Ghar Index"; } } catch (error) { console.error("Failed to fetch shared item:", error); sharedItemContent.innerHTML = `<div class="error-message" role="alert">Error loading shared item: ${error.message}. Please try again.</div>`; document.title = "Error Loading Item - Cinema Ghar Index"; } finally { setViewMode('shared'); window.scrollTo({ top: 0, behavior: 'smooth' }); } }
+           async function displaySharedItem(shareId) { if (!shareId || !sharedItemView || !sharedItemContent) return; sharedItemContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading shared item...</span></div>`; setViewMode('shared'); try { const params = { id: shareId }; // Pass ID to API
+             const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { const sharedMovieRaw = data.items[0]; const sharedMovie = preprocessMovieData(sharedMovieRaw); // Process it
+                 console.log("Displaying shared item:", sharedMovie.displayFilename); const actionHTML = createActionContentHTML(sharedMovie); // Generate buttons etc.
+                 sharedItemContent.innerHTML = actionHTML; document.title = `${sharedMovie.displayFilename || 'Shared Item'} - Cinema Ghar`; if (videoContainer) videoContainer.style.display = 'none'; // Ensure player hidden initially
+                } else { console.error("Shared item not found via API for ID:", shareId); sharedItemContent.innerHTML = `<div class="error-message" role="alert">Error: Shared item with ID ${sanitize(shareId)} was not found. It might have been removed or the link is incorrect.</div>`; document.title = "Item Not Found - Cinema Ghar Index"; } } catch (error) { console.error("Failed to fetch shared item:", error); sharedItemContent.innerHTML = `<div class="error-message" role="alert">Error loading shared item: ${error.message}. Please try again.</div>`; document.title = "Error Loading Item - Cinema Ghar Index"; } finally { setViewMode('shared'); // Ensure view mode is correct even after error
+             window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top of shared item
+           } }
 
-           // --- Player Logic (Unchanged) ---
-           function streamVideo(title, url, filenameForAudioCheck) { /* ... Keep existing function ... */ let currentActionContainer = null; if (currentViewMode === 'shared' && sharedItemContent) { currentActionContainer = sharedItemContent; } else { const currentActiveRow = activeTableActionRow || activePreviewActionRow; if (!currentActiveRow) { console.error("Cannot stream: active action row/div missing."); return; } currentActionContainer = currentActiveRow.matches('tr.action-row') ? currentActiveRow.querySelector('td') : currentActiveRow.matches('.preview-action-row') ? currentActiveRow : null; } if (!videoContainer || !videoElement || !currentActionContainer) { console.error("Cannot stream: player, video element, or action container missing.", { videoContainer, videoElement, currentActionContainer }); return; } if (videoContainer.parentElement !== currentActionContainer) { console.log("Moving video container to active container."); if (videoElement && videoElement.hasAttribute('src')) { videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); } if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) audioWarningDiv.style.display = 'none'; if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); currentActionContainer.appendChild(videoContainer); } if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); const savedVolume = localStorage.getItem(config.PLAYER_VOLUME_KEY); const savedSpeed = localStorage.getItem(config.PLAYER_SPEED_KEY); videoElement.volume = (savedVolume !== null) ? Math.max(0, Math.min(1, parseFloat(savedVolume))) : 1; if (volumeSlider) volumeSlider.value = videoElement.volume; videoElement.muted = (videoElement.volume === 0); videoElement.playbackRate = (savedSpeed !== null) ? parseFloat(savedSpeed) : 1; if(playbackSpeedSelect) playbackSpeedSelect.value = String(videoElement.playbackRate); updateMuteButton(); videoElement.currentTime = 0; const ddp51Regex = /\bDDP?([ ._-]?5\.1)?\b/i; const advancedAudioRegex = /\b(DTS|ATMOS|TrueHD)\b/i; const multiAudioHintRegex = /\b(Multi|Dual)[ ._-]?Audio\b/i; let warningText = ""; if (filenameForAudioCheck) { const lowerFilename = (filenameForAudioCheck || '').toLowerCase(); if (ddp51Regex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DDP audio might not work in browser. Use 'Copy URL' or 'Open Externally'."; } else if (advancedAudioRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DTS/Atmos/TrueHD audio likely unsupported. Use external player."; } else if (multiAudioHintRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> May contain multiple audio tracks. Use selector below or external player."; } } if (warningText && audioWarningDiv) { audioWarningDiv.innerHTML = warningText; audioWarningDiv.style.display = 'block'; } if (videoTitle) videoTitle.innerText = title; if (vlcText) vlcText.innerText = url; if (vlcBox) vlcBox.style.display = 'block'; videoElement.src = url; videoElement.load(); videoElement.play().catch(e => { console.log("Autoplay was prevented or failed:", e.message); }); videoContainer.style.display = 'flex'; const closeButton = videoContainer.querySelector('.close-btn'); if (closeButton) { setTimeout(() => closeButton.focus(), 100); } setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150); }
-           window.closePlayer = function(elementToFocusAfter = null) { /* ... Keep existing function ... */ if (elementToFocusAfter instanceof Event) { elementToFocusAfter = elementToFocusAfter?.target; } if (!videoContainer || !videoElement) return; const wasPlaying = videoContainer.style.display !== 'none'; const parentContainer = videoContainer.parentElement; try { const fsElement = document.fullscreenElement || document.webkitFullscreenElement; if (fsElement && (fsElement === videoElement || fsElement === videoContainer)) { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch(err) { console.error("Error exiting fullscreen:", err); } videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); videoContainer.style.display = 'none'; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); if (videoTitle) videoTitle.innerText = ''; if (videoContainer.classList.contains('is-fullscreen')) { videoContainer.classList.remove('is-fullscreen'); } const mainBodyContainer = document.getElementById('cinemaghar-container'); if (mainBodyContainer && videoContainer.parentElement !== mainBodyContainer) { mainBodyContainer.appendChild(videoContainer); console.log("Moved video player back to main container."); } else if (!mainBodyContainer) { console.warn("Main container #cinemaghar-container not found, cannot move player back."); } if (wasPlaying && parentContainer?.closest('.action-row, .preview-action-row')) { const parentActionRow = parentContainer.closest('.action-row, .preview-action-row'); if (parentActionRow) { const mainElement = parentActionRow.previousElementSibling; if (mainElement) { const viewButton = mainElement.querySelector('.view-button'); if (viewButton && viewButton.getAttribute('aria-expanded') === 'true') { viewButton.textContent = 'View'; viewButton.setAttribute('aria-expanded', 'false'); } mainElement.classList.remove('active-main-row'); } if (parentActionRow.style.display !== 'none') { parentActionRow.style.display = 'none'; if (parentActionRow.classList.contains('preview-action-row')) { parentActionRow.innerHTML = ''; } } } } else if (wasPlaying && currentViewMode === 'shared') { console.log("Closed player within shared view."); } let finalFocusTarget = elementToFocusAfter || lastFocusedElement; const closedRowId = parentContainer?.closest('.action-row, .preview-action-row')?.id; if (activeTableActionRow?.id === closedRowId || activePreviewActionRow?.id === closedRowId) { finalFocusTarget = null; } if (finalFocusTarget && typeof finalFocusTarget.focus === 'function') { console.log("Returning focus to:", finalFocusTarget); setTimeout(() => finalFocusTarget.focus(), 50); } lastFocusedElement = null; if (activeTableActionRow && activeTableActionRow.id === closedRowId) { activeTableActionRow = null; } if (activePreviewActionRow && activePreviewActionRow.id === closedRowId) { activePreviewActionRow = null; } }
-           function closePlayerIfNeeded(elementToFocusAfter = null) { /* ... */ if (videoContainer?.style.display === 'flex' || videoContainer?.style.display === 'block') { closePlayer(elementToFocusAfter); } }
-           window.seekVideo = function(seconds) { /* ... */ if (videoElement) videoElement.currentTime += seconds; }
-           window.toggleMute = function() { /* ... */ if (videoElement) videoElement.muted = !videoElement.muted; }
-           window.setVolume = function(value) { /* ... */ if (videoElement) { const vol = parseFloat(value); videoElement.volume = vol; videoElement.muted = (vol === 0); } }
-           window.setPlaybackSpeed = function(value) { /* ... */ if (videoElement) videoElement.playbackRate = parseFloat(value); }
-           window.toggleFullscreen = function() { /* ... */ const elementToMakeFullscreen = videoContainer; if (!elementToMakeFullscreen) return; const fsElement = document.fullscreenElement || document.webkitFullscreenElement; try { if (!fsElement) { if (elementToMakeFullscreen.requestFullscreen) elementToMakeFullscreen.requestFullscreen(); else if (elementToMakeFullscreen.webkitRequestFullscreen) elementToMakeFullscreen.webkitRequestFullscreen(); } else { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch (err) { console.error("Fullscreen API error:", err); alert("Fullscreen mode failed. Browser might block it."); } }
-           window.changeAudioTrack = function(selectElement) { /* ... */ if (!videoElement || !videoElement.audioTracks) return; const selectedTrackValue = selectElement.value; const tracks = videoElement.audioTracks; let trackChanged = false; for (let i = 0; i < tracks.length; i++) { const track = tracks[i]; const isSelectedTrack = (track.id && track.id === selectedTrackValue) || String(i) === selectedTrackValue; if (track.enabled !== isSelectedTrack) { try { track.enabled = isSelectedTrack; if (isSelectedTrack) console.log("Enabled audio track:", track.label || track.id || i); trackChanged = true; } catch (e) { console.error("Error changing audio track state for track:", track.id || i, e); } } } if (!trackChanged) console.warn("Selected audio track already active or no change applied."); }
-           function togglePlayPause() { /* ... */ if (videoElement) { if (videoElement.paused || videoElement.ended) videoElement.play().catch(e => console.log("Play error:", e.message)); else videoElement.pause(); } }
-           function updateMuteButton() { /* ... */ if (!videoElement || !muteButton) return; const isMuted = videoElement.muted || videoElement.volume === 0; muteButton.textContent = isMuted ? "Unmute" : "Mute"; muteButton.setAttribute('aria-pressed', String(isMuted)); if (volumeSlider) { volumeSlider.style.opacity = isMuted ? '0.5' : '1'; volumeSlider.disabled = isMuted; if (!isMuted && videoElement.volume === 0) { const defaultUnmuteVolume = 0.5; videoElement.volume = defaultUnmuteVolume; volumeSlider.value = defaultUnmuteVolume; } } }
-           function handleFullscreenChange() { /* ... */ const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement); if (!videoContainer) return; videoContainer.classList.toggle('is-fullscreen', isFullscreen); console.log("Fullscreen state changed:", isFullscreen); }
-           function populateAudioTrackSelector() { /* ... */ if (!videoElement || typeof videoElement.audioTracks === 'undefined' || !audioTrackSelect) { if(audioTrackSelect) audioTrackSelect.style.display = 'none'; return; } const tracks = videoElement.audioTracks; audioTrackSelect.innerHTML = ''; if (tracks.length <= 1) { audioTrackSelect.style.display = 'none'; return; } let hasEnabledTrack = false; for (let i = 0; i < tracks.length; i++) { if (tracks[i].enabled) hasEnabledTrack = true; } if (!hasEnabledTrack && tracks.length > 0) { try { tracks[0].enabled = true; } catch(e) { console.warn("Could not auto-enable first audio track:", e); } } let preferredTrackIndex = -1; for (let i = 0; i < tracks.length; i++) { const track = tracks[i]; const option = document.createElement('option'); const trackValue = track.id || i; option.value = trackValue; let label = track.label || `Track ${i + 1}`; let languageName = ''; if (track.language) { try { languageName = new Intl.DisplayNames(['en'], { type: 'language' }).of(track.language.split('-')[0]); label += ` (${languageName || track.language})`; } catch (e) { label += ` (${track.language})`; } } option.textContent = label; option.selected = track.enabled; option.disabled = track.readyState === 'ended'; audioTrackSelect.appendChild(option); const lang = track.language?.toLowerCase(); const lbl = label.toLowerCase(); if (preferredTrackIndex === -1 && (lang?.startsWith('hi') || lbl.includes('hindi') || languageName?.toLowerCase() === 'hindi')) { preferredTrackIndex = i; } } if (preferredTrackIndex !== -1) { console.log(`Preferred track found at index ${preferredTrackIndex}. Attempting auto-selection.`); try { let trackChanged = false; for (let i = 0; i < tracks.length; i++) { const shouldBeEnabled = (i === preferredTrackIndex); if (tracks[i].enabled !== shouldBeEnabled) { tracks[i].enabled = shouldBeEnabled; trackChanged = true; } } const preferredTrackValue = tracks[preferredTrackIndex].id || preferredTrackIndex; audioTrackSelect.value = preferredTrackValue; if (trackChanged) console.log("Successfully auto-selected preferred track."); } catch(e) { console.error("Error auto-selecting preferred audio track:", e); } } else { console.log("No preferred audio track found."); for (let i = 0; i < tracks.length; i++) { if (tracks[i].enabled) { audioTrackSelect.value = tracks[i].id || i; break; } } } audioTrackSelect.style.display = 'inline-block'; try { if (tracks.onchange === null) tracks.onchange = populateAudioTrackSelector; } catch(e) { console.warn("Browser might not support 'onchange' on AudioTrackList", e)} }
-           function openWithIntent(url) { /* ... */ if (!url) return; const mime = getMimeTypeFromUrl(url); const titleEncoded = encodeURIComponent(videoTitle?.innerText || document.title || 'Video'); const intentUri = `intent:${url}#Intent;type=${mime};action=android.intent.action.VIEW;S.title=${titleEncoded};end`; console.log("Intent:", intentUri); window.location.href = intentUri; }
-           function copyVLCLink(buttonElement, url) { /* ... */ console.log("Copy VLC button clicked. URL:", url); if (!url) { console.error("copyVLCLink: No URL provided."); alert("Cannot copy: URL is missing."); return; } const feedbackSpan = buttonElement.nextElementSibling; if (!feedbackSpan || !feedbackSpan.classList.contains('copy-feedback')) { console.warn("copyVLCLink: Could not find feedback span immediately after the button:", buttonElement); copyToClipboard(url, null); return; } copyToClipboard(url, feedbackSpan).catch(err => { console.error("Error during copyVLCLink process:", err); alert("Copy failed. Please try again."); if (feedbackSpan) { feedbackSpan.classList.remove('show', 'error'); feedbackSpan.style.display = 'none'; } }); }
-           function showCopyFeedback(spanElement, message = 'Copied!', isError = false) { /* ... */ if (!spanElement) return; clearTimeout(copyFeedbackTimeout); spanElement.textContent = message; spanElement.classList.toggle('error', isError); spanElement.classList.remove('share-fallback'); if (spanElement.classList.contains('share-fallback')) { spanElement.classList.add('share-fallback'); } spanElement.style.display = 'inline-block'; spanElement.classList.add('show'); copyFeedbackTimeout = setTimeout(() => { spanElement.classList.remove('show', 'error'); setTimeout(() => { if (!spanElement.classList.contains('show')) { spanElement.style.display = 'none'; spanElement.textContent = spanElement.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; } }, 300); }, 2500); }
-           function clearCopyFeedback() { /* ... */ clearTimeout(copyFeedbackTimeout); document.querySelectorAll('.copy-feedback.show').forEach(span => { span.classList.remove('show', 'error'); span.style.display = 'none'; span.textContent = span.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; }); }
-           function highlightVlcText() { /* ... */ const activeContext = activeTableActionRow || activePreviewActionRow || (currentViewMode === 'shared' ? sharedItemContent : null); if (!activeContext) return; const currentVlcText = activeContext.querySelector('#vlcBox code'); if (currentVlcText && currentVlcText.closest('#vlcBox')?.style.display !== 'none') { try { const range = document.createRange(); range.selectNodeContents(currentVlcText); const selection = window.getSelection(); if (selection) { selection.removeAllRanges(); selection.addRange(range); } console.log("Highlighted VLC text as fallback."); } catch (selectErr) { console.warn("Could not highlight VLC text:", selectErr); } } }
-           function handlePlayerKeyboardShortcuts(event) { /* ... */ if (!videoContainer || videoContainer.style.display !== 'flex' || !videoElement) return; const targetTagName = event.target.tagName.toLowerCase(); if (targetTagName === 'input' || targetTagName === 'select' || targetTagName === 'textarea') return; const key = event.key; let prevented = false; switch (key) { case ' ': case 'k': togglePlayPause(); prevented = true; break; case 'ArrowLeft': seekVideo(-10); prevented = true; break; case 'ArrowRight': seekVideo(10); prevented = true; break; case 'ArrowUp': setVolume(Math.min(videoElement.volume + 0.05, 1)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'ArrowDown': setVolume(Math.max(videoElement.volume - 0.05, 0)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'm': toggleMute(); prevented = true; break; case 'f': toggleFullscreen(); prevented = true; break; } if (prevented) event.preventDefault(); }
+           // --- Player Logic ---
+           function streamVideo(title, url, filenameForAudioCheck) { let currentActionContainer = null; // Determine where to put the player
+            if (currentViewMode === 'shared' && sharedItemContent) { currentActionContainer = sharedItemContent; // Inside shared item content
+            } else { // Inside table or preview action row
+                const currentActiveRow = activeTableActionRow || activePreviewActionRow; if (!currentActiveRow) { console.error("Cannot stream: active action row/div missing."); return; } currentActionContainer = currentActiveRow.matches('tr.action-row') ? currentActiveRow.querySelector('td') : currentActiveRow.matches('.preview-action-row') ? currentActiveRow : null; } if (!videoContainer || !videoElement || !currentActionContainer) { console.error("Cannot stream: player, video element, or action container missing.", { videoContainer, videoElement, currentActionContainer }); return; } // Move player if not already in the correct container
+            if (videoContainer.parentElement !== currentActionContainer) { console.log("Moving video container to active container."); if (videoElement && videoElement.hasAttribute('src')) { // Reset player state before moving
+                    videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); } if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) audioWarningDiv.style.display = 'none'; if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); currentActionContainer.appendChild(videoContainer); } // Reset player UI elements
+            if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); // Set volume/speed from localStorage or defaults
+            const savedVolume = localStorage.getItem(config.PLAYER_VOLUME_KEY); const savedSpeed = localStorage.getItem(config.PLAYER_SPEED_KEY); videoElement.volume = (savedVolume !== null) ? Math.max(0, Math.min(1, parseFloat(savedVolume))) : 1; if (volumeSlider) volumeSlider.value = videoElement.volume; videoElement.muted = (videoElement.volume === 0); videoElement.playbackRate = (savedSpeed !== null) ? parseFloat(savedSpeed) : 1; if(playbackSpeedSelect) playbackSpeedSelect.value = String(videoElement.playbackRate); updateMuteButton(); // Reset video position
+            videoElement.currentTime = 0; // Check filename for potential audio issues
+            const ddp51Regex = /\bDDP?([ ._-]?5\.1)?\b/i; const advancedAudioRegex = /\b(DTS|ATMOS|TrueHD)\b/i; const multiAudioHintRegex = /\b(Multi|Dual)[ ._-]?Audio\b/i; let warningText = ""; if (filenameForAudioCheck) { const lowerFilename = (filenameForAudioCheck || '').toLowerCase(); if (ddp51Regex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DDP audio might not work in browser. Use 'Copy URL' or 'Open Externally'."; } else if (advancedAudioRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DTS/Atmos/TrueHD audio likely unsupported. Use external player."; } else if (multiAudioHintRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> May contain multiple audio tracks. Use selector below or external player."; } } if (warningText && audioWarningDiv) { audioWarningDiv.innerHTML = warningText; audioWarningDiv.style.display = 'block'; } // Set title and VLC box info
+            if (videoTitle) videoTitle.innerText = title; if (vlcText) vlcText.innerText = url; if (vlcBox) vlcBox.style.display = 'block'; // Load and play the video
+            videoElement.src = url; videoElement.load(); videoElement.play().catch(e => { console.log("Autoplay was prevented or failed:", e.message); // User might need to click play manually
+            }); videoContainer.style.display = 'flex'; // Show the player container
+            const closeButton = videoContainer.querySelector('.close-btn'); if (closeButton) { // Focus the close button for accessibility
+                setTimeout(() => closeButton.focus(), 100); } // Scroll player into view
+            setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150); }
+           window.closePlayer = function(elementToFocusAfter = null) { if (elementToFocusAfter instanceof Event) { elementToFocusAfter = elementToFocusAfter?.target; } if (!videoContainer || !videoElement) return; const wasPlaying = videoContainer.style.display !== 'none'; const parentContainer = videoContainer.parentElement; // Exit fullscreen if active
+            try { const fsElement = document.fullscreenElement || document.webkitFullscreenElement; if (fsElement && (fsElement === videoElement || fsElement === videoContainer)) { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch(err) { console.error("Error exiting fullscreen:", err); } // Stop video and reset source
+            videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; try { videoElement.load(); } catch(e) { console.warn("Error during videoElement.load() on close:", e); } // Hide player and related UI elements
+            videoContainer.style.display = 'none'; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); if (videoTitle) videoTitle.innerText = ''; if (videoContainer.classList.contains('is-fullscreen')) { videoContainer.classList.remove('is-fullscreen'); } // Move player back to main container for cleanup
+            const mainBodyContainer = document.getElementById('cinemaghar-container'); if (mainBodyContainer && videoContainer.parentElement !== mainBodyContainer) { mainBodyContainer.appendChild(videoContainer); console.log("Moved video player back to main container."); } else if (!mainBodyContainer) { console.warn("Main container #cinemaghar-container not found, cannot move player back."); } // If player was inside an action row, reset that row's state
+            if (wasPlaying && parentContainer?.closest('.action-row, .preview-action-row')) { const parentActionRow = parentContainer.closest('.action-row, .preview-action-row'); if (parentActionRow) { const mainElement = parentActionRow.previousElementSibling; if (mainElement) { const viewButton = mainElement.querySelector('.view-button'); if (viewButton && viewButton.getAttribute('aria-expanded') === 'true') { viewButton.textContent = 'View'; viewButton.setAttribute('aria-expanded', 'false'); } mainElement.classList.remove('active-main-row'); } if (parentActionRow.style.display !== 'none') { parentActionRow.style.display = 'none'; // Hide the action row
+                    if (parentActionRow.classList.contains('preview-action-row')) { parentActionRow.innerHTML = ''; // Clear preview row content
+                    } } } } else if (wasPlaying && currentViewMode === 'shared') { console.log("Closed player within shared view."); } // Return focus logic
+            let finalFocusTarget = elementToFocusAfter || lastFocusedElement; const closedRowId = parentContainer?.closest('.action-row, .preview-action-row')?.id; if (activeTableActionRow?.id === closedRowId || activePreviewActionRow?.id === closedRowId) { // Don't refocus if the action row itself was just closed logically
+                finalFocusTarget = null; } if (finalFocusTarget && typeof finalFocusTarget.focus === 'function') { console.log("Returning focus to:", finalFocusTarget); setTimeout(() => finalFocusTarget.focus(), 50); } lastFocusedElement = null; // Clear active row references if they match the closed row
+            if (activeTableActionRow && activeTableActionRow.id === closedRowId) { activeTableActionRow = null; } if (activePreviewActionRow && activePreviewActionRow.id === closedRowId) { activePreviewActionRow = null; } }
+           function closePlayerIfNeeded(elementToFocusAfter = null) { if (videoContainer?.style.display === 'flex' || videoContainer?.style.display === 'block') { closePlayer(elementToFocusAfter); } }
+           window.seekVideo = function(seconds) { if (videoElement) videoElement.currentTime += seconds; }
+           window.toggleMute = function() { if (videoElement) videoElement.muted = !videoElement.muted; }
+           window.setVolume = function(value) { if (videoElement) { const vol = parseFloat(value); videoElement.volume = vol; videoElement.muted = (vol === 0); } }
+           window.setPlaybackSpeed = function(value) { if (videoElement) videoElement.playbackRate = parseFloat(value); }
+           window.toggleFullscreen = function() { const elementToMakeFullscreen = videoContainer; if (!elementToMakeFullscreen) return; const fsElement = document.fullscreenElement || document.webkitFullscreenElement; try { if (!fsElement) { // Enter fullscreen
+                if (elementToMakeFullscreen.requestFullscreen) elementToMakeFullscreen.requestFullscreen(); else if (elementToMakeFullscreen.webkitRequestFullscreen) elementToMakeFullscreen.webkitRequestFullscreen(); } else { // Exit fullscreen
+                if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch (err) { console.error("Fullscreen API error:", err); alert("Fullscreen mode failed. Browser might block it."); } }
+           window.changeAudioTrack = function(selectElement) { if (!videoElement || !videoElement.audioTracks) return; const selectedTrackValue = selectElement.value; const tracks = videoElement.audioTracks; let trackChanged = false; for (let i = 0; i < tracks.length; i++) { const track = tracks[i]; const isSelectedTrack = (track.id && track.id === selectedTrackValue) || String(i) === selectedTrackValue; if (track.enabled !== isSelectedTrack) { try { track.enabled = isSelectedTrack; if (isSelectedTrack) console.log("Enabled audio track:", track.label || track.id || i); trackChanged = true; } catch (e) { console.error("Error changing audio track state for track:", track.id || i, e); } } } if (!trackChanged) console.warn("Selected audio track already active or no change applied."); }
+           function togglePlayPause() { if (videoElement) { if (videoElement.paused || videoElement.ended) videoElement.play().catch(e => console.log("Play error:", e.message)); else videoElement.pause(); } }
+           function updateMuteButton() { if (!videoElement || !muteButton) return; const isMuted = videoElement.muted || videoElement.volume === 0; muteButton.textContent = isMuted ? "Unmute" : "Mute"; muteButton.setAttribute('aria-pressed', String(isMuted)); if (volumeSlider) { volumeSlider.style.opacity = isMuted ? '0.5' : '1'; volumeSlider.disabled = isMuted; // If unmuting and volume was 0, set a default volume
+                if (!isMuted && videoElement.volume === 0) { const defaultUnmuteVolume = 0.5; videoElement.volume = defaultUnmuteVolume; volumeSlider.value = defaultUnmuteVolume; } } }
+           function handleFullscreenChange() { const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement); if (!videoContainer) return; videoContainer.classList.toggle('is-fullscreen', isFullscreen); console.log("Fullscreen state changed:", isFullscreen); }
+           function populateAudioTrackSelector() { if (!videoElement || typeof videoElement.audioTracks === 'undefined' || !audioTrackSelect) { if(audioTrackSelect) audioTrackSelect.style.display = 'none'; return; } const tracks = videoElement.audioTracks; audioTrackSelect.innerHTML = ''; if (tracks.length <= 1) { audioTrackSelect.style.display = 'none'; return; } // Ensure at least one track is enabled if possible
+            let hasEnabledTrack = false; for (let i = 0; i < tracks.length; i++) { if (tracks[i].enabled) hasEnabledTrack = true; } if (!hasEnabledTrack && tracks.length > 0) { try { tracks[0].enabled = true; } catch(e) { console.warn("Could not auto-enable first audio track:", e); } } let preferredTrackIndex = -1; // Try to auto-select Hindi
+            for (let i = 0; i < tracks.length; i++) { const track = tracks[i]; const option = document.createElement('option'); const trackValue = track.id || i; // Use ID if available, otherwise index
+                option.value = trackValue; let label = track.label || `Track ${i + 1}`; let languageName = ''; if (track.language) { try { languageName = new Intl.DisplayNames(['en'], { type: 'language' }).of(track.language.split('-')[0]); label += ` (${languageName || track.language})`; } catch (e) { label += ` (${track.language})`; } } option.textContent = label; option.selected = track.enabled; // Set selected based on current state
+                option.disabled = track.readyState === 'ended'; // Disable if track ended? (rare)
+                audioTrackSelect.appendChild(option); // Check for preferred language (e.g., Hindi)
+                const lang = track.language?.toLowerCase(); const lbl = label.toLowerCase(); if (preferredTrackIndex === -1 && (lang?.startsWith('hi') || lbl.includes('hindi') || languageName?.toLowerCase() === 'hindi')) { preferredTrackIndex = i; } } // If a preferred track was found, try to select it
+            if (preferredTrackIndex !== -1) { console.log(`Preferred track found at index ${preferredTrackIndex}. Attempting auto-selection.`); try { let trackChanged = false; for (let i = 0; i < tracks.length; i++) { const shouldBeEnabled = (i === preferredTrackIndex); if (tracks[i].enabled !== shouldBeEnabled) { tracks[i].enabled = shouldBeEnabled; trackChanged = true; } } const preferredTrackValue = tracks[preferredTrackIndex].id || preferredTrackIndex; audioTrackSelect.value = preferredTrackValue; if (trackChanged) console.log("Successfully auto-selected preferred track."); } catch(e) { console.error("Error auto-selecting preferred audio track:", e); } } else { // Otherwise, just ensure the select reflects the currently enabled track
+                console.log("No preferred audio track found."); for (let i = 0; i < tracks.length; i++) { if (tracks[i].enabled) { audioTrackSelect.value = tracks[i].id || i; break; } } } audioTrackSelect.style.display = 'inline-block'; // Re-populate if tracks change (e.g., different source loaded)
+            try { if (tracks.onchange === null) tracks.onchange = populateAudioTrackSelector; } catch(e) { console.warn("Browser might not support 'onchange' on AudioTrackList", e)} }
+           function openWithIntent(url) { if (!url) return; const mime = getMimeTypeFromUrl(url); const titleEncoded = encodeURIComponent(videoTitle?.innerText || document.title || 'Video'); const intentUri = `intent:${url}#Intent;type=${mime};action=android.intent.action.VIEW;S.title=${titleEncoded};end`; console.log("Intent:", intentUri); window.location.href = intentUri; }
+           function copyVLCLink(buttonElement, url) { console.log("Copy VLC button clicked. URL:", url); if (!url) { console.error("copyVLCLink: No URL provided."); alert("Cannot copy: URL is missing."); return; } const feedbackSpan = buttonElement.nextElementSibling; // Assumes feedback span is immediate sibling
+            if (!feedbackSpan || !feedbackSpan.classList.contains('copy-feedback')) { console.warn("copyVLCLink: Could not find feedback span immediately after the button:", buttonElement); copyToClipboard(url, null); // Attempt copy without feedback span
+                return; } copyToClipboard(url, feedbackSpan).catch(err => { console.error("Error during copyVLCLink process:", err); alert("Copy failed. Please try again."); if (feedbackSpan) { // Reset feedback on error
+                    feedbackSpan.classList.remove('show', 'error'); feedbackSpan.style.display = 'none'; } }); }
+           function showCopyFeedback(spanElement, message = 'Copied!', isError = false) { if (!spanElement) return; clearTimeout(copyFeedbackTimeout); // Clear any existing timeout
+            spanElement.textContent = message; spanElement.classList.toggle('error', isError); // Add/remove error class
+            spanElement.classList.remove('share-fallback'); // Ensure base style
+            if (spanElement.classList.contains('share-fallback')) { spanElement.classList.add('share-fallback'); // Re-apply if it's a share fallback
+            } spanElement.style.display = 'inline-block'; // Make visible
+            spanElement.classList.add('show'); // Trigger animation/transition
+            copyFeedbackTimeout = setTimeout(() => { // Hide after delay
+                spanElement.classList.remove('show', 'error'); setTimeout(() => { // Reset text after fade out
+                    if (!spanElement.classList.contains('show')) { spanElement.style.display = 'none'; spanElement.textContent = spanElement.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; } }, 300); }, 2500); }
+           function clearCopyFeedback() { clearTimeout(copyFeedbackTimeout); document.querySelectorAll('.copy-feedback.show').forEach(span => { span.classList.remove('show', 'error'); span.style.display = 'none'; span.textContent = span.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; }); }
+           function handlePlayerKeyboardShortcuts(event) { if (!videoContainer || videoContainer.style.display !== 'flex' || !videoElement) return; // Ignore if player not visible
+            const targetTagName = event.target.tagName.toLowerCase(); if (targetTagName === 'input' || targetTagName === 'select' || targetTagName === 'textarea') return; // Ignore if typing in form fields
+            const key = event.key; let prevented = false; switch (key) { case ' ': case 'k': togglePlayPause(); prevented = true; break; case 'ArrowLeft': seekVideo(-10); prevented = true; break; case 'ArrowRight': seekVideo(10); prevented = true; break; case 'ArrowUp': setVolume(Math.min(videoElement.volume + 0.05, 1)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'ArrowDown': setVolume(Math.max(videoElement.volume - 0.05, 0)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'm': toggleMute(); prevented = true; break; case 'f': toggleFullscreen(); prevented = true; break; } if (prevented) event.preventDefault(); // Prevent default browser action (e.g., space scrolling)
+            }
 
-           // --- State Persistence (Unchanged) ---
-           function saveStateToLocalStorage() { /* ... Keep existing function ... */ try { const stateToSave = {}; if (currentState.sortColumn !== 'lastUpdated') stateToSave.sortColumn = currentState.sortColumn; if (currentState.sortDirection !== 'desc') stateToSave.sortDirection = currentState.sortDirection; if (currentState.qualityFilter !== '') stateToSave.qualityFilter = currentState.qualityFilter; /* Don't save page */ if (Object.keys(stateToSave).length > 0) { localStorage.setItem(config.LOCAL_STORAGE_KEY, JSON.stringify(stateToSave)); console.log("Saved state:", stateToSave); } else { localStorage.removeItem(config.LOCAL_STORAGE_KEY); console.log("State is default, removed saved state."); } } catch (e) { console.error("Failed to save state to localStorage:", e); } }
-           function loadStateFromLocalStorage() { /* ... Keep existing function ... */ try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; console.log("Loaded state:", { sortColumn: currentState.sortColumn, sortDirection: currentState.sortDirection, qualityFilter: currentState.qualityFilter }); } else { currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; console.log("No saved state found, using defaults."); } } catch (e) { console.error("Failed to load or parse state from localStorage:", e); localStorage.removeItem(config.LOCAL_STORAGE_KEY); currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; } currentState.searchTerm = ''; currentState.currentPage = 1; currentState.typeFilter = ''; activeResultsTab = 'allFiles'; activeTableActionRow = null; activePreviewActionRow = null; lastFocusedElement = null; }
+           // --- State Persistence ---
+           function saveStateToLocalStorage() { try { const stateToSave = {}; // Only save non-default values
+             if (currentState.sortColumn !== 'lastUpdated') stateToSave.sortColumn = currentState.sortColumn; if (currentState.sortDirection !== 'desc') stateToSave.sortDirection = currentState.sortDirection; if (currentState.qualityFilter !== '') stateToSave.qualityFilter = currentState.qualityFilter; /* Don't save page number or search term */ if (Object.keys(stateToSave).length > 0) { localStorage.setItem(config.LOCAL_STORAGE_KEY, JSON.stringify(stateToSave)); console.log("Saved state:", stateToSave); } else { localStorage.removeItem(config.LOCAL_STORAGE_KEY); console.log("State is default, removed saved state."); } } catch (e) { console.error("Failed to save state to localStorage:", e); } }
+           function loadStateFromLocalStorage() { try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); // Load saved state or use defaults
+                 currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; console.log("Loaded state:", { sortColumn: currentState.sortColumn, sortDirection: currentState.sortDirection, qualityFilter: currentState.qualityFilter }); } else { // Set defaults if no saved state
+                 currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; console.log("No saved state found, using defaults."); } } catch (e) { console.error("Failed to load or parse state from localStorage:", e); localStorage.removeItem(config.LOCAL_STORAGE_KEY); // Clear invalid state
+             currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; } // Reset dynamic state parts
+            currentState.searchTerm = ''; currentState.currentPage = 1; currentState.typeFilter = ''; activeResultsTab = 'allFiles'; activeTableActionRow = null; activePreviewActionRow = null; lastFocusedElement = null; }
 
            // --- Initial Data Loading and Setup (API Fetch) ---
-           async function fetchApiData(params = {}) { /* ... Keep existing function ... */ if (searchAbortController) { searchAbortController.abort(); } searchAbortController = new AbortController(); const signal = searchAbortController.signal; const query = new URLSearchParams(); query.set('page', params.page || currentState.currentPage); query.set('limit', params.limit || currentState.limit); query.set('sort', params.sort || currentState.sortColumn); query.set('sortDir', params.sortDir || currentState.sortDirection); const searchTerm = params.search !== undefined ? params.search : currentState.searchTerm; if (searchTerm) query.set('search', searchTerm); const qualityFilter = params.quality !== undefined ? params.quality : currentState.qualityFilter; if (qualityFilter) query.set('quality', qualityFilter); const typeFilter = params.type !== undefined ? params.type : currentState.typeFilter; if (typeFilter) query.set('type', typeFilter); if (params.id) { query.set('id', params.id); query.delete('search'); query.delete('quality'); query.delete('type'); query.delete('page'); query.delete('limit'); query.delete('sort'); query.delete('sortDir'); } const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`; console.log(`Fetching API: ${url}`); try { const response = await fetch(url, { signal }); if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); } const data = await response.json(); console.log(`API data received:`, data); const activePagination = tabMappings[activeResultsTab]?.pagination; if(activePagination && data.totalPages !== undefined) { activePagination.dataset.totalPages = data.totalPages; } return data; } catch (error) { if (error.name === 'AbortError') { console.log('API fetch aborted.'); return null; } console.error(`Error fetching data from ${url}:`, error); throw error; } finally { if (signal === searchAbortController?.signal) { searchAbortController = null; } } }
-           async function fetchAndRenderResults() { /* ... Keep existing function ... */ if (currentViewMode !== 'search') return; try { const apiResponse = await fetchApiData(); if (apiResponse === null) return; renderActiveResultsView(apiResponse); saveStateToLocalStorage(); } catch (error) { console.error("Failed to fetch/render search results:", error); const { tableBody } = tabMappings[activeResultsTab]; if (tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error loading results: ${error.message}. Please try again.</td></tr>`; } Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; }); } }
-           function populateQualityFilter(items = []) { /* ... Keep existing function ... */ if (!qualityFilterSelect) return; const currentSelectedValue = qualityFilterSelect.value; items.forEach(item => { if (item.displayQuality && item.displayQuality !== 'N/A') { uniqueQualities.add(item.displayQuality); } }); const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); }); while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); } sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } }); qualityFilterSelect.value = [...qualityFilterSelect.options].some(opt => opt.value === currentSelectedValue) ? currentSelectedValue : ""; updateFilterIndicator(); }
-           function displayLoadError(message) { /* ... Keep existing function ... */ const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (sharedItemContent) sharedItemContent.innerHTML = ''; if (sharedItemView) sharedItemView.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'shared-view-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
-           async function initializeApp() { /* ... Keep existing function ... */ const urlParams = new URLSearchParams(window.location.search); const shareId = urlParams.get('shareId'); isDirectShareLoad = !!shareId; if (pageLoader) pageLoader.style.display = 'flex'; if (isDirectShareLoad) { console.log("Direct share link detected for ID:", shareId); } else { console.log("Preparing homepage view (pre-data)."); if (searchFocusArea) searchFocusArea.style.display = 'flex'; if (pageFooter) pageFooter.style.display = 'flex'; if (resultsArea) resultsArea.style.display = 'none'; if (sharedItemView) sharedItemView.style.display = 'none'; const defaultMessageHTML = `<tr><td colspan="6" class="status-message">Enter search term above.</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) mapping.tableBody.innerHTML = defaultMessageHTML; if (mapping?.pagination) mapping.pagination.style.display = 'none'; }); } loadStateFromLocalStorage(); try { if (shareId) { await displaySharedItem(shareId); fetchApiData({limit: 100, sort: 'quality', sortDir: 'asc'}).then(data => { if (data && data.items) { populateQualityFilter(data.items.map(preprocessMovieData)); } }).catch(e => console.warn("Background quality fetch failed", e)); } else { await loadUpdatesPreview(); console.log("Fetching initial data for suggestions..."); const suggestionData = await fetchApiData({ limit: 5000, sort: 'lastUpdated', sortDir: 'desc' }); if(suggestionData && suggestionData.items) { localSuggestionData = suggestionData.items.map(preprocessMovieData); console.log(`Loaded ${localSuggestionData.length} items for suggestions.`); populateQualityFilter(localSuggestionData); } else { console.warn("Could not load initial data for suggestions/quality filter."); } setViewMode('homepage'); } if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); } } catch (error) { console.error('FATAL: Failed during app initialization:', error); displayLoadError(`Error initializing app: ${error.message}. Try refreshing.`); } finally { if (pageLoader) pageLoader.style.display = 'none'; } }
+           async function fetchApiData(params = {}) { if (searchAbortController) { searchAbortController.abort(); // Abort previous request if any
+             } searchAbortController = new AbortController(); const signal = searchAbortController.signal; const query = new URLSearchParams(); // Build query params based on current state or function args
+            query.set('page', params.page || currentState.currentPage); query.set('limit', params.limit || currentState.limit); query.set('sort', params.sort || currentState.sortColumn); query.set('sortDir', params.sortDir || currentState.sortDirection); // Use explicit search term from params if provided, else use global state
+            const searchTerm = params.search !== undefined ? params.search : currentState.searchTerm; if (searchTerm) query.set('search', searchTerm); // Use explicit quality filter from params if provided, else use global state
+            const qualityFilter = params.quality !== undefined ? params.quality : currentState.qualityFilter; if (qualityFilter) query.set('quality', qualityFilter); // Use explicit type filter from params if provided, else use global state
+            const typeFilter = params.type !== undefined ? params.type : currentState.typeFilter; if (typeFilter) query.set('type', typeFilter); // If fetching a single item by ID, override other filters/pagination
+            if (params.id) { query.set('id', params.id); query.delete('search'); query.delete('quality'); query.delete('type'); query.delete('page'); query.delete('limit'); query.delete('sort'); query.delete('sortDir'); } const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`; console.log(`Fetching API: ${url}`); try { const response = await fetch(url, { signal }); if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} // Try to parse error details
+                 const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); } const data = await response.json(); console.log(`API data received:`, data); // Store totalPages on pagination container for page change validation
+             const activePagination = tabMappings[activeResultsTab]?.pagination; if(activePagination && data.totalPages !== undefined) { activePagination.dataset.totalPages = data.totalPages; } return data; } catch (error) { if (error.name === 'AbortError') { console.log('API fetch aborted.'); return null; // Return null if aborted, not an error
+                 } console.error(`Error fetching data from ${url}:`, error); throw error; // Re-throw other errors
+            } finally { if (signal === searchAbortController?.signal) { searchAbortController = null; // Clear controller only if it's the one for this request
+                 } } }
+           async function fetchAndRenderResults() { if (currentViewMode !== 'search') return; // Only run when in search view
+            try { const apiResponse = await fetchApiData(); // Use current state for params
+             if (apiResponse === null) return; // Aborted request
+             renderActiveResultsView(apiResponse); // Render the fetched data
+             saveStateToLocalStorage(); // Save sort/filter state
+            } catch (error) { console.error("Failed to fetch/render search results:", error); const { tableBody } = tabMappings[activeResultsTab]; if (tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error loading results: ${error.message}. Please try again.</td></tr>`; } // Hide pagination on error
+             Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; }); } }
+           function populateQualityFilter() { // Uses the global uniqueQualities Set populated by preprocessMovieData
+             if (!qualityFilterSelect) return; const currentSelectedValue = currentState.qualityFilter || ""; // Use saved state value
+             // Sort qualities
+             const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); }); // Clear existing options (except the first "All Qualities")
+             while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); } // Add sorted qualities
+             sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } }); // Restore the previously selected value if it still exists
+             qualityFilterSelect.value = [...qualityFilterSelect.options].some(opt => opt.value === currentSelectedValue) ? currentSelectedValue : ""; updateFilterIndicator(); }
+           function displayLoadError(message) { const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; // Hide all main content areas
+            if (searchFocusArea) searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.style.display = 'none'; if (sharedItemView) sharedItemView.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'shared-view-active'); // Display error
+            if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; // Hide loader
+            }
+           async function initializeApp() { const urlParams = new URLSearchParams(window.location.search); const shareId = urlParams.get('shareId'); isDirectShareLoad = !!shareId; if (pageLoader) pageLoader.style.display = 'flex'; if (isDirectShareLoad) { console.log("Direct share link detected for ID:", shareId); // Shared view: Show only shared item area initially
+                if (searchFocusArea) searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; } else { console.log("Preparing homepage view (pre-data)."); // Homepage view: Show search/footer, hide results/shared
+                if (searchFocusArea) searchFocusArea.style.display = 'flex'; if (pageFooter) pageFooter.style.display = 'flex'; if (resultsArea) resultsArea.style.display = 'none'; if (sharedItemView) sharedItemView.style.display = 'none'; // Set initial table messages
+                const defaultMessageHTML = `<tr><td colspan="6" class="status-message">Enter search term above.</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) mapping.tableBody.innerHTML = defaultMessageHTML; if (mapping?.pagination) mapping.pagination.style.display = 'none'; }); } loadStateFromLocalStorage(); // Load saved sort/filter prefs
+            try { if (shareId) { await displaySharedItem(shareId); // Fetch and display only the shared item
+                 // Optional: fetch qualities in background for filter if user navigates away
+                  fetchApiData({ limit: 1, sort: 'lastUpdated', sortDir: 'desc', page: 1 }).then(data => {
+                       if(data && data.items) {
+                           // Populate uniqueQualities from this single item if needed
+                           data.items.map(preprocessMovieData);
+                           populateQualityFilter();
+                       }
+                  }).catch(e => console.warn("Background quality fetch failed on shared view", e));
+                } else { // Homepage view: Load updates preview first
+                 await loadUpdatesPreview(); // This now populates uniqueQualities and calls populateQualityFilter
+                 setViewMode('homepage'); // Set initial view state
+                } // Set filter dropdown value based on loaded state
+             if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); } } catch (error) { console.error('FATAL: Failed during app initialization:', error); displayLoadError(`Error initializing app: ${error.message}. Try refreshing.`); } finally { if (pageLoader) pageLoader.style.display = 'none'; // Hide loader
+            } }
 
-           // --- Event Handling Setup (Unchanged) ---
-           function handleActionClick(event) { /* ... */ const target = event.target; const button = target.closest('.action-buttons-container .button'); if (button) { const action = button.dataset.action; const url = button.dataset.url; const title = button.dataset.title; const filename = button.dataset.filename; const id = button.dataset.id; lastFocusedElement = button; if (action === 'play' && url && title) { event.preventDefault(); streamVideo(title, url, filename); } else if (action === 'copy-vlc' && url) { event.preventDefault(); copyVLCLink(button, url); } else if (action === 'open-intent' && url) { event.preventDefault(); openWithIntent(url); } else if (action === 'share' && id) { event.preventDefault(); handleShareClick(button); } } }
-           function handleContentClick(event) { /* ... */ const target = event.target; const viewButton = target.closest('.view-button'); const filenameLink = target.closest('td.col-filename, .preview-col-filename'); if (viewButton || filenameLink) { event.preventDefault(); const mainRowOrItem = target.closest('tr.movie-data-row, div.update-item'); if (mainRowOrItem) { lastFocusedElement = viewButton || filenameLink; if (mainRowOrItem.matches('tr.movie-data-row')) { toggleTableActions(mainRowOrItem, lastFocusedElement); } else if (mainRowOrItem.matches('div.update-item')) { togglePreviewActions(mainRowOrItem, lastFocusedElement); } } return; } handleActionClick(event); if (target.matches('.close-btn') && target.closest('#videoContainer')) { lastFocusedElement = target; closePlayer(lastFocusedElement); return; } }
-           document.addEventListener('DOMContentLoaded', async () => { await initializeApp(); if (searchInput) { searchInput.addEventListener('input', handleSearchInput); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); handleSearchSubmit(); } else if (event.key === 'Escape') { suggestionsContainer.style.display = 'none'; } }); searchInput.addEventListener('search', handleSearchClear); searchInput.addEventListener('blur', () => { setTimeout(() => { const searchButton = document.getElementById('searchSubmitButton'); if (document.activeElement !== searchInput && !suggestionsContainer.contains(document.activeElement) && document.activeElement !== searchButton) { suggestionsContainer.style.display = 'none'; } }, 150); }); } if (qualityFilterSelect) { qualityFilterSelect.addEventListener('change', triggerFilterChange); } if (resultsArea) { resultsArea.addEventListener('click', (event) => { if (event.target.closest('th.sortable')) { handleSort(event); } else { handleContentClick(event); } }); } if (updatesPreviewList) { updatesPreviewList.addEventListener('click', handleContentClick); } if (sharedItemView) { sharedItemView.addEventListener('click', handleContentClick); } if (videoContainer) { videoContainer.addEventListener('click', handleContentClick); } document.addEventListener('keydown', handlePlayerKeyboardShortcuts); document.addEventListener('click', (event) => { if (searchInput && suggestionsContainer && suggestionsContainer.style.display === 'block') { const searchWrapper = searchInput.closest('.search-input-wrapper'); if (searchWrapper && !searchWrapper.contains(event.target)) { suggestionsContainer.style.display = 'none'; } } if (videoContainer && videoContainer.style.display !== 'none' && !videoContainer.contains(event.target)) { const logicalParent = videoContainer.parentElement?.closest('.action-row, .preview-action-row, #shared-item-content'); const triggerElement = logicalParent?.previousElementSibling; const triggerButton = logicalParent?.querySelector(`[data-action-row-id="${logicalParent.id}"] .view-button`); if ((!logicalParent || !logicalParent.contains(event.target)) && (!triggerElement || !triggerElement.contains(event.target)) && (!triggerButton || !triggerButton.contains(event.target)) ) { console.log("Clicked outside player's logical container and trigger. Closing player."); closePlayer(event.target); } } }, false); });
+           // --- Event Handling Setup ---
+           function handleActionClick(event) { const target = event.target; const button = target.closest('.action-buttons-container .button:not(.trailer-button)'); // Exclude trailer button here
+             if (button) { const action = button.dataset.action; const url = button.dataset.url; const title = button.dataset.title; const filename = button.dataset.filename; const id = button.dataset.id; lastFocusedElement = button; // Store button for focus return
+             if (action === 'play' && url && title) { event.preventDefault(); streamVideo(title, url, filename); } else if (action === 'copy-vlc' && url) { event.preventDefault(); copyVLCLink(button, url); } else if (action === 'open-intent' && url) { event.preventDefault(); openWithIntent(url); } else if (action === 'share' && id) { event.preventDefault(); handleShareClick(button); } } // Trailer button is an <a>, no action needed here.
+           }
+           function handleContentClick(event) { const target = event.target; // Handle View button / Filename click FIRST
+            const viewButton = target.closest('.view-button'); const filenameLink = target.closest('td.col-filename, .preview-col-filename'); if (viewButton || filenameLink) { event.preventDefault(); const mainRowOrItem = target.closest('tr.movie-data-row, div.update-item'); if (mainRowOrItem) { lastFocusedElement = viewButton || filenameLink; // Store clicked element
+                 if (mainRowOrItem.matches('tr.movie-data-row')) { toggleTableActions(mainRowOrItem, lastFocusedElement); } else if (mainRowOrItem.matches('div.update-item')) { togglePreviewActions(mainRowOrItem, lastFocusedElement); } } return; // Stop further processing for these clicks
+            } // Delegate other action button clicks (Play, Copy, Share, etc.)
+            // *Except* trailer button which is a direct link
+            if (!target.closest('.trailer-button')) {
+                handleActionClick(event);
+            }
 
-           // --- Player Event Listeners (Unchanged) ---
-           if(videoElement) { videoElement.addEventListener('volumechange', () => { if (volumeSlider && Math.abs(parseFloat(volumeSlider.value) - videoElement.volume) > 0.01) { volumeSlider.value = videoElement.volume; } updateMuteButton(); try { localStorage.setItem(config.PLAYER_VOLUME_KEY, String(videoElement.volume)); } catch (e) { console.warn("LocalStorage volume save failed", e); } }); videoElement.addEventListener('ratechange', () => { if(playbackSpeedSelect && playbackSpeedSelect.value !== String(videoElement.playbackRate)) { playbackSpeedSelect.value = String(videoElement.playbackRate); } try { localStorage.setItem(config.PLAYER_SPEED_KEY, String(videoElement.playbackRate)); } catch (e) { console.warn("LocalStorage speed save failed", e); } }); videoElement.addEventListener('loadedmetadata', populateAudioTrackSelector); videoElement.removeEventListener('error', handleVideoError); videoElement.addEventListener('error', handleVideoError); }
+             // Handle player close button click
+            if (target.matches('.close-btn') && target.closest('#videoContainer')) { lastFocusedElement = target; // Store close button
+             closePlayer(lastFocusedElement); return; } }
+           document.addEventListener('DOMContentLoaded', async () => { await initializeApp(); // Attach Event Listeners
+             if (searchInput) { // No 'input' listener needed for suggestions
+                 searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); // Prevent form submission
+                         handleSearchSubmit(); } }); searchInput.addEventListener('search', handleSearchClear); // Handle browser's 'x' button
+                } if (qualityFilterSelect) { qualityFilterSelect.addEventListener('change', triggerFilterChange); } // Use event delegation for dynamic content
+             if (resultsArea) { resultsArea.addEventListener('click', (event) => { if (event.target.closest('th.sortable')) { handleSort(event); } else { handleContentClick(event); // Handles view toggles and action buttons
+                 } }); } if (updatesPreviewList) { updatesPreviewList.addEventListener('click', handleContentClick); } if (sharedItemView) { sharedItemView.addEventListener('click', handleContentClick); } if (videoContainer) { // Handles clicks *within* the video container (like custom controls)
+                 // Note: closing the player by clicking *outside* is handled below
+                 videoContainer.addEventListener('click', handleContentClick); } // Global listeners
+             document.addEventListener('keydown', handlePlayerKeyboardShortcuts); // Player shortcuts
+             document.addEventListener('click', (event) => { // Close player if clicking outside its logical container
+                if (videoContainer && videoContainer.style.display !== 'none' && !videoContainer.contains(event.target)) { const logicalParent = videoContainer.parentElement?.closest('.action-row, .preview-action-row, #shared-item-content'); const mainTriggerElement = logicalParent?.previousElementSibling; const viewButtonInTrigger = mainTriggerElement?.querySelector('.view-button'); // Check if click is outside player, its parent action container, and the button that opened it
+                    if ( (!logicalParent || !logicalParent.contains(event.target)) && (!mainTriggerElement || !mainTriggerElement.contains(event.target)) && (!viewButtonInTrigger || !viewButtonInTrigger.contains(event.target)) ) { console.log("Clicked outside player's logical container and trigger. Closing player."); closePlayer(event.target); // Pass the clicked element for potential focus return
+                    } } }, false); });
+
+           // --- Player Event Listeners ---
+           if(videoElement) { videoElement.addEventListener('volumechange', () => { if (volumeSlider && Math.abs(parseFloat(volumeSlider.value) - videoElement.volume) > 0.01) { volumeSlider.value = videoElement.volume; } updateMuteButton(); try { localStorage.setItem(config.PLAYER_VOLUME_KEY, String(videoElement.volume)); } catch (e) { console.warn("LocalStorage volume save failed", e); } }); videoElement.addEventListener('ratechange', () => { if(playbackSpeedSelect && playbackSpeedSelect.value !== String(videoElement.playbackRate)) { playbackSpeedSelect.value = String(videoElement.playbackRate); } try { localStorage.setItem(config.PLAYER_SPEED_KEY, String(videoElement.playbackRate)); } catch (e) { console.warn("LocalStorage speed save failed", e); } }); videoElement.addEventListener('loadedmetadata', populateAudioTrackSelector); videoElement.removeEventListener('error', handleVideoError); // Remove default handler if any
+             videoElement.addEventListener('error', handleVideoError); // Add our custom handler
+            }
            document.addEventListener('fullscreenchange', handleFullscreenChange);
            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
