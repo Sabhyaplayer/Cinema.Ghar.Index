@@ -58,6 +58,9 @@
           --button-custom-url-text: #343a40; /* Dark text for yellow bg */
           --button-custom-url-toggle-bg: var(--secondary-color); /* Use secondary color for toggle */
           --button-custom-url-toggle-hover: var(--secondary-hover);
+          /* New: Style for the Global Custom URL button */
+          --button-custom-url-global-bg: var(--secondary-color);
+          --button-custom-url-global-hover: var(--secondary-hover);
 
 
           --border-radius-sm: 0.375rem; /* 6px */
@@ -225,7 +228,7 @@
           position: relative;
           width: 100%;
           max-width: 700px;
-          margin: 0 auto 25px auto;
+          margin: 0 auto 25px auto; /* Reduced margin to make space for actions */
           display: flex;
           align-items: center;
           gap: 0;
@@ -327,7 +330,7 @@
           display: flex;
           gap: 15px;
           justify-content: center;
-          margin-top: 20px;
+          margin-top: 15px; /* Added margin */
           margin-bottom: 30px;
           transition: opacity var(--transition-speed) var(--transition-timing),
                       max-height var(--transition-speed) var(--transition-timing),
@@ -352,6 +355,16 @@
           background-color: #e9ecef;
           box-shadow: var(--shadow-sm);
           transform: translateY(-1px);
+      }
+      /* Specific style for the global custom URL button */
+      #cinemaghar-container .search-actions #playCustomUrlGlobalButton {
+          background-color: var(--button-custom-url-global-bg);
+          color: white !important;
+          border-color: var(--button-custom-url-global-bg);
+      }
+      #cinemaghar-container .search-actions #playCustomUrlGlobalButton:hover {
+          background-color: var(--button-custom-url-global-hover);
+          border-color: var(--button-custom-url-global-hover);
       }
 
       #cinemaghar-container.results-active .search-actions {
@@ -572,6 +585,8 @@
           padding: 20px 15px;
           background-color: #f0f2f5;
           border-radius: var(--border-radius-sm);
+          /* Needed for positioning player inside */
+          position: relative;
       }
       #shared-item-content .action-info,
       #shared-item-content .action-buttons-container {
@@ -751,7 +766,7 @@
 
       /* Action Row (Table) */
       #cinemaghar-container tr.action-row { display: none; background-color: #f8f9fa; }
-      #cinemaghar-container .action-row td { padding: 25px 20px; text-align: left; border-bottom: none; }
+      #cinemaghar-container .action-row td { padding: 25px 20px; text-align: left; border-bottom: none; position: relative; } /* Added position relative */
       /* Common Action Info/Buttons styles used by table, preview, and shared view */
       #cinemaghar-container .action-info,
       #cinemaghar-container .preview-action-row .action-info,
@@ -788,9 +803,9 @@
           padding-top: 0;
       }
 
-      /* --- Custom URL Input Section Styles --- */
+      /* --- Custom URL Input Section Styles (Inside Action Rows / Shared View) --- */
       #cinemaghar-container .custom-url-section {
-        display: none; /* Hidden by default, shown by JS on error */
+        display: none; /* Hidden by default, shown by JS */
         margin-top: 20px; /* Space above the custom URL area */
         padding-top: 20px; /* Space inside */
         border-top: 1px dashed var(--border-color); /* Separator */
@@ -888,12 +903,14 @@
       #cinemaghar-container .custom-url-toggle-button:hover {
           background-color: var(--button-custom-url-toggle-hover);
       }
-      #cinemaghar-container .play-custom-url-button {
+      #cinemaghar-container .play-custom-url-button,
+      #cinemaghar-container #playerCustomUrlSection button /* Global Player button */ {
           background-color: var(--button-custom-url-bg);
           color: var(--button-custom-url-text) !important; /* Ensure text is dark */
           font-weight: 600;
       }
-      #cinemaghar-container .play-custom-url-button:hover {
+      #cinemaghar-container .play-custom-url-button:hover,
+      #cinemaghar-container #playerCustomUrlSection button:hover /* Global Player button hover */ {
           background-color: var(--button-custom-url-hover);
           filter: brightness(1.05); /* Slight brighten instead of darken */
       }
@@ -924,9 +941,94 @@
       }
 
       /* --- Video Player Container --- */
-      #cinemaghar-container .video-container { margin: 20px auto 0 auto; background: #f0f2f5; padding: 50px 20px 20px 20px; border-radius: var(--border-radius-sm); box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; width: 100%; max-width: 850px; text-align: center; display: flex; flex-direction: column; }
-      #cinemaghar-container .close-btn { position: absolute; top: 15px; right: 18px; background: var(--error-color); color: white !important; border: none; padding: 6px 12px; border-radius: var(--border-radius-sm); cursor: pointer; font-size: 14px; font-weight: 500; z-index: 10; transition: background-color 0.2s ease; }
+      /* Position it generally, will be moved or displayed */
+      #cinemaghar-container .video-container {
+          margin: 20px auto 0 auto;
+          background: #f0f2f5;
+          padding: 20px;
+          border-radius: var(--border-radius-sm);
+          box-shadow: var(--shadow-lg);
+          position: relative;
+          box-sizing: border-box;
+          width: 100%;
+          max-width: 850px;
+          text-align: center;
+          display: none; /* Initially hidden */
+          flex-direction: column;
+          z-index: 900; /* Ensure it's above table content */
+      }
+      /* Styles when used for global custom URL */
+      #cinemaghar-container .video-container.global-custom-url-mode {
+         display: flex; /* Make visible */
+         position: fixed; /* Float above */
+         top: 50%;
+         left: 50%;
+         transform: translate(-50%, -50%);
+         width: 90%;
+         max-width: 600px; /* Limit width for modal-like appearance */
+         z-index: 9998; /* High z-index */
+         padding: 30px 25px;
+         border: 1px solid var(--border-color);
+      }
+
+      #cinemaghar-container .close-btn {
+          position: absolute;
+          top: 15px;
+          right: 18px;
+          background: var(--error-color);
+          color: white !important;
+          border: none;
+          padding: 6px 12px;
+          border-radius: var(--border-radius-sm);
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          z-index: 10; /* Above other player elements */
+          transition: background-color 0.2s ease;
+      }
       #cinemaghar-container .close-btn:hover { background-color: #c82333; }
+
+      /* NEW: Custom URL section inside the player */
+      #cinemaghar-container #playerCustomUrlSection {
+          display: none; /* Hidden by default */
+          padding: 20px 10px 10px 10px;
+          text-align: left;
+          flex-direction: column;
+          gap: 10px;
+          margin-bottom: 15px; /* Space below */
+          border-bottom: 1px dashed var(--border-color);
+      }
+      #cinemaghar-container #playerCustomUrlSection label {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-color);
+      }
+      #cinemaghar-container #playerCustomUrlSection input {
+          width: 100%;
+          padding: 10px 12px;
+          font-size: 14px;
+          border: 1px solid var(--border-color);
+          border-radius: var(--border-radius-sm);
+          box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+      }
+      #cinemaghar-container #playerCustomUrlSection input:focus {
+           border-color: var(--primary-color);
+           box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 0 0 2px rgba(13, 110, 253, 0.25);
+           outline: none;
+      }
+      #cinemaghar-container #playerCustomUrlSection button {
+           align-self: flex-start; /* Align button to the left */
+           padding: 9px 18px;
+           font-size: 14px;
+      }
+      #cinemaghar-container #playerCustomUrlSection .player-custom-url-feedback {
+          font-size: 13px;
+          color: var(--error-color);
+          margin-top: 5px;
+          min-height: 1.2em; /* Reserve space */
+          font-weight: 500;
+      }
+
       #cinemaghar-container #audioWarning { display: none; background-color: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); padding: 12px; margin-bottom: 15px; border-radius: var(--border-radius-sm); font-size: 14px; text-align: center; position: relative; z-index: 1; line-height: 1.5; flex-shrink: 0; }
       #cinemaghar-container #audioWarning strong { font-weight: 600; }
       #cinemaghar-container #html5VideoPlayer { width: 100%; max-height: 480px; display: block; margin: 10px auto 15px auto; background: black; border-radius: var(--border-radius-sm); outline: none; box-shadow: var(--shadow-md); flex-shrink: 1; flex-grow: 1; object-fit: contain; cursor: default; }
@@ -944,7 +1046,15 @@
       /* --- Fullscreen Player Styles --- */
       #cinemaghar-container .video-container.is-fullscreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; max-width: none; padding: 0; margin: 0; border-radius: 0; background-color: black; z-index: 2147483647; display: flex; flex-direction: column; justify-content: center; }
       #cinemaghar-container .video-container.is-fullscreen #html5VideoPlayer { width: 100%; height: 100%; max-height: none; flex-grow: 1; flex-shrink: 1; border-radius: 0; box-shadow: none; margin: 0; object-fit: contain; cursor: default; }
-      #cinemaghar-container .video-container.is-fullscreen .custom-controls, #cinemaghar-container .video-container.is-fullscreen .close-btn, #cinemaghar-container .video-container.is-fullscreen #videoTitle, #cinemaghar-container .video-container.is-fullscreen #audioWarning, #cinemaghar-container .video-container.is-fullscreen .vlc-copy-box { display: none !important; }
+      /* Hide everything except video in fullscreen */
+      #cinemaghar-container .video-container.is-fullscreen .custom-controls,
+      #cinemaghar-container .video-container.is-fullscreen .close-btn,
+      #cinemaghar-container .video-container.is-fullscreen #videoTitle,
+      #cinemaghar-container .video-container.is-fullscreen #audioWarning,
+      #cinemaghar-container .video-container.is-fullscreen .vlc-copy-box,
+      #cinemaghar-container .video-container.is-fullscreen #playerCustomUrlSection /* Hide custom URL input too */ {
+          display: none !important;
+      }
 
       /* --- Pagination --- */
       .pagination-container { text-align: center; margin: 30px 0 15px 0; user-select: none; }
@@ -1069,7 +1179,7 @@
         }
 
         .search-input-wrapper {
-            margin-bottom: 20px;
+            margin-bottom: 15px; /* Adjusted for actions */
             max-width: 95%;
             gap: 0;
         }
@@ -1095,7 +1205,7 @@
         }
         #searchInputSuggestions div { padding: 9px 15px 9px 40px; font-size: 14px; }
 
-        .search-actions { gap: 10px; margin-bottom: 25px; margin-top: 15px; }
+        .search-actions { gap: 10px; margin-bottom: 25px; margin-top: 10px; } /* Adjusted margin */
         #cinemaghar-container .search-actions .button { padding: 9px 16px; font-size: 13px; }
 
         #updates-preview-section {
@@ -1121,7 +1231,7 @@
         .update-item .preview-col-view .button.view-button { font-size: 11px; padding: 5px 8px; min-width: 40px; }
 
         /* Preview Action Row on mobile */
-        #cinemaghar-container .preview-action-row { padding: 15px 10px; }
+        #cinemaghar-container .preview-action-row { padding: 15px 10px; position: relative; } /* Added position relative */
         #cinemaghar-container .preview-action-row .action-info { font-size: 13px; margin-bottom: 15px; }
         #cinemaghar-container .preview-action-row .action-info .info-item { margin-bottom: 6px; line-height: 1.5; }
         #cinemaghar-container .preview-action-row .action-info strong { min-width: 65px; margin-right: 5px; }
@@ -1133,7 +1243,14 @@
         #cinemaghar-container .custom-url-section { margin-top: 15px; padding-top: 15px; }
         #cinemaghar-container .custom-url-container { padding: 10px; gap: 8px; margin-top: 10px; }
         #cinemaghar-container .custom-url-input { padding: 8px 10px; font-size: 13px; }
-        #cinemaghar-container .play-custom-url-button { padding: 9px 15px; font-size: 13px; width: 100%; } /* Full width play button */
+        #cinemaghar-container .play-custom-url-button,
+        #cinemaghar-container #playerCustomUrlSection button { /* Global player button mobile */
+            padding: 9px 15px; font-size: 13px; width: 100%;
+        }
+        #cinemaghar-container #playerCustomUrlSection label { font-size: 13px; } /* Global player label mobile */
+        #cinemaghar-container #playerCustomUrlSection input { font-size: 13px; padding: 8px 10px; } /* Global player input mobile */
+        #cinemaghar-container #playerCustomUrlSection .player-custom-url-feedback { font-size: 12px; } /* Global player feedback mobile */
+
         #cinemaghar-container .custom-url-toggle-button { width: 100%; } /* Make toggle full width */
 
 
@@ -1298,8 +1415,9 @@
 
 
         /* Player adjustments */
-        #cinemaghar-container #html5VideoPlayer { max-height: 280px; border-radius: var(--border-radius-sm);}
+        #cinemaghar-container .video-container:not(.global-custom-url-mode) #html5VideoPlayer { max-height: 280px; border-radius: var(--border-radius-sm);} /* Only constrain height if not global */
         #cinemaghar-container .video-container { padding: 45px 10px 15px 10px; max-width: 100%; margin-left: 0; margin-right: 0; border-radius: var(--border-radius-sm); }
+        #cinemaghar-container .video-container.global-custom-url-mode { width: 95%; max-width: 95%; padding: 25px 15px; }
         #cinemaghar-container .video-container.is-fullscreen #html5VideoPlayer { max-height: none; }
         #cinemaghar-container .close-btn { top: 12px; right: 12px; padding: 5px 9px; font-size: 12px; }
         #cinemaghar-container #videoTitle { font-size: 16px; }
@@ -1368,8 +1486,12 @@
           <div id="searchInputSuggestions"></div>
           <button class="button" id="searchSubmitButton" onclick="handleSearchSubmit()">Search</button>
       </div>
+      <!-- Search Actions: Contains global custom URL button -->
       <div class="search-actions">
-           <!-- Optional buttons here if needed -->
+           <button class="button" id="playCustomUrlGlobalButton">
+                <span aria-hidden="true">🔗</span> Play Custom URL
+           </button>
+           <!-- Other optional buttons could go here -->
       </div>
       <!-- Updates Preview Section (only shown on homepage) -->
       <div id="updates-preview-section" style="display: none;">
@@ -1490,8 +1612,19 @@
 
 
   <!-- Video Player Container - Initially hidden, moved dynamically by JS -->
-  <div class="video-container" id="videoContainer" style="display: none;">
+  <div class="video-container" id="videoContainer">
       <button class="close-btn" onclick="closePlayer(event)" aria-label="Close video player">✖ Close</button>
+
+      <!-- NEW: Custom URL Input Section (Now permanently inside player) -->
+      <div id="playerCustomUrlSection" style="display: none;">
+            <label for="playerCustomUrlInput">Enter Custom Video URL:</label>
+            <input type="url" id="playerCustomUrlInput" class="custom-url-input" placeholder="https://example.com/video.mp4" aria-label="Custom video URL input">
+            <button class="button" id="playerPlayCustomUrlButton">
+                <span aria-hidden="true">▶️</span> Play from Input
+            </button>
+            <span class="player-custom-url-feedback" role="status" aria-live="polite"></span>
+      </div>
+
       <div id="audioWarning" style="display: none;" role="alert"></div>
       <div id="videoTitle"></div>
       <video id="html5VideoPlayer" controls autoplay controlsList="nodownload noremoteplayback">
@@ -1550,9 +1683,9 @@
 
 </div> <!-- End #cinemaghar-container -->
 
-<!-- START OF INLINED SCRIPT BLOCK (MODIFIED FOR CUSTOM URL PLAY & ERROR FOCUS) -->
+<!-- START OF INLINED SCRIPT BLOCK (MODIFIED FOR GLOBAL CUSTOM URL) -->
 <script>
-       // --- START OF INLINED script.js (MODIFIED FOR CUSTOM URL PLAY & ERROR FOCUS) ---
+       // --- START OF INLINED script.js (MODIFIED FOR GLOBAL CUSTOM URL PLAY) ---
        (function() {
            'use strict';
 
@@ -1619,6 +1752,14 @@
            const backToHomeButtonResults = document.getElementById('backToHomeButtonResults');
            const backToHomeButtonShared = document.getElementById('backToHomeButtonShared');
            const pageFooter = document.getElementById('page-footer');
+           // NEW: Player Custom URL section elements
+           const playerCustomUrlSection = document.getElementById('playerCustomUrlSection');
+           const playerCustomUrlInput = document.getElementById('playerCustomUrlInput');
+           const playerPlayCustomUrlButton = document.getElementById('playerPlayCustomUrlButton');
+           const playerCustomUrlFeedback = playerCustomUrlSection?.querySelector('.player-custom-url-feedback');
+           // NEW: Global Custom URL button
+           const playCustomUrlGlobalButton = document.getElementById('playCustomUrlGlobalButton');
+
 
            // --- State Variables ---
            let localSuggestionData = [];
@@ -1635,6 +1776,7 @@
            let currentViewMode = 'homepage';
            let activeResultsTab = 'allFiles';
            let lastFocusedElement = null;
+           let isGlobalCustomUrlMode = false; // NEW: Flag for global player mode
 
            let currentState = {
                searchTerm: '',
@@ -1657,8 +1799,6 @@
            const TimeAgo = { MINUTE: 60, HOUR: 3600, DAY: 86400, WEEK: 604800, MONTH: 2592000, YEAR: 31536000, format: (isoString) => { if (!isoString) return 'N/A'; try { const date = new Date(isoString); const seconds = Math.floor((new Date() - date) / 1000); if (isNaN(seconds) || seconds < 0) { console.warn(`TimeAgo: Invalid seconds calculation for ${isoString}. Parsed date: ${date}. Returning full date.`); return TimeAgo.formatFullDate(date); } if (seconds < 2) return "just now"; if (seconds < TimeAgo.MINUTE) return `${seconds} sec${seconds > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.HOUR) return `${Math.floor(seconds / TimeAgo.MINUTE)} min${Math.floor(seconds / TimeAgo.MINUTE) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY) return `${Math.floor(seconds / TimeAgo.HOUR)} hr${Math.floor(seconds / TimeAgo.HOUR) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY * 2) return "Yesterday"; if (seconds < TimeAgo.WEEK) return `${Math.floor(seconds / TimeAgo.DAY)} days ago`; if (seconds < TimeAgo.MONTH) return `${Math.floor(seconds / TimeAgo.WEEK)} wk${Math.floor(seconds / TimeAgo.WEEK) > 1 ? 's' : ''} ago`; return TimeAgo.formatFullDate(date, true); } catch (e) { console.error("Date Format Error (TimeAgo):", isoString, e); return 'Invalid Date'; } }, formatFullDate: (date, short = false) => { if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid Date'; const optsDate = short ? { year: '2-digit', month: 'numeric', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' }; const optsTime = { hour: 'numeric', minute: '2-digit', hour12: true }; try { return `${date.toLocaleDateString(undefined, optsDate)}${short ? '' : ', ' + date.toLocaleTimeString(undefined, optsTime)}`; } catch (e) { console.error("toLocaleDateString/Time failed:", e); return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; } } };
            function extractSizeData(inputString) { if (!inputString) return { value: 0, unit: '', display: 'N/A', bytes: 0 }; const r = /(?<size>[\d.]+)\s?(?<unit>GB|MB)/i; const m = String(inputString).match(r); if (m?.groups?.size && m?.groups?.unit) { const value = parseFloat(m.groups.size); const unit = m.groups.unit.toUpperCase(); if (!isNaN(value)) { const bytes = unit === 'GB' ? value * 1024 * 1024 * 1024 : value * 1024 * 1024; return { value: value, unit: unit, display: `${value} ${unit}`, bytes: isNaN(bytes) ? 0 : bytes }; } } return { value: 0, unit: '', display: 'N/A', bytes: 0 }; }
            function getMimeTypeFromUrl(url) { if (!url) return 'video/*'; const m = url.match(/\.([a-zA-Z0-9]+)(?:[?#]|$)/); if (!m) return 'video/*'; const ext = m[1].toLowerCase(); const mimeMap = { 'mkv': 'video/x-matroska', 'mp4': 'video/mp4', 'mov': 'video/quicktime', 'avi': 'video/x-msvideo', 'webm': 'video/webm', 'wmv': 'video/x-ms-wmv', 'flv': 'video/x-flv', 'ts': 'video/mp2t', 'm4v': 'video/x-m4v', 'ogv': 'video/ogg' }; return mimeMap[ext] || 'video/*'; }
-
-           // --- MODIFIED handleVideoError ---
            function handleVideoError(event) {
                 console.error("HTML5 Video Error:", event, videoElement?.error);
                 let msg = "An unknown error occurred while trying to play the video.";
@@ -1678,33 +1818,33 @@
                     audioWarningDiv.style.display = 'block';
                 }
 
-                // Find the parent action container where the player currently resides
-                const currentActionContainer = videoContainer?.parentElement?.closest('.action-row td, .preview-action-row, #shared-item-content');
-                if (currentActionContainer) {
-                    // Find the 'Play Custom URL' toggle button WITHIN that container
-                    const customUrlToggleButton = currentActionContainer.querySelector('.custom-url-toggle-button');
-                    if (customUrlToggleButton) {
-                        console.log("Playback error occurred, showing custom URL toggle button and section.");
-                        // Make the toggle button visible
-                        customUrlToggleButton.style.display = 'inline-flex';
-                        // Ensure the custom URL section is also visible
-                        const customUrlSection = currentActionContainer.querySelector('.custom-url-section');
-                        if (customUrlSection && customUrlSection.style.display === 'none') {
-                           toggleCustomUrlInput(customUrlToggleButton, true); // Open section *without* focusing input yet
+                // If not in global mode, find the parent action container for the toggle button
+                if (!isGlobalCustomUrlMode) {
+                    const currentActionContainer = videoContainer?.parentElement?.closest('.action-row td, .preview-action-row, #shared-item-content');
+                    if (currentActionContainer) {
+                        const customUrlToggleButton = currentActionContainer.querySelector('.custom-url-toggle-button');
+                        if (customUrlToggleButton) {
+                            console.log("Playback error occurred, showing item's custom URL toggle button.");
+                            customUrlToggleButton.style.display = 'inline-flex';
+                            // Toggle the section open if it's not already
+                            const customUrlSection = currentActionContainer.querySelector('.custom-url-section');
+                            if (customUrlSection && customUrlSection.style.display === 'none') {
+                               toggleCustomUrlInput(customUrlToggleButton, true); // Open section *without* focusing input yet
+                            }
+                            setTimeout(() => { customUrlToggleButton.focus(); }, 100);
+                        } else {
+                            console.warn("Could not find custom URL toggle button in the current action container after video error.");
                         }
-                        // Focus the toggle button itself to draw attention
-                        setTimeout(() => {
-                            customUrlToggleButton.focus();
-                        }, 100); // Small delay for visibility
                     } else {
-                        console.warn("Could not find custom URL toggle button in the current action container after video error.");
+                        console.warn("Could not determine the player's action container after video error.");
                     }
                 } else {
-                    console.warn("Could not determine the player's action container after video error.");
+                    // If in global mode, maybe re-show the input section?
+                    if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'flex'; // Use flex for column layout
+                    if (videoElement) videoElement.style.display = 'none'; // Hide broken video player
+                    if (customControlsContainer) customControlsContainer.style.display = 'none'; // Hide controls
                 }
             }
-           // --- END MODIFIED handleVideoError ---
-
            function extractQualityFromFilename(filename) { if (!filename) return null; const safeFilename = String(filename); const patterns = [ /(?:^|\.|\[|\(|\s|_|-)((?:4k|2160p|1080p|720p|480p))(?=$|\.|\]|\)|\s|_|-)/i, /(?:^|\.|\[|\(|\s|_-)(WEB-?DL|WEBRip|BluRay|BDRip|BRRip|HDTV|HDRip|DVDrip|DVDScr|HDCAM|HC|TC|TS|CAM)(?=$|\.|\]|\)|\s|_|-)/i, /(?:^|\.|\[|\(|\s|_-)(HDR|DV|Dolby.?Vision|HEVC|x265)(?=$|\.|\]|\)|\s|_|-)/i ]; let foundQuality = null; for (const regex of patterns) { const match = safeFilename.match(regex); if (match && match[1]) { let quality = match[1].toUpperCase(); quality = quality.replace(/WEB-?DL/i, 'WEBDL'); quality = quality.replace(/BLURAY/i, 'BluRay'); quality = quality.replace(/DVDRIP/i, 'DVD'); quality = quality.replace(/DOLBY.?VISION/i, 'Dolby Vision'); if (quality === '2160P') quality = '4K'; if (patterns.indexOf(regex) < 2) return quality; if (patterns.indexOf(regex) === 2 && !foundQuality) foundQuality = quality; } } return foundQuality; }
            function normalizeTextForSearch(text) { if (!text) return ""; return String(text) .toLowerCase() .replace(/[.\-_\(\)\[\]]/g, '') .replace(/\s+/g, ' ') .trim(); }
            function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
@@ -1770,7 +1910,7 @@
                return processed;
            }
 
-           // --- HTML Generation (MODIFIED for Custom URL Button initial state) ---
+           // --- HTML Generation (MODIFIED for Custom URL Button in Action Row) ---
            function createActionContentHTML(movie) {
                const displayFilename = movie.displayFilename;
                const displaySize = movie.sizeData.display;
@@ -1789,7 +1929,7 @@
                const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : '';
                const escapedId = movie.id ? String(movie.id).replace(/'/g, "\\'") : '';
 
-               // Trailer Link Logic
+               // Trailer Link Logic (same as before)
                let youtubeTrailerButtonHTML = '';
                const titleForSearch = movie.extractedTitle || streamTitle;
                const yearForSearch = movie.extractedYear;
@@ -1808,7 +1948,7 @@
                    youtubeTrailerButtonHTML = `<a href="${youtubeSearchUrl}" target="_blank" rel="noopener noreferrer" class="button youtube-button">${youtubeIconSVG} Watch Trailer</a>`;
                }
 
-               // IMDb Link Logic
+               // IMDb Link Logic (same as before)
                let imdbSearchButtonHTML = '';
                if (movie.extractedTitle) {
                    let imdbQueryTerms = [`"${movie.extractedTitle}"`];
@@ -1834,10 +1974,10 @@
                        actionButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play in VLC or MX Player</button>`;
                    }
                }
-               // *** Custom URL Toggle Button - initially hidden via style ***
-               actionButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" data-title-ref="${escapedStreamTitle}" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
+               // *** Custom URL Toggle Button (for action rows) - initially hidden via style ***
+               actionButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
 
-               // Other Link Buttons
+               // Other Link Buttons (same as before)
                if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
                if (movie.gdflix_link) actionButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX</a>`;
                if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null') actionButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud</a>`;
@@ -1849,18 +1989,7 @@
                   actionButtonsHTML = '<span style="color: var(--text-muted); font-style: italic; text-align: center; width: 100%; display: block; padding: 10px 0;">No actions available</span>';
                }
 
-               // *** Custom URL Input Section (Initially Hidden via CSS class/style) ***
-               const customUrlSectionHTML = `
-                   <div class="custom-url-section" style="display: none;" aria-hidden="true">
-                       <div class="custom-url-container">
-                            <label for="custom-url-input-${escapedId}">Enter Custom Video URL:</label>
-                            <input type="url" class="custom-url-input" id="custom-url-input-${escapedId}" placeholder="https://example.com/video.mp4" aria-label="Custom video URL input">
-                            <button class="button play-custom-url-button" data-action="play-custom-url" data-title-ref="${escapedStreamTitle}">
-                                <span aria-hidden="true">▶️</span> Play from Input
-                            </button>
-                            <span class="custom-url-feedback" role="status" aria-live="polite"></span>
-                       </div>
-                   </div>`;
+               // *** Removed the inline custom URL section HTML here - it's now part of the main player ***
 
                // Combine all parts
                const actionContentHTML = `
@@ -1875,7 +2004,6 @@
                    <div class="action-buttons-container">
                        ${actionButtonsHTML}
                    </div>
-                   ${customUrlSectionHTML} <!-- Append the custom URL section here -->
                    `;
                return actionContentHTML;
            }
@@ -1939,8 +2067,7 @@
                 if (rowToClose && rowToClose.style.display !== 'none') {
                     const isPlayerInside = videoContainer?.parentElement === rowToClose
                                        || (rowToClose.matches('tr.action-row') && videoContainer?.parentElement === rowToClose.querySelector('td'))
-                                       || (rowToClose.matches('.preview-action-row') && videoContainer?.parentElement === rowToClose)
-                                       || (rowToClose.querySelector('.custom-url-section') && videoContainer?.parentElement === rowToClose.querySelector('.custom-url-section'));
+                                       || (rowToClose.matches('.preview-action-row') && videoContainer?.parentElement === rowToClose);
 
                     if (isPlayerInside) {
                         closePlayer(elementToFocusAfter || buttonElement || mainElement);
@@ -1954,17 +2081,7 @@
                         buttonElement.setAttribute('aria-expanded', 'false');
                     }
 
-                    // *** Ensure custom URL section is hidden and reset ***
-                    const customUrlSection = rowToClose.querySelector('.custom-url-section');
-                    if (customUrlSection) {
-                        customUrlSection.style.display = 'none';
-                        customUrlSection.setAttribute('aria-hidden', 'true');
-                        const customUrlInput = customUrlSection.querySelector('.custom-url-input');
-                        if (customUrlInput) customUrlInput.value = ''; // Clear input
-                        const customUrlFeedback = customUrlSection.querySelector('.custom-url-feedback');
-                        if (customUrlFeedback) customUrlFeedback.textContent = ''; // Clear feedback
-                    }
-                    // Reset the toggle button state and hide it again
+                    // *** Ensure custom URL toggle button in action row is reset/hidden ***
                     const customUrlToggleButton = rowToClose.querySelector('.custom-url-toggle-button');
                     if (customUrlToggleButton) {
                          customUrlToggleButton.style.display = 'none'; // Hide it
@@ -2001,41 +2118,41 @@
            // --- Shared Item Display Logic (Unchanged) ---
            async function displaySharedItem(shareId) { if (!shareId || !sharedItemView || !sharedItemContent) return; sharedItemContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading shared item...</span></div>`; setViewMode('shared'); try { const params = { id: shareId }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { const sharedMovieRaw = data.items[0]; const sharedMovie = preprocessMovieData(sharedMovieRaw); console.log("Displaying shared item:", sharedMovie.displayFilename); const actionHTML = createActionContentHTML(sharedMovie); sharedItemContent.innerHTML = actionHTML; document.title = `${sharedMovie.displayFilename || 'Shared Item'} - Cinema Ghar`; if (videoContainer) videoContainer.style.display = 'none'; } else { console.error("Shared item not found via API for ID:", shareId); sharedItemContent.innerHTML = `<div class="error-message" role="alert">Error: Shared item with ID ${sanitize(shareId)} was not found. It might have been removed or the link is incorrect.</div>`; document.title = "Item Not Found - Cinema Ghar Index"; } } catch (error) { console.error("Failed to fetch shared item:", error); sharedItemContent.innerHTML = `<div class="error-message" role="alert">Error loading shared item: ${error.message}. Please try again.</div>`; document.title = "Error Loading Item - Cinema Ghar Index"; } finally { setViewMode('shared'); window.scrollTo({ top: 0, behavior: 'smooth' }); } }
 
-           // --- Player Logic (Minor change for container placement check) ---
-           function streamVideo(title, url, filenameForAudioCheck) {
+           // --- Player Logic (MODIFIED to handle global custom URL mode) ---
+           function streamVideo(title, url, filenameForAudioCheck, isFromCustom = false) {
                let currentActionContainer = null;
                const activeRow = activeTableActionRow || activePreviewActionRow;
 
-               if (currentViewMode === 'shared' && sharedItemContent) {
+               if (isGlobalCustomUrlMode) {
+                  // No specific container needed, player stays positioned via CSS
+               } else if (currentViewMode === 'shared' && sharedItemContent) {
                    currentActionContainer = sharedItemContent;
                } else if (activeRow) {
                    currentActionContainer = activeRow.matches('tr.action-row') ? activeRow.querySelector('td') : activeRow;
                }
 
-               if (!videoContainer || !videoElement || !currentActionContainer) {
-                   console.error("Cannot stream: player, video element, or action container missing.", { videoContainer, videoElement, currentActionContainer });
+               if (!videoContainer || !videoElement) {
+                   console.error("Cannot stream: player or video element missing.");
                    return;
                }
 
-                // Find and HIDE the custom URL toggle button within the same container before playing
-                const customUrlToggleButton = currentActionContainer.querySelector('.custom-url-toggle-button');
-                if (customUrlToggleButton) {
-                    customUrlToggleButton.style.display = 'none';
-                    const customUrlSection = currentActionContainer.querySelector('.custom-url-section');
-                    if(customUrlSection) customUrlSection.style.display = 'none'; // Ensure section is closed too
+               // Hide custom URL input section if it's visible
+               if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none';
+               // Ensure video element and controls are visible
+               if (videoElement) videoElement.style.display = 'block';
+               if (customControlsContainer) customControlsContainer.style.display = 'flex';
+
+               // Move player if necessary (only if NOT in global mode)
+                if (!isGlobalCustomUrlMode && currentActionContainer && videoContainer.parentElement !== currentActionContainer) {
+                    console.log("Moving video container to active container:", currentActionContainer);
+                    if (videoElement && videoElement.hasAttribute('src')) { videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); }
+                    if (vlcBox) vlcBox.style.display = 'none';
+                    if (audioWarningDiv) audioWarningDiv.style.display = 'none';
+                    if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; }
+                    clearCopyFeedback();
+                    currentActionContainer.appendChild(videoContainer);
                 }
 
-               // Move player if necessary
-               if (videoContainer.parentElement !== currentActionContainer) {
-                   console.log("Moving video container to active container:", currentActionContainer);
-                   if (videoElement && videoElement.hasAttribute('src')) { videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); }
-                   if (vlcBox) vlcBox.style.display = 'none';
-                   if (audioWarningDiv) audioWarningDiv.style.display = 'none';
-                   if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; }
-                   clearCopyFeedback();
-                   // Append player (it comes after action buttons now)
-                   currentActionContainer.appendChild(videoContainer);
-               }
 
                // Reset warnings and controls
                if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; }
@@ -2053,10 +2170,15 @@
                updateMuteButton();
                videoElement.currentTime = 0;
 
-               // Audio warnings (only if original filename provided)
+               // Audio warnings (only if original filename provided, not for custom URLs)
                const ddp51Regex = /\bDDP?([ ._-]?5\.1)?\b/i; const advancedAudioRegex = /\b(DTS|ATMOS|TrueHD)\b/i; const multiAudioHintRegex = /\b(Multi|Dual)[ ._-]?Audio\b/i;
                let warningText = "";
-               if (filenameForAudioCheck) { const lowerFilename = (filenameForAudioCheck || '').toLowerCase(); if (ddp51Regex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DDP audio might not work in browser. Use 'Copy URL' or 'Play in VLC or MX Player'."; } else if (advancedAudioRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DTS/Atmos/TrueHD audio likely unsupported. Use external player."; } else if (multiAudioHintRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> May contain multiple audio tracks. Use selector below or external player."; } }
+               if (filenameForAudioCheck && !isFromCustom) { // Added !isFromCustom check
+                  const lowerFilename = (filenameForAudioCheck || '').toLowerCase();
+                  if (ddp51Regex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DDP audio might not work in browser. Use 'Copy URL' or 'Play in VLC or MX Player'."; }
+                  else if (advancedAudioRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DTS/Atmos/TrueHD audio likely unsupported. Use external player."; }
+                  else if (multiAudioHintRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> May contain multiple audio tracks. Use selector below or external player."; }
+               }
                if (warningText && audioWarningDiv) { audioWarningDiv.innerHTML = warningText; audioWarningDiv.style.display = 'block'; }
 
                // Set title and VLC box
@@ -2068,28 +2190,115 @@
                videoElement.src = url;
                videoElement.load();
                videoElement.play().catch(e => { console.log("Autoplay was prevented or failed:", e.message); });
-               videoContainer.style.display = 'flex';
 
-               // Focus and scroll
-               const closeButton = videoContainer.querySelector('.close-btn');
-               if (closeButton) { setTimeout(() => closeButton.focus(), 100); }
-               setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
+               // Show container (already done if global, ensure if not)
+               if (videoContainer.style.display === 'none') {
+                   videoContainer.style.display = 'flex';
+               }
+
+               // Focus and scroll (only if NOT global mode)
+                if (!isGlobalCustomUrlMode) {
+                   const closeButton = videoContainer.querySelector('.close-btn');
+                   if (closeButton) { setTimeout(() => closeButton.focus(), 100); }
+                   setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
+               }
            }
-           window.closePlayer = function(elementToFocusAfter = null) { if (elementToFocusAfter instanceof Event) { elementToFocusAfter = elementToFocusAfter?.target; } if (!videoContainer || !videoElement) return; const wasPlaying = videoContainer.style.display !== 'none'; const parentContainer = videoContainer.parentElement; try { const fsElement = document.fullscreenElement || document.webkitFullscreenElement; if (fsElement && (fsElement === videoElement || fsElement === videoContainer)) { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch(err) { console.error("Error exiting fullscreen:", err); } videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); videoContainer.style.display = 'none'; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); if (videoTitle) videoTitle.innerText = ''; if (videoContainer.classList.contains('is-fullscreen')) { videoContainer.classList.remove('is-fullscreen'); } const mainBodyContainer = document.getElementById('cinemaghar-container'); if (mainBodyContainer && videoContainer.parentElement !== mainBodyContainer) { mainBodyContainer.appendChild(videoContainer); console.log("Moved video player back to main container."); } else if (!mainBodyContainer) { console.warn("Main container #cinemaghar-container not found, cannot move player back."); }
-                // *** ADDED: Ensure custom URL section is hidden when player closes ***
-                if(parentContainer) {
-                   const customUrlSection = parentContainer.querySelector('.custom-url-section');
-                   if (customUrlSection) customUrlSection.style.display = 'none';
-                   const customUrlToggleButton = parentContainer.querySelector('.custom-url-toggle-button');
-                   if (customUrlToggleButton) {
-                       customUrlToggleButton.style.display = 'none'; // Hide toggle too
-                       customUrlToggleButton.setAttribute('aria-expanded', 'false');
-                       customUrlToggleButton.innerHTML = '<span aria-hidden="true">🔗</span> Play Custom URL';
-                   }
+
+           window.closePlayer = function(elementToFocusAfter = null) {
+                if (elementToFocusAfter instanceof Event) { elementToFocusAfter = elementToFocusAfter?.target; }
+                if (!videoContainer || !videoElement) return;
+
+                const wasPlaying = videoContainer.style.display !== 'none';
+                const parentContainer = videoContainer.parentElement; // Store before potentially moving
+                const wasGlobalMode = isGlobalCustomUrlMode; // Store before resetting
+
+                try {
+                    const fsElement = document.fullscreenElement || document.webkitFullscreenElement;
+                    if (fsElement && (fsElement === videoElement || fsElement === videoContainer)) {
+                        if (document.exitFullscreen) document.exitFullscreen();
+                        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                    }
+                } catch(err) { console.error("Error exiting fullscreen:", err); }
+
+                // Stop video playback
+                videoElement.pause();
+                videoElement.removeAttribute('src');
+                videoElement.currentTime = 0;
+                videoElement.load();
+
+                // Hide the entire container and reset states
+                videoContainer.style.display = 'none';
+                videoContainer.classList.remove('global-custom-url-mode', 'is-fullscreen'); // Remove modes
+                isGlobalCustomUrlMode = false; // Reset global mode flag
+
+                // Reset player internals
+                if (vlcBox) vlcBox.style.display = 'none';
+                if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; }
+                if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; }
+                if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; // Ensure input section is hidden
+                if (playerCustomUrlInput) playerCustomUrlInput.value = ''; // Clear input
+                if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = ''; // Clear feedback
+                clearCopyFeedback();
+                if (videoTitle) videoTitle.innerText = '';
+
+                // Move player back to main container if it was moved into an action row/shared content
+                if (!wasGlobalMode) {
+                    const mainBodyContainer = document.getElementById('cinemaghar-container');
+                    if (mainBodyContainer && videoContainer.parentElement !== mainBodyContainer) {
+                        if (!parentContainer?.contains(videoContainer)) { // Check if already moved
+                            mainBodyContainer.appendChild(videoContainer);
+                            console.log("Moved video player back to main container.");
+                        }
+                    } else if (!mainBodyContainer) {
+                        console.warn("Main container #cinemaghar-container not found, cannot move player back.");
+                    }
                 }
-                // --- END ADDED ---
-                if (wasPlaying && parentContainer?.closest('.action-row, .preview-action-row, #shared-item-content')) { const parentActionRowOrContent = parentContainer.closest('.action-row, .preview-action-row, #shared-item-content'); if (parentActionRowOrContent && !parentActionRowOrContent.id.startsWith('shared-item')) { const mainElement = parentActionRowOrContent.previousElementSibling; if (mainElement) { const viewButton = mainElement.querySelector('.view-button'); if (viewButton && viewButton.getAttribute('aria-expanded') === 'true') { viewButton.textContent = 'View'; viewButton.setAttribute('aria-expanded', 'false'); } mainElement.classList.remove('active-main-row'); } if (parentActionRowOrContent.style.display !== 'none' && !parentActionRowOrContent.id.startsWith('shared-item-content')) { parentActionRowOrContent.style.display = 'none'; if (parentActionRowOrContent.classList.contains('preview-action-row')) { parentActionRowOrContent.innerHTML = ''; } } } else if (wasPlaying && currentViewMode === 'shared') { console.log("Closed player within shared view."); } } let finalFocusTarget = elementToFocusAfter || lastFocusedElement; const closedRowId = parentContainer?.closest('.action-row, .preview-action-row')?.id; if (activeTableActionRow?.id === closedRowId || activePreviewActionRow?.id === closedRowId) { finalFocusTarget = null; } if (finalFocusTarget && typeof finalFocusTarget.focus === 'function') { console.log("Returning focus to:", finalFocusTarget); setTimeout(() => finalFocusTarget.focus(), 50); } lastFocusedElement = null; if (activeTableActionRow && activeTableActionRow.id === closedRowId) { activeTableActionRow = null; } if (activePreviewActionRow && activePreviewActionRow.id === closedRowId) { activePreviewActionRow = null; } }
-           function closePlayerIfNeeded(elementToFocusAfter = null) { if (videoContainer?.style.display === 'flex' || videoContainer?.style.display === 'block') { closePlayer(elementToFocusAfter); } }
+
+                // Handle focus restoration logic
+                let finalFocusTarget = elementToFocusAfter || lastFocusedElement;
+
+                // If player was inside an action row that is now being closed, don't focus the trigger
+                const closedRowId = parentContainer?.closest('.action-row, .preview-action-row')?.id;
+                if (!wasGlobalMode && (activeTableActionRow?.id === closedRowId || activePreviewActionRow?.id === closedRowId)) {
+                     finalFocusTarget = null; // Don't refocus trigger if row is closing anyway
+                }
+                // Reset active row state if player was closed from within it
+                if (!wasGlobalMode && closedRowId) {
+                    const mainElement = document.querySelector(`[data-action-row-id="${closedRowId}"]`);
+                    if (mainElement) {
+                         const viewButton = mainElement.querySelector('.view-button');
+                         if (viewButton && viewButton.getAttribute('aria-expanded') === 'true') {
+                              viewButton.textContent = 'View';
+                              viewButton.setAttribute('aria-expanded', 'false');
+                         }
+                         mainElement.classList.remove('active-main-row');
+                    }
+                    // Ensure the row itself is hidden if it wasn't explicitly closed by toggle
+                    const actionRowElement = document.getElementById(closedRowId);
+                    if(actionRowElement && actionRowElement.style.display !== 'none') {
+                        actionRowElement.style.display = 'none';
+                        if (actionRowElement.matches('.preview-action-row')) {
+                           actionRowElement.innerHTML = ''; // Clear preview row content
+                        }
+                    }
+                }
+
+
+                // Restore focus if a valid target exists
+                 if (finalFocusTarget && typeof finalFocusTarget.focus === 'function') {
+                    console.log("Returning focus to:", finalFocusTarget);
+                    setTimeout(() => finalFocusTarget.focus(), 50);
+                }
+                lastFocusedElement = null;
+
+                // Clear active row references if player was closed from within them
+                if (!wasGlobalMode) {
+                    if (activeTableActionRow?.id === closedRowId) activeTableActionRow = null;
+                    if (activePreviewActionRow?.id === closedRowId) activePreviewActionRow = null;
+                }
+           }
+
+           function closePlayerIfNeeded(elementToFocusAfter = null) { if (videoContainer?.style.display !== 'none') { closePlayer(elementToFocusAfter); } }
            window.seekVideo = function(seconds) { if (videoElement) videoElement.currentTime += seconds; }
            window.toggleMute = function() { if (videoElement) videoElement.muted = !videoElement.muted; }
            window.setVolume = function(value) { if (videoElement) { const vol = parseFloat(value); videoElement.volume = vol; videoElement.muted = (vol === 0); } }
@@ -2105,7 +2314,7 @@
            function showCopyFeedback(spanElement, message = 'Copied!', isError = false) { if (!spanElement) return; clearTimeout(copyFeedbackTimeout); spanElement.textContent = message; spanElement.classList.toggle('error', isError); spanElement.classList.remove('share-fallback'); if (spanElement.classList.contains('share-fallback')) { spanElement.classList.add('share-fallback'); } spanElement.style.display = 'inline-block'; spanElement.classList.add('show'); copyFeedbackTimeout = setTimeout(() => { spanElement.classList.remove('show', 'error'); setTimeout(() => { if (!spanElement.classList.contains('show')) { spanElement.style.display = 'none'; spanElement.textContent = spanElement.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; } }, 300); }, 2500); }
            function clearCopyFeedback() { clearTimeout(copyFeedbackTimeout); document.querySelectorAll('.copy-feedback.show').forEach(span => { span.classList.remove('show', 'error'); span.style.display = 'none'; span.textContent = span.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; }); }
            function highlightVlcText() { const activeContext = activeTableActionRow || activePreviewActionRow || (currentViewMode === 'shared' ? sharedItemContent : null); if (!activeContext) return; const currentVlcText = activeContext.querySelector('#vlcBox code'); if (currentVlcText && currentVlcText.closest('#vlcBox')?.style.display !== 'none') { try { const range = document.createRange(); range.selectNodeContents(currentVlcText); const selection = window.getSelection(); if (selection) { selection.removeAllRanges(); selection.addRange(range); } console.log("Highlighted VLC text as fallback."); } catch (selectErr) { console.warn("Could not highlight VLC text:", selectErr); } } }
-           function handlePlayerKeyboardShortcuts(event) { if (!videoContainer || videoContainer.style.display !== 'flex' || !videoElement) return; const targetTagName = event.target.tagName.toLowerCase(); if (targetTagName === 'input' || targetTagName === 'select' || targetTagName === 'textarea') return; const key = event.key; let prevented = false; switch (key) { case ' ': case 'k': togglePlayPause(); prevented = true; break; case 'ArrowLeft': seekVideo(-10); prevented = true; break; case 'ArrowRight': seekVideo(10); prevented = true; break; case 'ArrowUp': setVolume(Math.min(videoElement.volume + 0.05, 1)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'ArrowDown': setVolume(Math.max(videoElement.volume - 0.05, 0)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'm': toggleMute(); prevented = true; break; case 'f': toggleFullscreen(); prevented = true; break; } if (prevented) event.preventDefault(); }
+           function handlePlayerKeyboardShortcuts(event) { if (!videoContainer || videoContainer.style.display === 'none' || !videoElement) return; const targetTagName = event.target.tagName.toLowerCase(); if (targetTagName === 'input' || targetTagName === 'select' || targetTagName === 'textarea') return; const key = event.key; let prevented = false; switch (key) { case ' ': case 'k': togglePlayPause(); prevented = true; break; case 'ArrowLeft': seekVideo(-10); prevented = true; break; case 'ArrowRight': seekVideo(10); prevented = true; break; case 'ArrowUp': setVolume(Math.min(videoElement.volume + 0.05, 1)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'ArrowDown': setVolume(Math.max(videoElement.volume - 0.05, 0)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'm': toggleMute(); prevented = true; break; case 'f': toggleFullscreen(); prevented = true; break; } if (prevented) event.preventDefault(); }
 
            // --- State Persistence (Unchanged) ---
            function saveStateToLocalStorage() { try { const stateToSave = {}; if (currentState.sortColumn !== 'lastUpdated') stateToSave.sortColumn = currentState.sortColumn; if (currentState.sortDirection !== 'desc') stateToSave.sortDirection = currentState.sortDirection; if (currentState.qualityFilter !== '') stateToSave.qualityFilter = currentState.qualityFilter; if (Object.keys(stateToSave).length > 0) { localStorage.setItem(config.LOCAL_STORAGE_KEY, JSON.stringify(stateToSave)); console.log("Saved state:", stateToSave); } else { localStorage.removeItem(config.LOCAL_STORAGE_KEY); console.log("State is default, removed saved state."); } } catch (e) { console.error("Failed to save state to localStorage:", e); } }
@@ -2118,16 +2327,16 @@
            function displayLoadError(message) { const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (sharedItemContent) sharedItemContent.innerHTML = ''; if (sharedItemView) sharedItemView.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'shared-view-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
            async function initializeApp() { const urlParams = new URLSearchParams(window.location.search); const shareId = urlParams.get('shareId'); isDirectShareLoad = !!shareId; if (pageLoader) pageLoader.style.display = 'flex'; if (isDirectShareLoad) { console.log("Direct share link detected for ID:", shareId); } else { console.log("Preparing homepage view (pre-data)."); if (searchFocusArea) searchFocusArea.style.display = 'flex'; if (pageFooter) pageFooter.style.display = 'flex'; if (resultsArea) resultsArea.style.display = 'none'; if (sharedItemView) sharedItemView.style.display = 'none'; const defaultMessageHTML = `<tr><td colspan="6" class="status-message">Enter search term above.</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) mapping.tableBody.innerHTML = defaultMessageHTML; if (mapping?.pagination) mapping.pagination.style.display = 'none'; }); } loadStateFromLocalStorage(); try { if (shareId) { await displaySharedItem(shareId); fetchApiData({limit: 100, sort: 'quality', sortDir: 'asc'}).then(data => { if (data && data.items) { populateQualityFilter(data.items.map(preprocessMovieData)); } }).catch(e => console.warn("Background quality fetch failed", e)); } else { await loadUpdatesPreview(); console.log("Fetching initial data for suggestions..."); const suggestionData = await fetchApiData({ limit: 5000, sort: 'lastUpdated', sortDir: 'desc' }); if(suggestionData && suggestionData.items) { localSuggestionData = suggestionData.items.map(preprocessMovieData); console.log(`Loaded ${localSuggestionData.length} items for suggestions.`); populateQualityFilter(localSuggestionData); } else { console.warn("Could not load initial data for suggestions/quality filter."); } setViewMode('homepage'); } if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); } } catch (error) { console.error('FATAL: Failed during app initialization:', error); displayLoadError(`Error initializing app: ${error.message}. Try refreshing.`); } finally { if (pageLoader) pageLoader.style.display = 'none'; } }
 
-           // --- Event Handling Setup (MODIFIED handleActionClick) ---
+           // --- Event Handling Setup (MODIFIED handleActionClick & NEW global handlers) ---
            function handleActionClick(event) {
                 const target = event.target;
-                // Look for buttons inside the action buttons container OR the custom URL container
-                const button = target.closest('.action-buttons-container .button, .custom-url-container .button');
+                // Look for buttons inside action containers OR the player's custom URL section
+                const button = target.closest('.action-buttons-container .button, .custom-url-container .button, #playerCustomUrlSection button');
 
                 if (button) {
                    const action = button.dataset.action;
                    const url = button.dataset.url;
-                   let title = button.dataset.title || button.dataset.titleRef; // Get title from ref if needed
+                   let title = button.dataset.title || button.dataset.titleRef;
                    const filename = button.dataset.filename;
                    const id = button.dataset.id;
                    lastFocusedElement = button;
@@ -2143,6 +2352,7 @@
 
                    // Handle internal actions
                    if (action === 'play' && url) {
+                       isGlobalCustomUrlMode = false; // Ensure not global mode
                        streamVideo(title, url, filename);
                    } else if (action === 'copy-vlc' && url) {
                        copyVLCLink(button, url);
@@ -2151,44 +2361,124 @@
                    } else if (action === 'share' && id) {
                        handleShareClick(button);
                    } else if (action === 'toggle-custom-url') {
-                       toggleCustomUrlInput(button); // Call toggle function
+                       toggleCustomUrlInput(button); // Action row toggle
                    } else if (action === 'play-custom-url') {
-                       playFromCustomUrlInput(button); // Call play custom function
+                       playFromCustomUrlInput(button); // Action row play
                    }
                 }
            }
+
            // --- NEW/MODIFIED: Custom URL Toggle and Play Functions ---
+           function handleGlobalCustomUrlClick(event) {
+                event.preventDefault();
+                lastFocusedElement = event.target;
+                if (!videoContainer || !playerCustomUrlSection || !playerCustomUrlInput) return;
+
+                console.log("Global Play Custom URL clicked.");
+                closePlayerIfNeeded(); // Close any existing player session
+                closeActiveActionRow('any'); // Close any open action rows
+
+                isGlobalCustomUrlMode = true; // Set global mode flag
+
+                // Configure player appearance for input
+                videoContainer.classList.add('global-custom-url-mode');
+                if (videoElement) videoElement.style.display = 'none';
+                if (customControlsContainer) customControlsContainer.style.display = 'none';
+                if (videoTitle) videoTitle.innerText = 'Play Custom URL'; // Set title
+                if (vlcBox) vlcBox.style.display = 'none';
+                if (audioWarningDiv) audioWarningDiv.style.display = 'none';
+
+                // Show and configure the input section
+                playerCustomUrlSection.style.display = 'flex'; // Use flex for column layout
+                playerCustomUrlInput.value = '';
+                if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = '';
+                videoContainer.style.display = 'flex'; // Make the main container visible
+
+                // Focus the input field
+                setTimeout(() => playerCustomUrlInput.focus(), 50);
+           }
+
+           function handleGlobalPlayCustomUrl(event) {
+                event.preventDefault();
+                if (!playerCustomUrlInput || !playerCustomUrlFeedback) return;
+
+                const customUrl = playerCustomUrlInput.value.trim();
+                playerCustomUrlFeedback.textContent = ''; // Clear previous feedback
+
+                if (!customUrl) {
+                    playerCustomUrlFeedback.textContent = 'Please enter a URL.';
+                    playerCustomUrlInput.focus();
+                    return;
+                }
+
+                try {
+                    new URL(customUrl); // Validate URL format
+                } catch (e) {
+                    playerCustomUrlFeedback.textContent = 'Invalid URL format.';
+                    inputField.focus();
+                    return;
+                }
+
+                console.log(`Attempting to play global custom URL: ${customUrl}`);
+                // Hide input, show player elements
+                if(playerCustomUrlSection) playerCustomUrlSection.style.display = 'none';
+                if(videoElement) videoElement.style.display = 'block';
+                if(customControlsContainer) customControlsContainer.style.display = 'flex';
+
+                streamVideo("Custom URL Video", customUrl, null, true); // Pass true for isFromCustom
+           }
+
+           // MODIFIED: Handles toggle button within Action Rows/Shared view
            function toggleCustomUrlInput(toggleButton, triggeredByError = false) {
                 const actionContainer = toggleButton.closest('.action-row td, .preview-action-row, #shared-item-content');
-                if (!actionContainer) return;
-                const customUrlSection = actionContainer.querySelector('.custom-url-section');
-                if (!customUrlSection) return;
+                if (!actionContainer || !videoContainer || !playerCustomUrlSection) return;
 
-                const isHidden = customUrlSection.style.display === 'none';
-                customUrlSection.style.display = isHidden ? 'block' : 'none';
-                customUrlSection.setAttribute('aria-hidden', String(!isHidden));
+                // Make sure player is in the right place first
+                if (videoContainer.parentElement !== actionContainer) {
+                     actionContainer.appendChild(videoContainer);
+                }
+
+                const isHidden = playerCustomUrlSection.style.display === 'none';
+
+                // Show/Hide the input section INSIDE the player
+                playerCustomUrlSection.style.display = isHidden ? 'flex' : 'none';
+
+                // Show/Hide the main video elements
+                 videoElement.style.display = isHidden ? 'none' : 'block';
+                 customControlsContainer.style.display = isHidden ? 'none' : 'flex';
+                 if(vlcBox) vlcBox.style.display = isHidden ? 'none' : 'block';
+                 if(audioWarningDiv && !audioWarningDiv.innerHTML.includes('Playback Error')) { // Keep error message visible
+                     audioWarningDiv.style.display = isHidden ? 'none' : 'block';
+                 }
+                 // Make sure player container itself is visible
+                 videoContainer.style.display = 'flex';
+
+                // Update toggle button state
                 toggleButton.setAttribute('aria-expanded', String(isHidden));
                 toggleButton.innerHTML = isHidden
                     ? '<span aria-hidden="true">🔼</span> Hide Custom URL Input'
                     : '<span aria-hidden="true">🔗</span> Play Custom URL';
 
-                // Only focus the input field if toggled MANUALLY by the user clicking the button
-                if (isHidden && !triggeredByError) {
-                    const inputField = customUrlSection.querySelector('.custom-url-input');
-                    if (inputField) {
-                         setTimeout(() => inputField.focus(), 50); // Delay focus slightly
-                    }
+                // Focus logic
+                 if (isHidden && !triggeredByError) {
+                    if (playerCustomUrlInput) setTimeout(() => playerCustomUrlInput.focus(), 50);
                 } else if (!isHidden) {
-                     // If closing, ensure focus goes back to the toggle button
-                     setTimeout(() => toggleButton.focus(), 50);
+                    setTimeout(() => toggleButton.focus(), 50);
                 }
+
+                // Scroll player into view if needed
+                setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
            }
-           function playFromCustomUrlInput(playButton) {
-                const container = playButton.closest('.custom-url-container');
+
+            // MODIFIED: Handles play button for Action Rows/Shared view's custom input
+            function playFromCustomUrlInput(playButton) {
+                // This button might be inside the player section OR the old inline section (if error recovery showed it)
+                const container = playButton.closest('#playerCustomUrlSection, .custom-url-container');
                 if (!container) return;
-                const inputField = container.querySelector('.custom-url-input');
-                const feedbackSpan = container.querySelector('.custom-url-feedback');
-                const titleRef = playButton.dataset.titleRef || "Custom URL Video";
+
+                const inputField = container.querySelector('.custom-url-input, #playerCustomUrlInput');
+                const feedbackSpan = container.querySelector('.custom-url-feedback, .player-custom-url-feedback');
+                const titleRef = "Custom URL Video"; // Always generic for custom
 
                 if (!inputField || !feedbackSpan) return;
 
@@ -2209,13 +2499,21 @@
                     return;
                 }
 
-                console.log(`Attempting to play custom URL: ${customUrl} with title: ${titleRef}`);
-                // Move player into the custom URL section before playing
-                const customUrlSection = container.closest('.custom-url-section');
-                if(customUrlSection && videoContainer.parentElement !== customUrlSection) {
-                   customUrlSection.prepend(videoContainer); // Prepend to keep it visually grouped
-                }
-                streamVideo(titleRef, customUrl, null); // Pass null for filename audio check
+                console.log(`Attempting to play custom URL from item context: ${customUrl}`);
+                isGlobalCustomUrlMode = false; // Not global mode
+
+                // Ensure player is in the correct parent action container
+                const actionContainer = container.closest('.action-row td, .preview-action-row, #shared-item-content');
+                if (actionContainer && videoContainer.parentElement !== actionContainer) {
+                     actionContainer.appendChild(videoContainer);
+                 }
+
+                // Hide input section, show player elements
+                if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none';
+                if (videoElement) videoElement.style.display = 'block';
+                if (customControlsContainer) customControlsContainer.style.display = 'flex';
+
+                streamVideo(titleRef, customUrl, null, true); // Pass true for isFromCustom
            }
            // --- END NEW/MODIFIED Custom URL Functions ---
 
@@ -2240,7 +2538,7 @@
                 }
 
                 // Handle clicks on action buttons (delegated)
-                handleActionClick(event);
+                 handleActionClick(event);
 
                 // Handle Player Close Button separately
                  if (target.matches('.close-btn') && target.closest('#videoContainer')) {
@@ -2250,11 +2548,11 @@
                  }
            }
 
-           // --- Add Event Listeners (Ensure player error listener is attached) ---
+           // --- Add Event Listeners ---
            document.addEventListener('DOMContentLoaded', async () => {
                 await initializeApp();
 
-                // Search listeners
+                // Search listeners (same as before)
                 if (searchInput) {
                     searchInput.addEventListener('input', handleSearchInput);
                     searchInput.addEventListener('keydown', (event) => {
@@ -2272,7 +2570,7 @@
                     });
                 }
 
-                // Filter listener
+                // Filter listener (same as before)
                 if (qualityFilterSelect) {
                     qualityFilterSelect.addEventListener('change', triggerFilterChange);
                 }
@@ -2298,29 +2596,67 @@
                     sharedItemView.addEventListener('click', handleContentClick);
                 }
 
-                 // Player-specific click listener (for close button)
+                 // Player-specific click listener (for close button AND custom URL play button)
                 if (videoContainer) {
-                    videoContainer.addEventListener('click', handleContentClick);
+                    videoContainer.addEventListener('click', (event) => {
+                         if (event.target.matches('.close-btn')) {
+                            lastFocusedElement = event.target;
+                            closePlayer(lastFocusedElement);
+                         } else if (event.target.matches('#playerPlayCustomUrlButton')) {
+                             // Could be global play or action row play, handle based on mode
+                             if (isGlobalCustomUrlMode) {
+                                 handleGlobalPlayCustomUrl(event);
+                             } else {
+                                 playFromCustomUrlInput(event.target);
+                             }
+                         }
+                    });
+                }
+
+                // NEW: Global custom URL button listener
+                if (playCustomUrlGlobalButton) {
+                    playCustomUrlGlobalButton.addEventListener('click', handleGlobalCustomUrlClick);
                 }
 
 
-                // Global keydown for player shortcuts
+                // Global keydown for player shortcuts (same as before)
                 document.addEventListener('keydown', handlePlayerKeyboardShortcuts);
 
-                // Global click listener for closing suggestions/player
+                // Global click listener for closing suggestions/player (MODIFIED)
                 document.addEventListener('click', (event) => {
+                    // Close suggestions
                     if (searchInput && suggestionsContainer && suggestionsContainer.style.display === 'block') {
                         const searchWrapper = searchInput.closest('.search-input-wrapper');
                         if (searchWrapper && !searchWrapper.contains(event.target)) {
                             suggestionsContainer.style.display = 'none';
                         }
                     }
+                    // Close player if click is outside its logical container/trigger
                     if (videoContainer && videoContainer.style.display !== 'none' && !videoContainer.contains(event.target)) {
-                         const logicalParent = videoContainer.parentElement?.closest('.action-row td, .preview-action-row, #shared-item-content, .custom-url-section');
-                         const triggerElement = logicalParent?.closest('.action-row, .preview-action-row')?.previousElementSibling;
-                         if ( (!logicalParent || !logicalParent.contains(event.target)) && (!triggerElement || !triggerElement.contains(event.target)) ) {
-                             console.log("Clicked outside player's logical container and trigger. Closing player.");
-                             closePlayer(event.target);
+                        // Check if click is outside the video container itself AND also outside the button/link that opened it
+                        const isOutsidePlayer = !videoContainer.contains(event.target);
+                        const isOutsideTrigger = !lastFocusedElement || (lastFocusedElement && !lastFocusedElement.contains(event.target));
+                        const isOutsideGlobalTrigger = !playCustomUrlGlobalButton || !playCustomUrlGlobalButton.contains(event.target);
+
+                        // Determine if the click was inside an action row/item that might contain the trigger
+                        let clickInsideAssociatedRow = false;
+                        const activeRowElement = activeTableActionRow || activePreviewActionRow;
+                        if (activeRowElement) {
+                            const mainRowElement = activeRowElement.previousElementSibling;
+                            if (mainRowElement?.contains(event.target) || activeRowElement.contains(event.target)) {
+                                clickInsideAssociatedRow = true;
+                            }
+                        }
+                        // Check shared view context
+                        let clickInsideSharedContext = false;
+                        if (currentViewMode === 'shared' && sharedItemContent?.contains(event.target)) {
+                            clickInsideSharedContext = true;
+                        }
+
+
+                        if (isOutsidePlayer && isOutsideTrigger && isOutsideGlobalTrigger && !clickInsideAssociatedRow && !clickInsideSharedContext) {
+                             console.log("Clicked outside player's logical container or trigger. Closing player.");
+                             closePlayer(event.target); // Pass click target for potential focus restoration elsewhere
                          }
                     }
                 }, false);
@@ -2330,8 +2666,7 @@
                     videoElement.addEventListener('volumechange', () => { if (volumeSlider && Math.abs(parseFloat(volumeSlider.value) - videoElement.volume) > 0.01) { volumeSlider.value = videoElement.volume; } updateMuteButton(); try { localStorage.setItem(config.PLAYER_VOLUME_KEY, String(videoElement.volume)); } catch (e) { console.warn("LocalStorage volume save failed", e); } });
                     videoElement.addEventListener('ratechange', () => { if(playbackSpeedSelect && playbackSpeedSelect.value !== String(videoElement.playbackRate)) { playbackSpeedSelect.value = String(videoElement.playbackRate); } try { localStorage.setItem(config.PLAYER_SPEED_KEY, String(videoElement.playbackRate)); } catch (e) { console.warn("LocalStorage speed save failed", e); } });
                     videoElement.addEventListener('loadedmetadata', populateAudioTrackSelector);
-                    // Remove default listener if added elsewhere, add our specific one
-                    videoElement.removeEventListener('error', handleVideoError);
+                    videoElement.removeEventListener('error', handleVideoError); // Remove any previous
                     videoElement.addEventListener('error', handleVideoError);
                 }
                 document.addEventListener('fullscreenchange', handleFullscreenChange);
