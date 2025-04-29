@@ -1,8 +1,3 @@
-# api/hubcloud.py
-# Note: This script assumes 'requests' and 'beautifulsoup4' are installed
-# in the Vercel Python runtime environment. Add them to requirements.txt.
-# For lxml, add 'lxml' to requirements.txt as well.
-
 import requests
 import time
 import re
@@ -21,15 +16,16 @@ except ImportError:
     from bs4 import BeautifulSoup
     PARSER = "html.parser"
     LXML_AVAILABLE = False
-    # We can't print warnings easily in serverless, rely on logs if needed
+    # Print warning to stderr so it appears in Vercel logs but doesn't break JSON output
+    print("Warning: lxml not found, using html.parser. Parsing might be slower or less robust.", file=sys.stderr)
 
-# --- Configuration (Copied from your provided script) ---
+# --- Configuration ---
 DEFAULT_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
     'Accept-Language': 'en-US,en;q=0.9',
 }
-REQUEST_TIMEOUT = 30
+REQUEST_TIMEOUT = 30 # In seconds
 DRIVE_PREFERRED_BUTTON_TEXTS = [
     r'Download\s*\[FSL Server\]',
     r'Download\s*File\s*\[\s*\d+(\.\d+)?\s*(GB|MB)\s*\]',
@@ -42,7 +38,7 @@ DRIVE_INTERMEDIATE_DOMAINS = [
     'cdn.ampproject.org', 'bloggingvector.shop', 'newssongs.co.in',
 ]
 
-# --- Helper Functions for 'drive' links (Copied from your script) ---
+# --- Helper Functions for 'drive' links ---
 def drive_is_intermediate_link(url):
     if not url or not isinstance(url, str) or not url.startswith('http'): return False
     try:
@@ -50,10 +46,10 @@ def drive_is_intermediate_link(url):
         return any(domain == intermediate or domain.endswith('.' + intermediate) for intermediate in DRIVE_INTERMEDIATE_DOMAINS)
     except Exception: return False
 
-def drive_extract_final_download_link(soup, base_url, log_prefix="    (drive)"):
+def drive_extract_final_download_link(soup, base_url, log_entries):
     direct_link = None
     found_link = False
-    # print(f"{log_prefix}[*] Searching for preferred button text...") # Logging removed for serverless
+    log_entries.append("(drive) Searching for preferred button text...")
     for pattern in DRIVE_PREFERRED_BUTTON_TEXTS:
         try:
             potential_matches = soup.find_all(['a', 'button'], string=re.compile(pattern, re.IGNORECASE))
@@ -73,15 +69,16 @@ def drive_extract_final_download_link(soup, base_url, log_prefix="    (drive)"):
                     if any(hint in temp_link for hint in DRIVE_FINAL_LINK_HINTS) and not drive_is_intermediate_link(temp_link):
                         direct_link = temp_link
                         found_link = True
-                        # print(f"{log_prefix}[+] Found via preferred text '{pattern}': {direct_link}")
+                        log_entries.append(f"(drive) Found via preferred text '{pattern}': {direct_link}")
                         break
-                    # else: print(f"{log_prefix}[!] Found preferred text '{pattern}' but resolved href '{temp_link}' doesn't look final or is intermediate.")
+                    else: log_entries.append(f"(drive) Found preferred text '{pattern}' but resolved href '{temp_link}' doesn't look final or is intermediate.")
             if found_link: break
         except Exception as e:
-            # print(f"{log_prefix}[!] Error during preferred text search for pattern '{pattern}': {e}")
-            continue
+            log_entries.append(f"(drive) Error during preferred text search for pattern '{pattern}': {e}")
+            continue # Keep trying other patterns
+
     if not found_link:
-        # print(f"{log_prefix}[*] Preferred text not found/yielded final link. Searching for links with FINAL_LINK_HINTS...")
+        log_entries.append("(drive) Preferred text not found/yielded final link. Searching for links with FINAL_LINK_HINTS...")
         potential_links = soup.find_all('a', href=True)
         for link_tag in potential_links:
             href = link_tag.get('href', '')
@@ -92,41 +89,46 @@ def drive_extract_final_download_link(soup, base_url, log_prefix="    (drive)"):
                    if not drive_is_intermediate_link(abs_href):
                         direct_link = abs_href
                         found_link = True
-                        # print(f"{log_prefix}[+] Found plausible final link via hint in href: {direct_link}")
+                        log_entries.append(f"(drive) Found plausible final link via hint in href: {direct_link}")
                         break
+
     if direct_link:
          if drive_is_intermediate_link(direct_link):
-              # print(f"{log_prefix}[!] Warning: Link '{direct_link}' looked final but resolved to an intermediate domain. Discarding.")
-              return None
+              log_entries.append(f"(drive) Warning: Link '{direct_link}' looked final but resolved to an intermediate domain. Discarding.")
+              return None # Return None if it's intermediate
          return direct_link
     else:
-        # print(f"{log_prefix}[!] No final-looking download link found by drive methods.")
+        log_entries.append("(drive) No final-looking download link found by drive methods.")
         return None
 
-# --- Core Function for 'drive' links (Copied, logging reduced) ---
+# --- Core Function for 'drive' links ---
 def handle_drive_link(session, hubcloud_url):
     current_url = hubcloud_url
-    log_entries = [] # Collect logs instead of printing
+    log_entries = []
+    final_link = None
     try:
         log_entries.append(f"Processing Drive Link: {current_url}")
         initial_headers = DEFAULT_HEADERS.copy(); initial_headers['Referer'] = 'https://google.com/'
         response_get = session.get(current_url, headers=initial_headers, timeout=REQUEST_TIMEOUT, allow_redirects=True)
-        response_get.raise_for_status()
+        response_get.raise_for_status() # Raise exception for bad status codes
         session.headers.update(DEFAULT_HEADERS); session.headers['Referer'] = response_get.url
         soup_get = BeautifulSoup(response_get.text, PARSER)
         current_url = response_get.url
-        log_entries.append(f"Initial page fetched (Status: {response_get.status_code}, URL: {current_url})")
+        log_entries.append(f"(drive) Initial page fetched (Status: {response_get.status_code}, URL: {current_url})")
 
         form_data = {}
-        log_entries.append(f"Searching for POST form data...")
+        log_entries.append("(drive) Searching for POST form data...")
         form = soup_get.find('form', {'method': re.compile('post', re.IGNORECASE)})
         if form:
             inputs = form.find_all('input', {'type': 'hidden'})
             for input_tag in inputs:
                 name = input_tag.get('name'); value = input_tag.get('value')
                 if name and value is not None: form_data[name] = value
-            log_entries.append(f"Found form data: {form_data}")
+            log_entries.append(f"(drive) Found form data: {form_data}")
+
+        # Fallback to script extraction if form data is incomplete
         if 'op' not in form_data or 'id' not in form_data:
+            log_entries.append("(drive) Form data incomplete, searching scripts...")
             scripts = soup_get.find_all('script')
             script_content = "\n".join([script.string for script in scripts if script.string])
             op_match = re.search(r'["\']op["\']\s*[:=]\s*["\']([^"\']+?)["\']', script_content)
@@ -135,7 +137,11 @@ def handle_drive_link(session, hubcloud_url):
             if op_match and 'op' not in form_data: form_data['op'] = op_match.group(1)
             if id_match and 'id' not in form_data: form_data['id'] = id_match.group(2)
             if rand_match and 'rand' not in form_data: form_data['rand'] = rand_match.group(1)
+
+            # Ensure 'op' is suitable for download
             if 'op' not in form_data or form_data.get('op') in ['download0', '']: form_data['op'] = 'download1'
+
+            # Fallback for 'id' from URL path
             if 'id' not in form_data:
                 try:
                     parsed_url = urlparse(current_url)
@@ -143,28 +149,35 @@ def handle_drive_link(session, hubcloud_url):
                     potential_id = None
                     if len(path_parts) >= 2 and path_parts[0] == 'drive': potential_id = path_parts[1]
                     elif len(path_parts) >= 1 and path_parts[0]: potential_id = path_parts[0]
-                    if potential_id: form_data['id'] = potential_id; log_entries.append(f"Extracted 'id' from URL path: {form_data['id']}")
-                except Exception as e: log_entries.append(f"Error extracting 'id' from URL path: {e}")
+                    if potential_id:
+                        form_data['id'] = potential_id
+                        log_entries.append(f"(drive) Extracted 'id' from URL path: {form_data['id']}")
+                except Exception as e: log_entries.append(f"(drive) Error extracting 'id' from URL path: {e}")
+
+        # Final check for required data
         if 'op' not in form_data or 'id' not in form_data:
-            log_entries.append(f"Error: Could not find required 'op' and 'id' data.")
-            return None, log_entries
-        log_entries.append(f"Using POST data: {form_data}")
+            log_entries.append("Error: Could not find required 'op' and 'id' data for POST.")
+            return None, log_entries # Return early
+
+        log_entries.append(f"(drive) Using POST data: {form_data}")
 
         post_url = current_url
         session.headers['Referer'] = current_url
+        # Increase timeout slightly for the POST request which might do more work
         response_post1 = session.post(post_url, data=form_data, timeout=REQUEST_TIMEOUT + 15, allow_redirects=True)
-        response_post1.raise_for_status()
+        response_post1.raise_for_status() # Raise exception for bad status codes
         soup_post1 = BeautifulSoup(response_post1.text, PARSER)
         current_url = response_post1.url
         session.headers['Referer'] = current_url
-        log_entries.append(f"POST request successful (Status: {response_post1.status_code}, Landed on URL: {current_url})")
+        log_entries.append(f"(drive) POST request successful (Status: {response_post1.status_code}, Landed on URL: {current_url})")
 
-        log_entries.append(f"Analyzing response from {current_url}...")
-        final_link = drive_extract_final_download_link(soup_post1, current_url)
+        log_entries.append(f"(drive) Analyzing response from {current_url}...")
+        final_link = drive_extract_final_download_link(soup_post1, current_url, log_entries)
         if final_link:
-            log_entries.append(f"Found final link directly after first POST: {final_link}")
-            return final_link, log_entries
+            log_entries.append(f"(drive) Found final link directly after first POST.")
+            return final_link, log_entries # Success!
 
+        # If no direct final link, look for an intermediate one
         intermediate_link = None
         potential_links = soup_post1.find_all('a', href=True)
         for link_tag in potential_links:
@@ -175,227 +188,314 @@ def handle_drive_link(session, hubcloud_url):
                     abs_href = urljoin(current_url, href)
                     if drive_is_intermediate_link(abs_href):
                          intermediate_link = abs_href
-                         log_entries.append(f"Found intermediate link to follow: {intermediate_link}")
-                         break
-        if intermediate_link:
-            log_entries.append(f"Following intermediate link: {intermediate_link}")
-            time.sleep(2)
-            try:
-                response_intermediate = session.get(intermediate_link, timeout=REQUEST_TIMEOUT + 30, allow_redirects=True)
-                intermediate_final_url = response_intermediate.url
-                session.headers['Referer'] = intermediate_final_url
-                content_type = response_intermediate.headers.get('Content-Type', '').lower()
-                if 'html' not in content_type:
-                    log_entries.append(f"Intermediate link response not HTML ({content_type}). Status: {response_intermediate.status_code}. URL: {intermediate_final_url}")
-                    if any(hint in intermediate_final_url for hint in DRIVE_FINAL_LINK_HINTS) and not drive_is_intermediate_link(intermediate_final_url):
-                            log_entries.append(f"Intermediate GET redirected directly to final link: {intermediate_final_url}")
-                            return intermediate_final_url, log_entries
-                    elif 300 <= response_intermediate.status_code < 400 and 'Location' in response_intermediate.headers:
-                         final_redirect_url = urljoin(intermediate_link, response_intermediate.headers['Location'])
-                         if any(hint in final_redirect_url for hint in DRIVE_FINAL_LINK_HINTS) and not drive_is_intermediate_link(final_redirect_url):
-                              log_entries.append(f"Found final link via intermediate redirect header: {final_redirect_url}")
-                              return final_redirect_url, log_entries
-                         else: log_entries.append(f"Intermediate redirect header doesn't look final: {final_redirect_url}")
-                    else:
-                        try:
-                            response_text = response_intermediate.text
-                            url_matches = re.findall(r'https?://[^\s\'"<]+', response_text)
-                            for url_match in url_matches:
-                                if any(hint in url_match for hint in DRIVE_FINAL_LINK_HINTS) and not drive_is_intermediate_link(url_match):
-                                    log_entries.append(f"Found plausible final link in non-HTML intermediate response: {url_match}")
-                                    return url_match, log_entries
-                            log_entries.append(f"No plausible final link found in non-HTML intermediate response body.")
-                        except Exception as decode_err: log_entries.append(f"Failed to decode/search non-HTML intermediate response: {decode_err}")
-                    return None, log_entries
-                response_intermediate.raise_for_status()
-                soup_intermediate = BeautifulSoup(response_intermediate.text, PARSER)
-                log_entries.append(f"Intermediate page fetched (Status: {response_intermediate.status_code}, Final URL: {intermediate_final_url})")
-                final_link = drive_extract_final_download_link(soup_intermediate, intermediate_final_url)
-                if final_link:
-                     log_entries.append(f"Found final link after following intermediate link: {final_link}")
-                     return final_link, log_entries
-                else:
-                     log_entries.append(f"Error: Could not find final link after following intermediate link.")
-                     return None, log_entries
-            except requests.exceptions.Timeout: log_entries.append(f"Error: Timed out fetching intermediate link: {intermediate_link}"); return None, log_entries
-            except requests.exceptions.RequestException as e: log_entries.append(f"Network/HTTP Error fetching intermediate link {intermediate_link}: {e}"); return None, log_entries
-            except Exception as e: log_entries.append(f"Unexpected error processing intermediate link {intermediate_link}: {e}"); return None, log_entries
-        else:
-             log_entries.append(f"Error: No final link or recognized intermediate link found in the first POST response.")
-             return None, log_entries
-    except requests.exceptions.Timeout: log_entries.append(f"Error: Request timed out during process for {hubcloud_url}"); return None, log_entries
-    except requests.exceptions.RequestException as e: log_entries.append(f"Network/HTTP Error processing {hubcloud_url}: {e}"); return None, log_entries
-    except Exception as e: log_entries.append(f"An unexpected error occurred for {hubcloud_url}: {e}"); return None, log_entries
-    finally: log_entries.append(f"Finished Processing Drive Link: {hubcloud_url}")
+                         log_entries.append(f"(drive) Found intermediate link to follow: {intermediate_link}")
+                         break # Found one, stop looking
 
-# --- Helper Functions for 'video' links (Copied, logging reduced) ---
+        if intermediate_link:
+            log_entries.append(f"(drive) Following intermediate link: {intermediate_link}")
+            time.sleep(2) # Small delay before hitting intermediate link
+            # Use longer timeout for intermediate links as they can be slow
+            response_intermediate = session.get(intermediate_link, timeout=REQUEST_TIMEOUT + 30, allow_redirects=True)
+            intermediate_final_url = response_intermediate.url
+            session.headers['Referer'] = intermediate_final_url
+            content_type = response_intermediate.headers.get('Content-Type', '').lower()
+
+            # Check if the intermediate response is the final file itself
+            if 'html' not in content_type:
+                log_entries.append(f"(drive) Intermediate link response not HTML ({content_type}). Status: {response_intermediate.status_code}. URL: {intermediate_final_url}")
+                if any(hint in intermediate_final_url for hint in DRIVE_FINAL_LINK_HINTS) and not drive_is_intermediate_link(intermediate_final_url):
+                        log_entries.append(f"(drive) Intermediate GET redirected directly to final link.")
+                        return intermediate_final_url, log_entries # Success!
+                # Check redirect header even if status isn't 3xx, sometimes they misuse it
+                elif 'Location' in response_intermediate.headers:
+                     final_redirect_url = urljoin(intermediate_link, response_intermediate.headers['Location'])
+                     if any(hint in final_redirect_url for hint in DRIVE_FINAL_LINK_HINTS) and not drive_is_intermediate_link(final_redirect_url):
+                          log_entries.append(f"(drive) Found final link via intermediate redirect header.")
+                          return final_redirect_url, log_entries # Success!
+                     else: log_entries.append(f"(drive) Intermediate redirect header doesn't look final: {final_redirect_url}")
+                else:
+                    # Last resort: search non-HTML response body
+                    try:
+                        response_text = response_intermediate.text
+                        url_matches = re.findall(r'https?://[^\s\'"<]+', response_text)
+                        for url_match in url_matches:
+                             # Be stricter here to avoid false positives
+                            if any(hint in url_match for hint in DRIVE_FINAL_LINK_HINTS[-3:]) and not drive_is_intermediate_link(url_match):
+                                log_entries.append(f"(drive) Found plausible final link in non-HTML intermediate response.")
+                                return url_match, log_entries # Success!
+                        log_entries.append(f"(drive) No plausible final link found in non-HTML intermediate response body.")
+                    except Exception as decode_err: log_entries.append(f"(drive) Failed to decode/search non-HTML intermediate response: {decode_err}")
+                # If we reach here after non-html check, it's likely a failure
+                log_entries.append("Error: Intermediate link didn't yield a final file or recognizable redirect.")
+                return None, log_entries
+
+            # If it *was* HTML, parse it
+            response_intermediate.raise_for_status() # Raise for bad status on HTML page
+            soup_intermediate = BeautifulSoup(response_intermediate.text, PARSER)
+            log_entries.append(f"(drive) Intermediate page fetched (Status: {response_intermediate.status_code}, Final URL: {intermediate_final_url})")
+            final_link = drive_extract_final_download_link(soup_intermediate, intermediate_final_url, log_entries)
+            if final_link:
+                 log_entries.append(f"(drive) Found final link after following intermediate link.")
+                 return final_link, log_entries # Success!
+            else:
+                 log_entries.append("Error: Could not find final link after following intermediate link.")
+                 return None, log_entries # Failure
+
+        else:
+             log_entries.append("Error: No final link or recognized intermediate link found in the first POST response.")
+             return None, log_entries # Failure
+
+    # Catch specific exceptions for better logging
+    except requests.exceptions.Timeout as e:
+        log_entries.append(f"Error: Request timed out during process for {hubcloud_url}. Details: {e}")
+        return None, log_entries
+    except requests.exceptions.HTTPError as e:
+         log_entries.append(f"Error: HTTP error occurred processing {hubcloud_url}. Status: {e.response.status_code}. URL: {e.request.url}. Details: {e}")
+         return None, log_entries
+    except requests.exceptions.RequestException as e:
+        log_entries.append(f"Error: Network/Request error processing {hubcloud_url}. Details: {e}")
+        return None, log_entries
+    except Exception as e:
+        # Catch any other unexpected errors
+        log_entries.append(f"FATAL ERROR during drive link processing: {e}\n{traceback.format_exc()}")
+        return None, log_entries
+
+# --- Helper Functions for 'video' links ---
 def video_fetch_and_parse(session, url, referer=None, log_entries=None):
     if log_entries is None: log_entries = []
-    log_entries.append(f"Fetching: {url}")
+    log_entries.append(f"(video) Fetching: {url}")
     current_headers = session.headers.copy()
     if referer: current_headers['Referer'] = referer
     try:
         response = session.get(url, headers=current_headers, timeout=REQUEST_TIMEOUT, allow_redirects=True)
         response.raise_for_status()
         raw_html = response.text
-        session.headers['Referer'] = response.url
-        log_entries.append(f"Successfully fetched (Status: {response.status_code}, Landed on: {response.url})")
+        session.headers['Referer'] = response.url # Update referer for next request
+        log_entries.append(f"(video) Successfully fetched (Status: {response.status_code}, Landed on: {response.url})")
         soup = BeautifulSoup(raw_html, PARSER)
         return soup, raw_html, response.url, log_entries
-    except requests.exceptions.Timeout: log_entries.append(f"Request timed out ({REQUEST_TIMEOUT}s) for {url}"); return None, None, url, log_entries
-    except requests.exceptions.HTTPError as http_err: log_entries.append(f"HTTP error {http_err.response.status_code} for {url}"); return None, None, getattr(http_err.response, 'url', url), log_entries
-    except requests.exceptions.RequestException as req_err: log_entries.append(f"Request error for {url}: {req_err}"); return None, None, url, log_entries
-    except Exception as e: log_entries.append(f"Unexpected error parsing {url}: {e}"); return None, None, url, log_entries
+    except requests.exceptions.Timeout:
+        log_entries.append(f"Error: Request timed out ({REQUEST_TIMEOUT}s) for {url}")
+        return None, None, url, log_entries
+    except requests.exceptions.HTTPError as http_err:
+        log_entries.append(f"Error: HTTP error {http_err.response.status_code} for {url}")
+        return None, None, getattr(http_err.response, 'url', url), log_entries
+    except requests.exceptions.RequestException as req_err:
+        log_entries.append(f"Error: Request error for {url}: {req_err}")
+        return None, None, url, log_entries
+    except Exception as e:
+        log_entries.append(f"Error: Unexpected error parsing {url}: {e}")
+        return None, None, url, log_entries
 
-def video_find_intermediate_link(soup, initial_url, log_entries=None):
-    if log_entries is None: log_entries = []
+def video_find_intermediate_link(soup, initial_url, log_entries):
     if not soup: return None, log_entries
-    log_entries.append("Searching for intermediate 'Generate...' link...")
-    generate_link_tag = None; search_text_pattern = 'Generate Direct Download Link'; href_pattern = 'gamerxyt.com/hubcloud.php'
-    potential_containers = soup.find_all('div', class_=re.compile(r'vd|buttons')); found = False
-    if not potential_containers: potential_containers = [soup]
+    log_entries.append("(video) Searching for intermediate 'Generate...' link...")
+    generate_link_tag = None
+    search_text_pattern = 'Generate Direct Download Link'
+    href_pattern = 'gamerxyt.com/hubcloud.php' # Specific intermediate domain
+    found = False
+
+    # Look for the link specifically within button/vd divs first for better targeting
+    potential_containers = soup.find_all('div', class_=re.compile(r'vd|buttons', re.IGNORECASE))
+    if not potential_containers:
+        potential_containers = [soup] # Fallback to searching the whole document
+
     for container in potential_containers:
+        # Try finding by exact text first
         generate_link_tag = container.find('a', string=lambda text: text and search_text_pattern in text.strip())
-        if generate_link_tag: log_entries.append(f"Found intermediate link by text: '{search_text_pattern}'"); found = True; break
+        if generate_link_tag:
+            log_entries.append(f"(video) Found intermediate link by text: '{search_text_pattern}'")
+            found = True; break
+        # If not found by text, try finding by the specific href pattern
         if not generate_link_tag:
              generate_link_tag = container.find('a', href=lambda href: href and href_pattern in href)
-             if generate_link_tag: log_entries.append(f"Found intermediate link by href pattern: '{href_pattern}'"); found = True; break
+             if generate_link_tag:
+                 log_entries.append(f"(video) Found intermediate link by href pattern: '{href_pattern}'")
+                 found = True; break
+
     if found and generate_link_tag and generate_link_tag.get('href'):
         intermediate_url = urljoin(initial_url, generate_link_tag.get('href').strip())
-        log_entries.append(f"Resolved intermediate link: {intermediate_url}")
+        log_entries.append(f"(video) Resolved intermediate link: {intermediate_url}")
         return intermediate_url, log_entries
     else:
-        log_entries.append(f"Could not find the intermediate <a> tag using text OR href search.")
+        log_entries.append(f"Error: Could not find the intermediate 'Generate' <a> tag using text OR href search.")
         return None, log_entries
 
-def video_find_final_download_link(soup, raw_html, intermediate_url, log_entries=None):
-    if log_entries is None: log_entries = []
+def video_find_final_download_link(soup, raw_html, intermediate_url, log_entries):
     if not soup: return None, log_entries
-    log_entries.append("Searching for final download link on intermediate page...")
-    final_link_tag = None; link_type = None
+    log_entries.append("(video) Searching for final download link on intermediate page...")
+    final_link_tag = None
+    link_type = "Unknown"
+
+    # Prioritized search strategies
     search_priorities = [
-        {'type': 'PixelDrain', 'text_pattern': 'Download [PixelServer', 'href_hint': 'pixel'},
-        {'type': 'FSL Server', 'text_pattern': 'Download [FSL Server]', 'href_hint': 'fsl.pub'},
-        {'type': 'Download File [Size]', 'text_regex': r'Download File\s*\[.+\]', 'class_hint': 'btn-success'},
-        {'type': 'Download [Server : Speed]', 'text_pattern': 'Download [Server :', 'href_hint': None},
-        {'type': 'Generic Download Button', 'text_pattern': r'^Download( Now)?$', 'class_hint': 'btn'},
+        {'type': 'PixelDrain Button', 'tag': 'a', 'attrs': {'class': re.compile(r'btn-success', re.I)}, 'text_pattern': r'Download\s*\[PixelServer'},
+        {'type': 'FSL Server Button', 'tag': 'a', 'attrs': {'class': re.compile(r'btn-success', re.I)}, 'text_pattern': r'Download\s*\[FSL Server'},
+        {'type': 'Download File [Size] Button', 'tag': 'a', 'attrs': {'class': re.compile(r'btn-success', re.I)}, 'text_pattern': r'Download File\s*\['},
+        {'type': 'Generic Download Button', 'tag': 'a', 'attrs': {'class': re.compile(r'btn', re.I)}, 'text_pattern': r'^Download( Now)?$'},
+        {'type': 'Link with PixelDrain Hint', 'tag': 'a', 'attrs': {'href': re.compile(r'pixel', re.I)}},
+        {'type': 'Link with FSL Hint', 'tag': 'a', 'attrs': {'href': re.compile(r'fsl\.pub', re.I)}},
     ]
+
     for priority in search_priorities:
         link_type = priority['type']
-        if priority.get('text_pattern'):
-            final_link_tag = soup.find('a', string=lambda t: t and priority['text_pattern'] in t.strip())
-            if final_link_tag: break
-        if not final_link_tag and priority.get('text_regex'):
-             elements_to_search = soup; class_hint = priority.get('class_hint')
-             if class_hint: potential_buttons = soup.find_all('a', class_=class_hint); elements_to_search = potential_buttons if potential_buttons else soup.find_all('a')
-             else: elements_to_search = soup.find_all('a')
-             for element in elements_to_search:
-                  element_text = element.get_text(strip=True)
-                  if re.search(priority['text_regex'], element_text, re.IGNORECASE): final_link_tag = element; break
-             if final_link_tag: break
-        if not final_link_tag and priority.get('href_hint'):
-             final_link_tag = soup.find('a', href=lambda h: h and priority['href_hint'] in h.lower())
-             if final_link_tag: break
-    if final_link_tag and final_link_tag.get('href'):
+        log_entries.append(f"(video) Trying strategy: {link_type}")
+        potential_tags = soup.find_all(priority['tag'], **priority.get('attrs', {}))
+
+        for tag in potential_tags:
+            # Check text pattern if specified
+            if 'text_pattern' in priority:
+                tag_text = tag.get_text(strip=True)
+                if not re.search(priority['text_pattern'], tag_text, re.IGNORECASE):
+                    continue # Text doesn't match, skip this tag
+
+            # Check href validity
+            href_value = tag.get('href','').strip()
+            if href_value and not href_value.startswith(('#', 'javascript:')):
+                final_link_tag = tag # Found a potential candidate
+                break # Stop searching tags for this priority
+
+        if final_link_tag:
+            log_entries.append(f"(video) Found potential tag via strategy: {link_type}")
+            break # Stop searching priorities
+
+    if final_link_tag:
         href_value = final_link_tag.get('href','').strip()
-        if href_value and not href_value.startswith(('#', 'javascript:')):
-            final_url = urljoin(intermediate_url, href_value)
-            log_entries.append(f"Found '{link_type}' link: {final_url}")
-            return final_url, log_entries
-        else: log_entries.append(f"Found tag for '{link_type}' but href was invalid: '{href_value}'"); final_link_tag = None
-    if not final_link_tag:
+        final_url = urljoin(intermediate_url, href_value)
+        log_entries.append(f"(video) Resolved final link: {final_url}")
+        # Add a basic check if the resolved URL looks plausible
+        if not urlparse(final_url).scheme or not urlparse(final_url).netloc:
+             log_entries.append(f"Error: Resolved final URL '{final_url}' seems invalid.")
+             return None, log_entries
+        return final_url, log_entries
+    else:
         log_entries.append("FAILED TO FIND VIDEO DOWNLOAD LINK")
         log_entries.append("Could not find a usable download link with current methods.")
-        # Log snippet of HTML for debugging in serverless logs
+        # Optional: Log HTML snippet for debugging (can be verbose)
         # log_entries.append("Intermediate Page Snippet:\n" + raw_html[:1000])
         return None, log_entries
 
-# --- Core Function for 'video' links (Copied, logging reduced) ---
+# --- Core Function for 'video' links ---
 def handle_video_link(session, hubcloud_url):
     final_link = None
     log_entries = []
     try:
         log_entries.append(f"Processing Video Link: {hubcloud_url}")
-        session.headers.update(DEFAULT_HEADERS)
+        session.headers.update(DEFAULT_HEADERS) # Reset headers
+
         initial_soup, _, initial_final_url, log_entries = video_fetch_and_parse(session, hubcloud_url, log_entries=log_entries)
         if not initial_soup:
-            log_entries.append("Failed to fetch or parse initial page.")
-            return None, log_entries
+            log_entries.append("Error: Failed to fetch or parse initial page.")
+            return None, log_entries # Critical failure
 
-        intermediate_link, log_entries = video_find_intermediate_link(initial_soup, initial_final_url, log_entries=log_entries)
+        intermediate_link, log_entries = video_find_intermediate_link(initial_soup, initial_final_url, log_entries)
         if not intermediate_link:
-            log_entries.append("Could not find the intermediate link.")
-            return None, log_entries
+            log_entries.append("Error: Could not find the intermediate link.")
+            return None, log_entries # Critical failure
 
-        time.sleep(1)
-        intermediate_soup, intermediate_raw_html, intermediate_final_url, log_entries = video_fetch_and_parse(session, intermediate_link, log_entries=log_entries)
+        time.sleep(1) # Small delay
+        intermediate_soup, intermediate_raw_html, intermediate_final_url, log_entries = video_fetch_and_parse(session, intermediate_link, referer=initial_final_url, log_entries=log_entries)
         if not intermediate_soup:
-            log_entries.append("Failed to fetch or parse intermediate page.")
-            return None, log_entries
+            log_entries.append("Error: Failed to fetch or parse intermediate page.")
+            return None, log_entries # Critical failure
 
-        final_link, log_entries = video_find_final_download_link(intermediate_soup, intermediate_raw_html, intermediate_final_url, log_entries=log_entries)
+        final_link, log_entries = video_find_final_download_link(intermediate_soup, intermediate_raw_html, intermediate_final_url, log_entries)
+        # final_link will be None if it failed
 
     except Exception as e:
+        # Catch any unexpected error during the process
         log_entries.append(f"FATAL ERROR during video link processing: {e}\n{traceback.format_exc()}")
-        return None, log_entries
-    finally: log_entries.append(f"Finished Processing Video Link: {hubcloud_url}")
+        return None, log_entries # Return None on fatal error
 
+    # Return the final link (which could be None) and the logs
     return final_link, log_entries
 
-# --- Main Execution for Serverless/Script Usage ---
+# --- Main Execution ---
 if __name__ == "__main__":
-    result = {"success": False, "error": "No URL provided", "finalUrl": None, "logs": []}
+    # Initialize result structure, always return this
+    result = {"success": False, "error": "Script execution failed", "finalUrl": None, "logs": []}
+    logs = [] # Local list to collect logs during execution
     hubcloud_link_to_process = None
-
-    # Check command-line arguments first
-    if len(sys.argv) > 1:
-        hubcloud_link_to_process = sys.argv[1]
-    else:
-        # Fallback: Read from environment variable if needed (e.g., for testing)
-        hubcloud_link_to_process = os.environ.get('HUBCLOUD_URL_TO_BYPASS')
-
-    if not hubcloud_link_to_process:
-         print(json.dumps(result)) # Output JSON error if no URL
-         sys.exit(1)
+    final_download_link = None
 
     try:
+        # Check command-line arguments first
+        if len(sys.argv) > 1:
+            hubcloud_link_to_process = sys.argv[1]
+            logs.append(f"Received URL from command line argument: {hubcloud_link_to_process}")
+        else:
+            # Fallback: Read from environment variable if needed (e.g., for testing)
+            hubcloud_link_to_process = os.environ.get('HUBCLOUD_URL_TO_BYPASS')
+            if hubcloud_link_to_process:
+                 logs.append(f"Received URL from environment variable: {hubcloud_link_to_process}")
+
+        if not hubcloud_link_to_process:
+             result["error"] = "No URL provided to script"
+             # No 'logs' added yet, but print the result dict
+             print(json.dumps(result))
+             sys.exit(1) # Exit after printing JSON
+
+        # Validate URL basic format
         parsed_start_url = urlparse(hubcloud_link_to_process)
         if not parsed_start_url.scheme or not parsed_start_url.netloc:
-            result["error"] = f"Invalid URL format: {hubcloud_link_to_process}"
+            result["error"] = f"Invalid URL format provided: {hubcloud_link_to_process}"
+            logs.append(result["error"])
+            result["logs"] = logs
             print(json.dumps(result))
-            sys.exit(1)
+            sys.exit(1) # Exit after printing JSON
 
+        # --- Start Processing ---
         session = requests.Session()
         path = parsed_start_url.path.lower()
-        final_download_link = None
-        logs = []
 
         if path.startswith('/drive/'):
-            final_download_link, logs = handle_drive_link(session, hubcloud_link_to_process)
+            logs.append("Detected '/drive/' link type.")
+            final_download_link, script_logs = handle_drive_link(session, hubcloud_link_to_process)
+            logs.extend(script_logs) # Add logs from the handler
         elif path.startswith('/video/'):
-             final_download_link, logs = handle_video_link(session, hubcloud_link_to_process)
+             logs.append("Detected '/video/' link type.")
+             final_download_link, script_logs = handle_video_link(session, hubcloud_link_to_process)
+             logs.extend(script_logs) # Add logs from the handler
         else:
              result["error"] = f"Unknown HubCloud URL type (path: {parsed_start_url.path})"
-             result["logs"] = logs
+             logs.append(result["error"])
+             # final_download_link remains None
 
-        result["logs"] = logs # Add logs regardless of success/failure
+        # --- Populate final result ---
+        result["logs"] = logs # Add collected logs to the result
+
         if final_download_link:
             result["success"] = True
             result["finalUrl"] = final_download_link
-            result["error"] = None
+            result["error"] = None # Clear default error
+            print("Script finished successfully.", file=sys.stderr) # Log success to stderr
         else:
             result["success"] = False
-            # Try to extract a more specific error from the last few log entries
+            # If no link found, try to set a more specific error message from logs
             if logs:
-                recent_errors = [log for log in logs[-5:] if "Error:" in log or "FATAL ERROR" in log or "FAILED" in log]
-                result["error"] = recent_errors[-1] if recent_errors else "Extraction Failed (Check logs for details)"
+                # Look for common failure indicators in the last few logs
+                failure_indicators = ["Error:", "FATAL ERROR", "FAILED", "Could not find", "timed out"]
+                recent_errors = [log for log in logs[-5:] if any(indicator in log for indicator in failure_indicators)]
+                if recent_errors:
+                     # Extract the most relevant part of the error log
+                     extracted_error = recent_errors[-1].split(":", 1)[-1].strip()
+                     result["error"] = extracted_error[:150] # Limit error length
+                elif not result.get("error"): # Keep existing error if already set (e.g., unknown type)
+                     result["error"] = "Extraction Failed (No specific error found in logs)"
             else:
                  result["error"] = "Extraction Failed (No logs generated)"
+            print(f"Script finished with failure. Error: {result['error']}", file=sys.stderr) # Log failure to stderr
 
     except Exception as e:
+        # Catch any unexpected fatal error in the main block
         result["success"] = False
         result["error"] = f"Unexpected fatal error in script: {e}"
-        result["logs"].append(f"Traceback:\n{traceback.format_exc()}")
+        # Add traceback to logs for debugging
+        logs.append(f"FATAL EXCEPTION in main block: {e}\n{traceback.format_exc()}")
+        result["logs"] = logs
+        print(f"Script crashed with fatal error: {e}", file=sys.stderr) # Log crash to stderr
 
-    # Ensure output is valid JSON printed to stdout
-    print(json.dumps(result, indent=None)) # No indent for cleaner parsing
+    finally:
+        # !!! Crucial: Always print the JSON result to stdout !!!
+        # Use compact separators for slightly smaller output
+        print(json.dumps(result, indent=None, separators=(',', ':')))
