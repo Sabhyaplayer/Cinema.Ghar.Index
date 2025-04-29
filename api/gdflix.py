@@ -4,33 +4,46 @@ import json
 from urllib.parse import urljoin, urlparse, parse_qs
 import time
 import re
-import cloudscraper # Use cloudscraper instead of requests
+import cloudscraper
 from bs4 import BeautifulSoup
-# ---- ADD THIS LINE ----
-from requests.exceptions import Timeout, RequestException # Import specific exceptions
+from requests.exceptions import Timeout, RequestException # Keep these imports
 
 # --- Constants ---
 GENERATION_TIMEOUT = 40
 POLL_INTERVAL = 5
+
+# --- ENHANCED HEADERS ---
+# Add more headers to mimic a real browser visit
 DEFAULT_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-    'Accept-Language': 'en-US,en;q=0.9',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36', # Use a recent Chrome UA
+    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'accept-language': 'en-US,en;q=0.9',
+    'sec-ch-ua': '"Chromium";v="112", "Google Chrome";v="112", "Not:A-Brand";v="99"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+    'sec-fetch-dest': 'document',
+    'sec-fetch-mode': 'navigate',
+    'sec-fetch-site': 'none', # For initial request, often 'none' or 'cross-site' if coming from elsewhere
+    'sec-fetch-user': '?1',
+    'upgrade-insecure-requests': '1',
+    # Referer is often added dynamically for subsequent requests
 }
 
-# --- GDFLIX Bypass Logic (adapted to use cloudscraper) ---
+# --- GDFLIX Bypass Logic (No changes needed inside this function itself for this error) ---
 def get_gdflix_download_link_with_scraper(scraper, start_url):
     """
     Fetches the final download link using a cloudscraper instance.
     Handles 'Generate' button by mimicking its POST request.
+    (Function content remains the same as the previous version)
     """
     print(f"GDFLIX Bypass: Starting for URL: {start_url}")
     page1_url = start_url
     try:
         # --- Step 1 & 2 --- (Fetch and parse page 1)
         print(f"GDFLIX Bypass: Fetching initial URL: {page1_url}")
+        # Use scraper instance which includes DEFAULT_HEADERS + cloudscraper handling
         response1 = scraper.get(page1_url, allow_redirects=True, timeout=30)
-        response1.raise_for_status()
+        response1.raise_for_status() # This will raise HTTPError for 403
         page1_url = response1.url
         print(f"GDFLIX Bypass: Redirected to/Landed on: {page1_url}")
         soup1 = BeautifulSoup(response1.text, 'lxml')
@@ -61,6 +74,7 @@ def get_gdflix_download_link_with_scraper(scraper, start_url):
             time.sleep(1)
 
             print(f"GDFLIX Bypass: Fetching second page URL (Generate button page): {second_page_url}")
+            # Add Referer for the second request
             fetch_headers_p2 = {'Referer': page1_url}
             response2 = scraper.get(second_page_url, timeout=30, headers=fetch_headers_p2)
             response2.raise_for_status()
@@ -110,11 +124,13 @@ def get_gdflix_download_link_with_scraper(scraper, start_url):
                     post_data = {'action': 'cloud', 'key': '08df4425e31c4330a1a0a3cefc45c19e84d0a192', 'action_token': ''}
                     parsed_uri = urlparse(page2_url)
                     hostname = parsed_uri.netloc
+                    # Add Referer and X-Token for POST
                     post_headers = {'x-token': hostname, 'Referer': page2_url}
 
                     print(f"GDFLIX Bypass Info: Sending POST request to {page2_url}...")
                     page3_url = None
                     try:
+                        # scraper will merge post_headers with its default headers
                         post_response = scraper.post(page2_url, data=post_data, headers=post_headers, timeout=30)
                         post_response.raise_for_status()
 
@@ -148,9 +164,12 @@ def get_gdflix_download_link_with_scraper(scraper, start_url):
                     except cloudscraper.exceptions.CloudflareException as cf_err:
                          print(f"GDFLIX Bypass Error: Cloudflare challenge during POST: {cf_err}")
                          return None, "Cloudflare Blocked POST"
-                    # Use imported RequestException here
                     except RequestException as post_err:
                          print(f"GDFLIX Bypass Error during POST request: {post_err}")
+                         # Check specifically for 403 in POST
+                         status_code = getattr(post_err.response, 'status_code', 'N/A')
+                         if status_code == 403:
+                             return None, "POST request Forbidden (403)"
                          return None, f"POST Network Error: {post_err}"
 
                     # --- If POST was successful and we have page3_url, START POLLING ---
@@ -193,7 +212,6 @@ def get_gdflix_download_link_with_scraper(scraper, start_url):
                                     print(f"GDFLIX Bypass: Found final Cloud Resume link URL after polling: {final_download_link}")
                                     return final_download_link, None
 
-                            # Use imported RequestException here
                             except RequestException as poll_err:
                                 print(f"GDFLIX Bypass Warning: Error during polling request: {poll_err}. Will retry.")
                             except Exception as parse_err:
@@ -208,6 +226,7 @@ def get_gdflix_download_link_with_scraper(scraper, start_url):
 
         # --- Step 3b: Fallback - PixeldrainDL on page 1 ---
         else:
+            # ... (Pixeldrain fallback logic remains the same) ...
             print("GDFLIX Bypass Info: 'Fast Cloud Download' not found. Checking for 'PixeldrainDL'...")
             pixeldrain_link_tag = None
             pixeldrain_pattern = re.compile(r'pixeldrain\s*dl', re.IGNORECASE)
@@ -235,13 +254,24 @@ def get_gdflix_download_link_with_scraper(scraper, start_url):
             return None, "Primary and fallback links not found."
 
 
+    # --- MORE SPECIFIC ERROR CATCHING ---
+    except RequestException as http_err:
+        # Catch HTTP errors like 403 Forbidden, 404 Not Found, etc.
+        status_code = getattr(http_err.response, 'status_code', 'N/A')
+        print(f"GDFLIX Bypass Error: HTTP error encountered: {status_code} - {http_err}")
+        # Return a specific message for 403
+        if status_code == 403:
+             return None, f"Access Forbidden (403) by target server."
+        elif status_code == 404:
+             return None, f"Initial URL Not Found (404)."
+        return None, f"HTTP Error: {status_code} - {http_err}" # General HTTP error
     except cloudscraper.exceptions.CloudflareException as cf_err:
         print(f"GDFLIX Bypass Error: Cloudflare challenge encountered: {cf_err}")
         return None, "Cloudflare protection blocked access."
-    # Use imported Timeout and RequestException here
     except Timeout:
         print("GDFLIX Bypass Error: Request timed out.")
         return None, "Request timed out."
+    # Catch other RequestExceptions (connection errors etc.) AFTER HTTPError
     except RequestException as e:
         print(f"GDFLIX Bypass Error: Network error during requests: {e}")
         return None, f"Network Error: {e}"
@@ -251,15 +281,12 @@ def get_gdflix_download_link_with_scraper(scraper, start_url):
         traceback.print_exc()
         return None, f"Unexpected Error: {e}"
 
-# --- API Handler Class (remains the same) ---
+# --- API Handler Class (Modified Error Handling) ---
 class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         content_length = int(self.headers.get('Content-Length', 0))
-        if content_length == 0:
-            self._send_response(400, {"success": False, "error": "Missing request body"})
-            return
-
+        # ... (JSON body reading remains the same) ...
         try:
             body = self.rfile.read(content_length)
             data = json.loads(body)
@@ -278,36 +305,63 @@ class handler(BaseHTTPRequestHandler):
         scraper = None
         try:
             print("GDFLIX API: Creating cloudscraper instance...")
+            # Set delay to potentially help with detection, if needed
             scraper = cloudscraper.create_scraper(
                  browser={
                     'browser': 'chrome',
                     'platform': 'windows',
                     'mobile': False
-                }
+                },
+                delay=5 # Add a small delay between requests (optional)
             )
+            # Update scraper instance with the enhanced DEFAULT_HEADERS
             scraper.headers.update(DEFAULT_HEADERS)
-            print("GDFLIX API: Starting bypass process...")
+
+            print(f"GDFLIX API: Starting bypass process for {gdflix_url}...")
             final_url, error_message = get_gdflix_download_link_with_scraper(scraper, gdflix_url)
             print("GDFLIX API: Bypass process finished.")
 
             if final_url:
                 self._send_response(200, {"success": True, "finalUrl": final_url})
             else:
-                status_code = 500
-                if "Timeout" in (error_message or "") or "generating" in (error_message or ""):
+                # Determine status code based on the *returned* error message
+                status_code = 500 # Default internal error
+                err_msg_lower = (error_message or "").lower()
+
+                if "forbidden" in err_msg_lower or "403" in err_msg_lower:
+                    status_code = 403 # Use 403 if the bypass function reported it
+                elif "timeout" in err_msg_lower or "generating" in err_msg_lower:
                     status_code = 504
-                elif "Cloudflare" in (error_message or "") or "Captcha" in (error_message or ""):
+                elif "cloudflare" in err_msg_lower or "captcha" in err_msg_lower:
                      status_code = 503
-                elif "not found" in (error_message or "").lower() or "no link" in (error_message or "").lower():
+                elif "not found" in err_msg_lower or "404" in err_msg_lower:
                      status_code = 404
+                elif "network error" in err_msg_lower:
+                     status_code = 502 # Bad Gateway might fit network issues
 
                 self._send_response(status_code, {"success": False, "error": error_message or "Bypass failed for unknown reason."})
+
+        # --- IMPROVED CATCHING IN HANDLER ---
+        # Catch specific RequestException first to handle HTTP errors like 403
+        except RequestException as net_err:
+            status_code = getattr(net_err.response, 'status_code', 500)
+            error_detail = f"Network/HTTP Error ({status_code}): {net_err}"
+            # Log the specific error on the server
+            print(f"GDFLIX API: Caught RequestException in handler: {error_detail}")
+            # Send back a user-friendly message, including status code if it's a client error
+            user_message = f"Network/HTTP Error ({status_code})" if 400 <= status_code < 500 else "Network Error"
+            self._send_response(status_code, {"success": False, "error": user_message})
+
+        except cloudscraper.exceptions.CloudflareException as cf_err:
+             print(f"GDFLIX API: Cloudflare challenge error during bypass: {cf_err}")
+             self._send_response(503, {"success": False, "error": f"Cloudflare Error: {cf_err}"})
 
         except Exception as e:
             import traceback
             print("GDFLIX API: Unhandled exception during bypass!")
             traceback.print_exc()
-            self._send_response(500, {"success": False, "error": f"Internal server error: {e}"})
+            # Avoid sending raw exception details to the client
+            self._send_response(500, {"success": False, "error": "Internal server error during bypass."})
         finally:
              if scraper:
                  print("GDFLIX API: cloudscraper instance cleanup (automatic).")
@@ -315,14 +369,16 @@ class handler(BaseHTTPRequestHandler):
 
 
     def do_OPTIONS(self):
+        # ... (OPTIONS handler remains the same) ...
         self.send_response(204)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, x-token, User-Agent, Accept')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, x-token, User-Agent, Accept') # Ensure all needed headers are listed
         self.send_header('Access-Control-Max-Age', '86400')
         self.end_headers()
 
     def _send_response(self, status_code, response_data):
+        # ... (_send_response remains the same) ...
         self.send_response(status_code)
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
