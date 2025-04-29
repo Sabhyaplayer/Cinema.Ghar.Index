@@ -1749,18 +1749,18 @@
 
 <!-- START OF INLINED SCRIPT BLOCK (MODIFIED FOR HUBCLEOUD BYPASS) -->
 <script>
-       // --- START OF INLINED script.js (MODIFIED FOR HUBCLEOUD BYPASS) ---
+       // --- START OF INLINED script.js (MODIFIED FOR HUBCLEOUD BYPASS + URL SPACE ENCODING) ---
        (function() {
            'use strict';
 
            // ===========================================================
-           // JAVASCRIPT SECTION (Updated for HubCloud Bypass)
+           // JAVASCRIPT SECTION (Updated for HubCloud Bypass & URL Space Encoding)
            // ===========================================================
            const config = {
                HDR_LOGO_URL: "https://as1.ftcdn.net/v2/jpg/05/32/83/72/1000_F_532837228_v8CGZRU0jy39uCtqFRnJz6xDntrGuLLx.webp",
                FOURK_LOGO_URL: "https://i.pinimg.com/736x/85/c4/b0/85c4b0a2fb8612825d0cd2f53460925f.jpg",
                ITEMS_PER_PAGE: 50,
-               LOCAL_STORAGE_KEY: 'cinemaGharState_v12_db', // Incremented version for bypass integration
+               LOCAL_STORAGE_KEY: 'cinemaGharState_v13_db', // Incremented version for URL encoding fix
                PLAYER_VOLUME_KEY: 'cinemaGharPlayerVolume',
                PLAYER_SPEED_KEY: 'cinemaGharPlayerSpeed',
                SEARCH_DEBOUNCE_DELAY: 300,
@@ -1774,6 +1774,7 @@
            };
 
            // --- DOM Element References ---
+           // ... (Keep all existing DOM references) ...
            const container = document.getElementById('cinemaghar-container');
            const pageLoader = document.getElementById('page-loader');
            const searchFocusArea = document.getElementById('search-focus-area');
@@ -1826,8 +1827,8 @@
            // Global Custom URL button
            const playCustomUrlGlobalButton = document.getElementById('playCustomUrlGlobalButton');
 
-
            // --- State Variables ---
+           // ... (Keep all existing state variables) ...
            let localSuggestionData = [];
            let currentViewData = []; // Holds data for the *currently displayed* results tab
            let weeklyUpdatesData = []; // Holds data specifically for the homepage preview
@@ -1862,7 +1863,8 @@
                series: { button: seriesTabButton, panel: seriesTabPanel, tableBody: seriesTableBody, pagination: seriesPaginationControls, typeFilter: 'series', tableHead: seriesTableHead }
            };
 
-           // --- Utility Functions (Keep ALL existing utility functions) ---
+           // --- Utility Functions ---
+           // ... (Keep ALL existing utility functions: sanitize, TimeAgo, extractSizeData, getMimeTypeFromUrl, handleVideoError, extractQualityFromFilename, normalizeTextForSearch, escapeRegExp, copyToClipboard) ...
            const sanitize = (str) => { if (str === null || typeof str === 'undefined') return ""; const temp = document.createElement('div'); temp.textContent = String(str); return temp.innerHTML; };
            const TimeAgo = { MINUTE: 60, HOUR: 3600, DAY: 86400, WEEK: 604800, MONTH: 2592000, YEAR: 31536000, format: (isoString) => { if (!isoString) return 'N/A'; try { const date = new Date(isoString); const seconds = Math.floor((new Date() - date) / 1000); if (isNaN(seconds) || seconds < 0) { console.warn(`TimeAgo: Invalid seconds calculation for ${isoString}. Parsed date: ${date}. Returning full date.`); return TimeAgo.formatFullDate(date); } if (seconds < 2) return "just now"; if (seconds < TimeAgo.MINUTE) return `${seconds} sec${seconds > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.HOUR) return `${Math.floor(seconds / TimeAgo.MINUTE)} min${Math.floor(seconds / TimeAgo.MINUTE) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY) return `${Math.floor(seconds / TimeAgo.HOUR)} hr${Math.floor(seconds / TimeAgo.HOUR) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY * 2) return "Yesterday"; if (seconds < TimeAgo.WEEK) return `${Math.floor(seconds / TimeAgo.DAY)} days ago`; if (seconds < TimeAgo.MONTH) return `${Math.floor(seconds / TimeAgo.WEEK)} wk${Math.floor(seconds / TimeAgo.WEEK) > 1 ? 's' : ''} ago`; return TimeAgo.formatFullDate(date, true); } catch (e) { console.error("Date Format Error (TimeAgo):", isoString, e); return 'Invalid Date'; } }, formatFullDate: (date, short = false) => { if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid Date'; const optsDate = short ? { year: '2-digit', month: 'numeric', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' }; const optsTime = { hour: 'numeric', minute: '2-digit', hour12: true }; try { return `${date.toLocaleDateString(undefined, optsDate)}${short ? '' : ', ' + date.toLocaleTimeString(undefined, optsTime)}`; } catch (e) { console.error("toLocaleDateString/Time failed:", e); return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; } } };
            function extractSizeData(inputString) { if (!inputString) return { value: 0, unit: '', display: 'N/A', bytes: 0 }; const r = /(?<size>[\d.]+)\s?(?<unit>GB|MB)/i; const m = String(inputString).match(r); if (m?.groups?.size && m?.groups?.unit) { const value = parseFloat(m.groups.size); const unit = m.groups.unit.toUpperCase(); if (!isNaN(value)) { const bytes = unit === 'GB' ? value * 1024 * 1024 * 1024 : value * 1024 * 1024; return { value: value, unit: unit, display: `${value} ${unit}`, bytes: isNaN(bytes) ? 0 : bytes }; } } return { value: 0, unit: '', display: 'N/A', bytes: 0 }; }
@@ -1915,12 +1917,20 @@
            function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
            async function copyToClipboard(text, feedbackSpan) { console.log("Attempting to copy:", text); let success = false; if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) { try { await navigator.clipboard.writeText(text); success = true; console.log("navigator.clipboard.writeText SUCCEEDED"); } catch (err) { console.error("Async clipboard write failed:", err); success = false; } } if (!success) { console.warn("Using fallback copy method (execCommand)."); const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.top = "-9999px"; textArea.style.left = "-9999px"; textArea.style.opacity = "0"; textArea.setAttribute("readonly", ""); document.body.appendChild(textArea); try { textArea.select(); textArea.setSelectionRange(0, textArea.value.length); success = document.execCommand('copy'); console.log("Fallback execCommand result:", success); } catch (err) { console.error('Fallback copy execCommand failed:', err); success = false; } finally { document.body.removeChild(textArea); } } if (success) { console.log("Copy successful!"); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copied!', false); } } else { console.error("Copy FAILED."); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copy Failed!', true); } else { alert("Copy failed. Please try again or copy manually. Check console for errors (F12)."); } } return success; }
 
-           // --- Data Preprocessing (Unchanged) ---
+           // --- Data Preprocessing (MODIFIED for URL encoding) ---
            function preprocessMovieData(movie) {
                const processed = { ...movie };
                processed.id = movie.original_id;
+
                // Ensure url is either a valid string or explicitly null/undefined
                processed.url = (movie.url && typeof movie.url === 'string' && movie.url.toLowerCase() !== 'null' && movie.url.trim() !== '') ? movie.url : null;
+               // *** NEW: Encode spaces in the URL if it exists ***
+               if (processed.url) {
+                   processed.url = processed.url.replace(/ /g, '%20');
+                   console.log(`preprocessMovieData: Encoded spaces in URL for ID ${processed.id}. New URL: ${processed.url}`);
+               }
+               // *** END NEW ***
+
                processed.hubcloud_link = (movie.hubcloud_link && typeof movie.hubcloud_link === 'string' && movie.hubcloud_link.toLowerCase() !== 'null' && movie.hubcloud_link.trim() !== '') ? movie.hubcloud_link : null;
 
                processed.displayFilename = sanitize(movie.filename || '');
@@ -1978,9 +1988,11 @@
                }
                return processed;
            }
+           // --- END MODIFIED Data Preprocessing ---
 
            // --- HTML Generation (MODIFIED for HubCloud Bypass Button) ---
            function createActionContentHTML(movie, dataIndexOrRef = null) { // Added dataIndexOrRef
+               // ... (Keep existing variable declarations: displayFilename, displaySize, etc.) ...
                const displayFilename = movie.displayFilename;
                const displaySize = movie.sizeData.display;
                const displayQuality = movie.displayQuality;
@@ -1995,7 +2007,8 @@
                if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
                const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
                const escapedFilename = displayFilename.replace(/'/g, "\\'");
-               const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : ''; // Use potentially bypassed URL
+               // Use the potentially ENCODED URL from the movie object
+               const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : '';
                const escapedId = movie.id ? String(movie.id).replace(/[^a-zA-Z0-9-_]/g, '') : ''; // Ensure valid ID for element IDs
                const escapedHubcloudUrl = movie.hubcloud_link ? movie.hubcloud_link.replace(/'/g, "\\'") : '';
 
@@ -2036,9 +2049,11 @@
                let otherLinkButtonsHTML = '';
 
                // 1. URL Dependent Buttons (Play, Download, Copy, Intent)
-               if (movie.url) { // Check if URL is available (either original or bypassed)
+               // Use the potentially ENCODED movie.url here
+               if (movie.url) {
                    urlDependentButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play here</button>`;
-                   urlDependentButtonsHTML += `<a class="button download-button" href="${sanitize(movie.url)}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`;
+                   // The href uses the already encoded URL directly
+                   urlDependentButtonsHTML += `<a class="button download-button" href="${movie.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`;
                    urlDependentButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`;
                    if (navigator.userAgent.toLowerCase().includes("android")) {
                        urlDependentButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play in VLC or MX Player</button>`;
@@ -2108,12 +2123,15 @@
 
            function createMovieTableRowHTML(movie, dataIndex, actionRowId) { const displayFilename = movie.displayFilename; const displaySize = movie.sizeData.display; const displayQuality = movie.displayQuality; const timestampString = movie.last_updated_ts; const formattedDateRelative = TimeAgo.format(timestampString); const dateObject = timestampString ? new Date(timestampString) : null; const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A'; let hdrLogoHtml = ''; let fourkLogoHtml = ''; const lowerFilename = (displayFilename || '').toLowerCase(); if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; } if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; } const mainRowHTML = ` <tr class="movie-data-row" data-index="${dataIndex}" data-action-row-id="${actionRowId}"> <td class="col-id">${sanitize(movie.id || 'N/A')}</td> <td class="col-filename" title="Click to view details: ${displayFilename}"> ${displayFilename}${fourkLogoHtml}${hdrLogoHtml} </td> <td class="col-size">${displaySize}</td> <td class="col-quality">${displayQuality}</td> <td class="col-updated" title="${formattedDateFull}">${formattedDateRelative}</td> <td class="col-view"> <button class="button view-button" aria-expanded="false">View</button> </td> </tr>`; return mainRowHTML; }
 
-           // --- View Control (Unchanged) ---
+
+           // --- View Control ---
+           // ... (Keep unchanged: setViewMode, resetToHomepage) ...
            function setViewMode(mode) { console.log("Setting view mode to:", mode); const previousMode = currentViewMode; currentViewMode = mode; if (mode !== previousMode) { closePlayerIfNeeded(null); } container.classList.toggle('results-active', mode === 'search'); container.classList.toggle('shared-view-active', mode === 'shared'); const showHomepage = mode === 'homepage'; const showSearch = mode === 'search'; const showShared = mode === 'shared'; if (searchFocusArea) searchFocusArea.style.display = (showHomepage || showSearch) ? 'flex' : 'none'; if (resultsArea) resultsArea.style.display = showSearch ? 'block' : 'none'; if (sharedItemView) sharedItemView.style.display = showShared ? 'block' : 'none'; if (updatesPreviewSection) updatesPreviewSection.style.display = showHomepage ? 'block' : 'none'; if (pageFooter) pageFooter.style.display = (showHomepage || showSearch) ? 'flex' : 'none'; if (showHomepage) { if (searchInput) searchInput.value = ''; currentState.searchTerm = ''; if (suggestionsContainer) suggestionsContainer.style.display = 'none'; activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = ''; closeActiveActionRow('table', null); closeActiveActionRow('preview', null); sharedItemData = null; // Clear shared data on homepage
                 if (weeklyUpdatesData.length > 0) { displayInitialUpdates(); } else if (localSuggestionData.length > 0) { if (updatesPreviewList) updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none'; } else { if (updatesPreviewList) updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; } document.title = "Cinema Ghar Index"; } else if (showSearch) { closeActiveActionRow('preview', null); sharedItemData = null; document.title = "Cinema Ghar Index"; } else if (showShared) { closeActiveActionRow('table', null); closeActiveActionRow('preview', null); } saveStateToLocalStorage(); }
            window.resetToHomepage = function(event) { const triggerElement = event?.target; const wasInSharedView = (currentViewMode === 'shared'); if (!wasInSharedView && window.history.pushState) { const cleanUrl = window.location.origin + window.location.pathname; window.history.pushState({ path: cleanUrl }, '', cleanUrl); } else if (!wasInSharedView) { window.location.hash = ''; } isDirectShareLoad = false; if (wasInSharedView) { console.log("Returning from shared view, performing full page reload to reset."); window.location.href = window.location.origin + window.location.pathname; } else { lastFocusedElement = triggerElement; setViewMode('homepage'); if (searchInput) { setTimeout(() => searchInput.focus(), 100); } } }
 
-           // --- Search and Suggestions Logic (Unchanged) ---
+           // --- Search and Suggestions Logic ---
+           // ... (Keep unchanged: handleSearchInput, fetchAndDisplaySuggestions, selectSuggestion, handleSearchSubmit, handleSearchClear, showLoadingStateInTables) ...
            function handleSearchInput() { clearTimeout(suggestionDebounceTimeout); const searchTerm = searchInput.value.trim(); if (searchTerm.length < 2) { suggestionsContainer.style.display = 'none'; return; } suggestionDebounceTimeout = setTimeout(() => { fetchAndDisplaySuggestions(searchTerm); }, config.SUGGESTIONS_DEBOUNCE_DELAY); }
            function fetchAndDisplaySuggestions(term) { const normalizedTerm = normalizeTextForSearch(term); if (!normalizedTerm) { suggestionsContainer.style.display = 'none'; return; } const matchingItems = localSuggestionData.filter(movie => movie.searchText.includes(normalizedTerm)).slice(0, config.MAX_SUGGESTIONS); suggestionsContainer.innerHTML = ''; if (matchingItems.length > 0) { const fragment = document.createDocumentFragment(); matchingItems.forEach(item => { const div = document.createElement('div'); let displayText = item.displayFilename; let highlighted = false; if (term.length > 0) { try { const safeTerm = escapeRegExp(term); const regex = new RegExp(`(${safeTerm})`, 'i'); if ((item.displayFilename || '').match(regex)) { div.innerHTML = (item.displayFilename || '').replace(regex, '<strong>$1</strong>'); highlighted = true; } } catch (e) { console.warn("Regex error during highlighting:", e); } } if (!highlighted) { div.textContent = item.displayFilename; } div.title = item.displayFilename; div.onclick = () => selectSuggestion(item.displayFilename); fragment.appendChild(div); }); suggestionsContainer.appendChild(fragment); suggestionsContainer.style.display = 'block'; } else { suggestionsContainer.style.display = 'none'; } }
            function selectSuggestion(selectedValue) { searchInput.value = selectedValue; suggestionsContainer.style.display = 'none'; handleSearchSubmit(); }
@@ -2121,18 +2139,21 @@
            function handleSearchClear() { clearTimeout(suggestionDebounceTimeout); suggestionsContainer.style.display = 'none'; if (currentViewMode !== 'homepage') { setTimeout(() => { if (searchInput.value.trim() === '') { console.log("Search input cleared via 'x', resetting to homepage."); resetToHomepage(); } }, 100); } else { currentState.searchTerm = ''; saveStateToLocalStorage(); } }
            function showLoadingStateInTables(message = 'Loading...') { const loadingHTML = `<tr><td colspan="6" class="loading-message" role="status" aria-live="polite"><div class="spinner"></div>${sanitize(message)}</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) { mapping.tableBody.innerHTML = loadingHTML; } if (mapping?.pagination) { mapping.pagination.style.display = 'none'; } }); }
 
-           // --- Updates Preview Logic (Unchanged) ---
+           // --- Updates Preview Logic ---
+           // ... (Keep unchanged: loadUpdatesPreview, displayInitialUpdates, appendMoreUpdates, appendUpdatesToPreview) ...
            async function loadUpdatesPreview() { if (isDirectShareLoad || !updatesPreviewSection || !updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; showMoreUpdatesButton.style.display = 'none'; updatesPreviewShownCount = 0; weeklyUpdatesData = []; try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_INITIAL_COUNT, page: 1 }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { weeklyUpdatesData = data.items.map(preprocessMovieData); displayInitialUpdates(); console.log(`Loaded initial ${weeklyUpdatesData.length} updates. Total pages from API: ${data.totalPages}`); } else { updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; } } catch (error) { console.error("Failed to load updates preview:", error); updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Could not load updates. ${error.message}</div>`; showMoreUpdatesButton.style.display = 'none'; } }
            function displayInitialUpdates() { if (!updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = ''; updatesPreviewShownCount = 0; closeActiveActionRow('preview', null); if (weeklyUpdatesData.length === 0) { updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; return; } const initialCount = Math.min(weeklyUpdatesData.length, config.UPDATES_PREVIEW_INITIAL_COUNT); appendUpdatesToPreview(0, initialCount); updatesPreviewShownCount = initialCount; const potentiallyMore = weeklyUpdatesData.length >= config.UPDATES_PREVIEW_INITIAL_COUNT; if (potentiallyMore) { showMoreUpdatesButton.style.display = 'block'; showMoreUpdatesButton.disabled = false; showMoreUpdatesButton.textContent = "Show More"; } else { showMoreUpdatesButton.style.display = 'none'; } }
            window.appendMoreUpdates = async function() { if (!updatesPreviewList || !showMoreUpdatesButton) return; showMoreUpdatesButton.disabled = true; showMoreUpdatesButton.textContent = "Loading..."; const currentPage = Math.floor(weeklyUpdatesData.length / config.UPDATES_PREVIEW_LOAD_MORE_COUNT); const nextPage = currentPage + 1; console.log(`Attempting to load page ${nextPage} for updates preview.`); try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_LOAD_MORE_COUNT, page: nextPage }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { const newItems = data.items.map(preprocessMovieData); const startIndex = weeklyUpdatesData.length; weeklyUpdatesData.push(...newItems); appendUpdatesToPreview(startIndex, weeklyUpdatesData.length); updatesPreviewShownCount = weeklyUpdatesData.length; console.log(`Loaded ${newItems.length} more updates. Total now: ${updatesPreviewShownCount}. Current API page: ${data.page}, Total API pages: ${data.totalPages}`); if (data.page >= data.totalPages) { showMoreUpdatesButton.textContent = "All Updates Shown"; } else { showMoreUpdatesButton.disabled = false; showMoreUpdatesButton.textContent = "Show More"; } } else { console.log("No more updates found from API."); showMoreUpdatesButton.textContent = "No More Updates"; } } catch (error) { console.error("Failed to load more updates:", error); showMoreUpdatesButton.textContent = "Error Loading"; showMoreUpdatesButton.disabled = false; } }
            function appendUpdatesToPreview(startIndex, endIndex) { if (!updatesPreviewList) return; const fragment = document.createDocumentFragment(); const itemsToAppend = weeklyUpdatesData.slice(startIndex, endIndex); itemsToAppend.forEach((movie, indexInSlice) => { const overallIndex = startIndex + indexInSlice; if (!movie) return; const itemDiv = document.createElement('div'); itemDiv.className = 'update-item'; const uniqueIdPart = movie.id ? String(movie.id).replace(/[^a-zA-Z0-9-_]/g, '') : `gen-${overallIndex}`; const actionRowId = `preview-actions-${uniqueIdPart}-${overallIndex}`; itemDiv.dataset.index = overallIndex; itemDiv.dataset.actionRowId = actionRowId; let hdrLogoHtml = ''; let fourkLogoHtml = ''; const lowerFilename = (movie.displayFilename || '').toLowerCase(); if (movie.displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; } if ((movie.displayQuality || '').includes('HDR') || (movie.displayQuality || '').includes('DOLBY VISION') || movie.displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; } const timestampString = movie.last_updated_ts; const formattedDateRelative = TimeAgo.format(timestampString); const dateObject = timestampString ? new Date(timestampString) : null; const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A'; itemDiv.innerHTML = ` <div class="preview-col-id" title="ID: ${sanitize(movie.id || 'N/A')}">${sanitize(movie.id || 'N/A')}</div> <div class="preview-col-filename" title="${movie.displayFilename}"> ${sanitize(movie.displayFilename)}${fourkLogoHtml}${hdrLogoHtml} </div> <div class="preview-col-date" title="${formattedDateFull}"> ${formattedDateRelative} </div> <div class="preview-col-view"> <button class="button view-button" aria-expanded="false">View</button> </div> `; fragment.appendChild(itemDiv); const actionRowDiv = document.createElement('div'); actionRowDiv.id = actionRowId; actionRowDiv.className = 'preview-action-row'; actionRowDiv.style.display = 'none'; fragment.appendChild(actionRowDiv); }); const initialLoader = updatesPreviewList.querySelector('.loading-inline-spinner'); if (initialLoader && startIndex === 0) { initialLoader.remove(); } updatesPreviewList.appendChild(fragment); }
 
 
-           // --- Filtering, Sorting (Unchanged) ---
+           // --- Filtering, Sorting ---
+           // ... (Keep unchanged: triggerFilterChange, handleSort) ...
            function triggerFilterChange() { if (!qualityFilterSelect || currentViewMode !== 'search') return; const newQualityFilter = qualityFilterSelect.value; if (newQualityFilter !== currentState.qualityFilter) { currentState.qualityFilter = newQualityFilter; currentState.currentPage = 1; closePlayerIfNeeded(null); showLoadingStateInTables(`Applying filter: ${sanitize(newQualityFilter || 'All Qualities')}...`); fetchAndRenderResults(); } }
            function handleSort(event) { const header = event.target.closest('th.sortable'); if (!header || currentViewMode !== 'search') return; const sortKey = header.dataset.sortKey; if (!sortKey) return; const oldSortColumn = currentState.sortColumn; const oldSortDirection = currentState.sortDirection; if (currentState.sortColumn === sortKey) { currentState.sortDirection = currentState.sortDirection === 'asc' ? 'desc' : 'asc'; } else { currentState.sortColumn = sortKey; currentState.sortDirection = ['filename', 'quality'].includes(sortKey) ? 'asc' : 'desc'; } if (oldSortColumn !== currentState.sortColumn || oldSortDirection !== currentState.sortDirection) { currentState.currentPage = 1; closePlayerIfNeeded(null); showLoadingStateInTables(`Sorting by ${sanitize(sortKey)} (${currentState.sortDirection})...`); fetchAndRenderResults(); } }
 
-           // --- Rendering Logic (Unchanged) ---
+           // --- Rendering Logic ---
+           // ... (Keep unchanged: renderActiveResultsView, renderPaginationControls, updateSortIndicators, updateFilterIndicator, updateActiveTabAndPanel) ...
            function renderActiveResultsView(apiResponse) { if (currentViewMode !== 'search' || !tabMappings[activeResultsTab]) { if (currentViewMode === 'search') { showLoadingStateInTables('Enter search term above.'); } return; } console.log(`Rendering results for tab: ${activeResultsTab}`, apiResponse); console.time("renderActiveResultsView"); const { tableBody, pagination, tableHead } = tabMappings[activeResultsTab]; if (!tableBody || !pagination) { console.error("Missing table body or pagination controls for tab:", activeResultsTab); console.timeEnd("renderActiveResultsView"); return; } const itemsToRender = apiResponse.items || []; const totalItems = apiResponse.totalItems || 0; const currentPage = apiResponse.page || 1; const totalPages = apiResponse.totalPages || 1; currentViewData = itemsToRender.map(preprocessMovieData); // Store processed data for the current view
                 let tableHtml = ''; if (totalItems === 0) { let message = `No ${tabMappings[activeResultsTab].typeFilter || 'files'} found`; if (currentState.searchTerm) message += ` matching "${sanitize(currentState.searchTerm)}"`; if (currentState.qualityFilter) message += ` with quality "${sanitize(currentState.qualityFilter)}"`; message += '.'; tableHtml = `<tr><td colspan="6" class="status-message">${message}</td></tr>`; } else { currentViewData.forEach((movie, indexOnPage) => { const uniqueIdPart = movie.id ? String(movie.id).replace(/[^a-zA-Z0-9-_]/g, '') : `gen-${indexOnPage}`; const actionRowId = `${activeResultsTab}-actions-${uniqueIdPart}-${indexOnPage}`; tableHtml += createMovieTableRowHTML(movie, indexOnPage, actionRowId); }); } tableBody.innerHTML = tableHtml; renderPaginationControls(pagination, totalItems, currentPage, totalPages); updateActiveTabAndPanel(); if (tableHead) updateSortIndicators(tableHead); updateFilterIndicator(); closeActiveActionRow('table', null); console.timeEnd("renderActiveResultsView"); }
            function renderPaginationControls(targetContainer, totalItems, currentPage, totalPages) { if (!targetContainer) return; if (totalItems === 0 || totalPages <= 1) { targetContainer.innerHTML = ''; targetContainer.style.display = 'none'; return; } targetContainer.dataset.totalPages = totalPages; targetContainer.innerHTML = ''; let paginationHTML = ''; const maxPagesToShow = 5; const halfPages = Math.floor(maxPagesToShow / 2); paginationHTML += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled title="First page"' : 'title="Previous page"'}>« Prev</button>`; let startPage, endPage; if (totalPages <= maxPagesToShow + 2) { startPage = 1; endPage = totalPages; } else { startPage = Math.max(2, currentPage - halfPages); endPage = Math.min(totalPages - 1, currentPage + halfPages); if (currentPage - halfPages < 2) { endPage = Math.min(totalPages - 1, maxPagesToShow); } if (currentPage + halfPages > totalPages - 1) { startPage = Math.max(2, totalPages - maxPagesToShow + 1); } } if (startPage > 1) { paginationHTML += `<button onclick="changePage(1)" title="Page 1">1</button>`; if (startPage > 2) { paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`; } } for (let i = startPage; i <= endPage; i++) { paginationHTML += (i === currentPage) ? `<span class="current-page">${i}</span>` : `<button onclick="changePage(${i})" title="Page ${i}">${i}</button>`; } if (endPage < totalPages) { if (endPage < totalPages - 1) { paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`; } paginationHTML += `<button onclick="changePage(${totalPages})" title="Page ${totalPages}">${totalPages}</button>`; } paginationHTML += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled title="Last page"' : 'title="Next page"'}>Next »</button>`; targetContainer.innerHTML = paginationHTML; targetContainer.style.display = 'block'; }
@@ -2140,12 +2161,15 @@
            function updateFilterIndicator() { if(qualityFilterSelect) { qualityFilterSelect.classList.toggle('filter-active', !!currentState.qualityFilter); } }
            function updateActiveTabAndPanel() { Object.keys(tabMappings).forEach(tabId => { const mapping = tabMappings[tabId]; const isActive = tabId === activeResultsTab; if (mapping?.button) mapping.button.classList.toggle('active', isActive); if (mapping?.panel) mapping.panel.classList.toggle('active', isActive); }); }
 
-           // --- Pagination and Tab Switching (Unchanged) ---
+
+           // --- Pagination and Tab Switching ---
+           // ... (Keep unchanged: changePage, scrollToTopOfActiveTable, switchTab) ...
            window.changePage = function(newPage) { if (currentViewMode !== 'search' || newPage < 1 || newPage === currentState.currentPage) { return; } const currentPagination = tabMappings[activeResultsTab]?.pagination; if(currentPagination && currentPagination.dataset.totalPages) { const totalP = parseInt(currentPagination.dataset.totalPages, 10); if(newPage > totalP) { console.log(`Change page request to ${newPage} denied, exceeds total pages (${totalP}).`); return; } } currentState.currentPage = newPage; closePlayerIfNeeded(null); fetchAndRenderResults().then(() => { const activeTableBody = tabMappings[activeResultsTab]?.tableBody; scrollToTopOfActiveTable(activeTableBody); }); saveStateToLocalStorage(); }
            function scrollToTopOfActiveTable(tableBodyElement) { if (!tableBodyElement) return; const tableContainer = tableBodyElement.closest('.table-container'); if (tableContainer) { const searchBarArea = container.querySelector('#search-focus-area'); const backButtonElem = resultsArea.querySelector('#backToHomeButtonResults'); const filterArea = resultsArea.querySelector('.results-filter-area'); const tabNav = resultsArea.querySelector('.tab-navigation'); let stickyHeaderHeight = 0; if (container.classList.contains('results-active')) { stickyHeaderHeight = (searchBarArea?.offsetHeight || 0) + (backButtonElem?.offsetHeight || 0) + (backButtonElem ? parseFloat(getComputedStyle(backButtonElem).marginBottom) : 0) + (filterArea?.offsetHeight || 0) + (tabNav?.offsetHeight || 0); } const elementTop = tableContainer.getBoundingClientRect().top + window.pageYOffset; const scrollPosition = elementTop - stickyHeaderHeight - 20; window.scrollTo({ top: scrollPosition, behavior: 'smooth' }); } }
            window.switchTab = function(tabId) { if (currentViewMode !== 'search' || tabId === activeResultsTab || !tabMappings[tabId]) { return; } activeResultsTab = tabId; currentState.currentPage = 1; currentState.typeFilter = tabMappings[tabId].typeFilter; closePlayerIfNeeded(null); closeActiveActionRow('table', null); updateActiveTabAndPanel(); showLoadingStateInTables(`Loading ${tabMappings[tabId].typeFilter || 'all files'}...`); fetchAndRenderResults(); saveStateToLocalStorage(); }
 
-           // --- Action Row Logic (MODIFIED to handle custom URL section hiding/reset) ---
+           // --- Action Row Logic ---
+           // ... (Keep unchanged: closeActiveActionRow, toggleTableActions, togglePreviewActions, scrollToRowIfNeeded, focusFirstElementInContainer) ...
            function closeActiveActionRow(type = 'any', elementToFocusAfter = null) {
                 let rowToClose = null;
                 let mainElement = null;
@@ -2204,8 +2228,6 @@
                     }
                 }
            }
-           // --- END MODIFIED closeActiveActionRow ---
-
            function toggleTableActions(mainRowElement, triggerElement = null) { if (!mainRowElement || !mainRowElement.matches('.movie-data-row')) return; const targetRowId = mainRowElement.dataset.actionRowId; const dataIndex = parseInt(mainRowElement.dataset.index, 10); if (!targetRowId || isNaN(dataIndex) || dataIndex < 0 || dataIndex >= currentViewData.length) { console.error("Invalid data attributes or index on table row:", mainRowElement, dataIndex, currentViewData.length); return; } const buttonElement = mainRowElement.querySelector('.view-button'); if (!buttonElement) { console.error("Could not find view button in row:", mainRowElement); return; } const isCurrentlyAssociatedActiveRow = activeTableActionRow && activeTableActionRow.id === targetRowId; const elementToFocusAfterClose = triggerElement || buttonElement; if (!isCurrentlyAssociatedActiveRow) { closePlayerIfNeeded(elementToFocusAfterClose); closeActiveActionRow('any', elementToFocusAfterClose); } if (isCurrentlyAssociatedActiveRow) { closeActiveActionRow('table', elementToFocusAfterClose); } else { const movie = currentViewData[dataIndex]; if (!movie) { console.error("Movie data not found for index:", dataIndex); return; } let targetRow = document.getElementById(targetRowId); const actionHTML = createActionContentHTML(movie, dataIndex); // Pass index
                 const colspanValue = mainRowElement.cells.length || 6; if (!targetRow) { targetRow = document.createElement('tr'); targetRow.id = targetRowId; targetRow.className = 'action-row'; targetRow.innerHTML = `<td colspan="${colspanValue}">${actionHTML}</td>`; mainRowElement.parentNode.insertBefore(targetRow, mainRowElement.nextSibling); } else { const td = targetRow.querySelector('td') || document.createElement('td'); td.colSpan = colspanValue; td.innerHTML = actionHTML; targetRow.innerHTML = ''; targetRow.appendChild(td); } targetRow.style.display = 'table-row'; buttonElement.textContent = 'Hide'; buttonElement.setAttribute('aria-expanded', 'true'); mainRowElement.classList.add('active-main-row'); activeTableActionRow = targetRow; focusFirstElementInContainer(targetRow); scrollToRowIfNeeded(mainRowElement); } }
            function togglePreviewActions(mainItemDiv, triggerElement = null) { if (!mainItemDiv || !mainItemDiv.matches('.update-item')) return; const movieIndex = parseInt(mainItemDiv.dataset.index, 10); const targetRowId = mainItemDiv.dataset.actionRowId; if (isNaN(movieIndex) || !targetRowId || movieIndex < 0 || movieIndex >= weeklyUpdatesData.length) { console.error("Invalid data attributes or index on preview item.", mainItemDiv, movieIndex, weeklyUpdatesData.length); return; } const targetRowDiv = document.getElementById(targetRowId); const buttonElement = mainItemDiv.querySelector('.view-button'); if (!targetRowDiv || !buttonElement) { console.error("Target action div or button not found.", targetRowId); return; } const isCurrentlyAssociatedActiveRow = activePreviewActionRow && activePreviewActionRow.id === targetRowId; const elementToFocusAfterClose = triggerElement || buttonElement; if (!isCurrentlyAssociatedActiveRow) { closePlayerIfNeeded(elementToFocusAfterClose); closeActiveActionRow('any', elementToFocusAfterClose); } if (isCurrentlyAssociatedActiveRow) { closeActiveActionRow('preview', elementToFocusAfterClose); } else { const movie = weeklyUpdatesData[movieIndex]; if (!movie) { console.error("Movie data not found for preview index:", movieIndex); return; } const actionContentHTML = createActionContentHTML(movie, movieIndex); // Pass index
@@ -2213,16 +2235,20 @@
            function scrollToRowIfNeeded(mainElement) { setTimeout(() => { mainElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100); }
            function focusFirstElementInContainer(containerElement) { if (!containerElement) return; const firstFocusable = containerElement.querySelector('.play-button, .hubcloud-bypass-button, .youtube-button, .imdb-button, .download-button, .vlc-button, .intent-button, .custom-url-toggle-button, .share-button, a[href]'); if (firstFocusable) { setTimeout(() => firstFocusable.focus(), 50); } }
 
-           // --- Share Logic (Unchanged) ---
+           // --- Share Logic ---
+           // ... (Keep unchanged: handleShareClick) ...
            async function handleShareClick(buttonElement) { const itemId = buttonElement.dataset.id; const itemTitle = buttonElement.dataset.title || "Cinema Ghar Item"; const itemFilename = buttonElement.dataset.filename || ""; if (!itemId) { console.error("Share failed: Item ID missing."); alert("Cannot share this item (missing ID)."); return; } const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${encodeURIComponent(itemId)}`; const shareText = `Check out: ${itemTitle}\n${itemFilename ? `(${itemFilename})\n` : ''}`; const feedbackSpan = buttonElement.nextElementSibling; if (!feedbackSpan || !feedbackSpan.classList.contains('copy-feedback')) { console.warn("Share fallback feedback span not found next to button:", buttonElement); } if (navigator.share) { try { await navigator.share({ title: itemTitle, text: shareText, url: shareUrl, }); console.log('Successful share'); } catch (error) { console.error('Error sharing:', error); if (error.name !== 'AbortError') { if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Share failed!', true); } else { alert(`Share failed: ${error.message}`); } } } } else { console.log('Web Share API not supported, falling back to copy.'); await copyToClipboard(shareUrl, feedbackSpan); } }
 
-           // --- Shared Item Display Logic (MODIFIED to store data) ---
-           async function displaySharedItem(shareId) { if (!shareId || !sharedItemView || !sharedItemContent) return; sharedItemContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading shared item...</span></div>`; setViewMode('shared'); sharedItemData = null; // Reset shared data
+           // --- Shared Item Display Logic ---
+           // ... (Keep unchanged: displaySharedItem - relies on preprocessMovieData) ...
+            async function displaySharedItem(shareId) { if (!shareId || !sharedItemView || !sharedItemContent) return; sharedItemContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading shared item...</span></div>`; setViewMode('shared'); sharedItemData = null; // Reset shared data
                 try { const params = { id: shareId }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { const sharedMovieRaw = data.items[0]; sharedItemData = preprocessMovieData(sharedMovieRaw); // Store processed data
                     console.log("Displaying shared item:", sharedItemData.displayFilename); const actionHTML = createActionContentHTML(sharedItemData, 'shared'); // Pass 'shared' ref
                     sharedItemContent.innerHTML = actionHTML; document.title = `${sharedItemData.displayFilename || 'Shared Item'} - Cinema Ghar`; if (videoContainer) videoContainer.style.display = 'none'; } else { console.error("Shared item not found via API for ID:", shareId); sharedItemContent.innerHTML = `<div class="error-message" role="alert">Error: Shared item with ID ${sanitize(shareId)} was not found. It might have been removed or the link is incorrect.</div>`; document.title = "Item Not Found - Cinema Ghar Index"; } } catch (error) { console.error("Failed to fetch shared item:", error); sharedItemContent.innerHTML = `<div class="error-message" role="alert">Error loading shared item: ${error.message}. Please try again.</div>`; document.title = "Error Loading Item - Cinema Ghar Index"; } finally { setViewMode('shared'); window.scrollTo({ top: 0, behavior: 'smooth' }); } }
 
-           // --- Player Logic (MODIFIED to handle global custom URL mode) ---
+           // --- Player Logic ---
+           // ... (Keep unchanged: streamVideo, closePlayer, closePlayerIfNeeded, seekVideo, toggleMute, setVolume, setPlaybackSpeed, toggleFullscreen, changeAudioTrack, togglePlayPause, updateMuteButton, handleFullscreenChange, populateAudioTrackSelector, openWithIntent, copyVLCLink, showCopyFeedback, clearCopyFeedback, clearBypassFeedback, highlightVlcText, handlePlayerKeyboardShortcuts) ...
+           // Note: streamVideo, openWithIntent, copyVLCLink now implicitly use the encoded URL passed to them or retrieved from data attributes.
            function streamVideo(title, url, filenameForAudioCheck, isFromCustom = false) {
                let currentActionContainer = null;
                const activeRow = activeTableActionRow || activePreviewActionRow;
@@ -2287,11 +2313,11 @@
 
                // Set title and VLC box
                if (videoTitle) videoTitle.innerText = title || "Video";
-               if (vlcText) vlcText.innerText = url;
+               if (vlcText) vlcText.innerText = url; // URL is already encoded here if needed
                if (vlcBox) vlcBox.style.display = 'block';
 
                // Load and play
-               videoElement.src = url;
+               videoElement.src = url; // Use the potentially encoded URL
                videoElement.load();
                videoElement.play().catch(e => { console.log("Autoplay was prevented or failed:", e.message); });
 
@@ -2307,7 +2333,6 @@
                    setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
                }
            }
-
            window.closePlayer = function(elementToFocusAfter = null) {
                 if (elementToFocusAfter instanceof Event) { elementToFocusAfter = elementToFocusAfter?.target; }
                 if (!videoContainer || !videoElement) return;
@@ -2409,7 +2434,6 @@
                     if (activePreviewActionRow?.id === closedRowId) activePreviewActionRow = null;
                 }
            }
-
            function closePlayerIfNeeded(elementToFocusAfter = null) { if (videoContainer?.style.display !== 'none') { closePlayer(elementToFocusAfter); } }
            window.seekVideo = function(seconds) { if (videoElement) videoElement.currentTime += seconds; }
            window.toggleMute = function() { if (videoElement) videoElement.muted = !videoElement.muted; }
@@ -2430,26 +2454,31 @@
            function highlightVlcText() { const activeContext = activeTableActionRow || activePreviewActionRow || (currentViewMode === 'shared' ? sharedItemContent : null); if (!activeContext) return; const currentVlcText = activeContext.querySelector('#vlcBox code'); if (currentVlcText && currentVlcText.closest('#vlcBox')?.style.display !== 'none') { try { const range = document.createRange(); range.selectNodeContents(currentVlcText); const selection = window.getSelection(); if (selection) { selection.removeAllRanges(); selection.addRange(range); } console.log("Highlighted VLC text as fallback."); } catch (selectErr) { console.warn("Could not highlight VLC text:", selectErr); } } }
            function handlePlayerKeyboardShortcuts(event) { if (!videoContainer || videoContainer.style.display === 'none' || !videoElement) return; const targetTagName = event.target.tagName.toLowerCase(); if (targetTagName === 'input' || targetTagName === 'select' || targetTagName === 'textarea') return; const key = event.key; let prevented = false; switch (key) { case ' ': case 'k': togglePlayPause(); prevented = true; break; case 'ArrowLeft': seekVideo(-10); prevented = true; break; case 'ArrowRight': seekVideo(10); prevented = true; break; case 'ArrowUp': setVolume(Math.min(videoElement.volume + 0.05, 1)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'ArrowDown': setVolume(Math.max(videoElement.volume - 0.05, 0)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'm': toggleMute(); prevented = true; break; case 'f': toggleFullscreen(); prevented = true; break; } if (prevented) event.preventDefault(); }
 
-           // --- State Persistence (Unchanged) ---
+
+           // --- State Persistence ---
+           // ... (Keep unchanged: saveStateToLocalStorage, loadStateFromLocalStorage) ...
            function saveStateToLocalStorage() { try { const stateToSave = {}; if (currentState.sortColumn !== 'lastUpdated') stateToSave.sortColumn = currentState.sortColumn; if (currentState.sortDirection !== 'desc') stateToSave.sortDirection = currentState.sortDirection; if (currentState.qualityFilter !== '') stateToSave.qualityFilter = currentState.qualityFilter; if (Object.keys(stateToSave).length > 0) { localStorage.setItem(config.LOCAL_STORAGE_KEY, JSON.stringify(stateToSave)); console.log("Saved state:", stateToSave); } else { localStorage.removeItem(config.LOCAL_STORAGE_KEY); console.log("State is default, removed saved state."); } } catch (e) { console.error("Failed to save state to localStorage:", e); } }
            function loadStateFromLocalStorage() { try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; console.log("Loaded state:", { sortColumn: currentState.sortColumn, sortDirection: currentState.sortDirection, qualityFilter: currentState.qualityFilter }); } else { currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; console.log("No saved state found, using defaults."); } } catch (e) { console.error("Failed to load or parse state from localStorage:", e); localStorage.removeItem(config.LOCAL_STORAGE_KEY); currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; } currentState.searchTerm = ''; currentState.currentPage = 1; currentState.typeFilter = ''; activeResultsTab = 'allFiles'; activeTableActionRow = null; activePreviewActionRow = null; lastFocusedElement = null; }
 
-           // --- Initial Data Loading and Setup (Unchanged) ---
+           // --- Initial Data Loading and Setup ---
+           // ... (Keep unchanged: fetchApiData, fetchAndRenderResults, populateQualityFilter, displayLoadError, initializeApp) ...
            async function fetchApiData(params = {}) { if (searchAbortController) { searchAbortController.abort(); } searchAbortController = new AbortController(); const signal = searchAbortController.signal; const query = new URLSearchParams(); query.set('page', params.page || currentState.currentPage); query.set('limit', params.limit || currentState.limit); query.set('sort', params.sort || currentState.sortColumn); query.set('sortDir', params.sortDir || currentState.sortDirection); const searchTerm = params.search !== undefined ? params.search : currentState.searchTerm; if (searchTerm) query.set('search', searchTerm); const qualityFilter = params.quality !== undefined ? params.quality : currentState.qualityFilter; if (qualityFilter) query.set('quality', qualityFilter); const typeFilter = params.type !== undefined ? params.type : currentState.typeFilter; if (typeFilter) query.set('type', typeFilter); if (params.id) { query.set('id', params.id); query.delete('search'); query.delete('quality'); query.delete('type'); query.delete('page'); query.delete('limit'); query.delete('sort'); query.delete('sortDir'); } const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`; console.log(`Fetching API: ${url}`); try { const response = await fetch(url, { signal }); if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); } const data = await response.json(); console.log(`API data received:`, data); const activePagination = tabMappings[activeResultsTab]?.pagination; if(activePagination && data.totalPages !== undefined) { activePagination.dataset.totalPages = data.totalPages; } return data; } catch (error) { if (error.name === 'AbortError') { console.log('API fetch aborted.'); return null; } console.error(`Error fetching data from ${url}:`, error); throw error; } finally { if (signal === searchAbortController?.signal) { searchAbortController = null; } } }
            async function fetchAndRenderResults() { if (currentViewMode !== 'search') return; try { const apiResponse = await fetchApiData(); if (apiResponse === null) return; renderActiveResultsView(apiResponse); saveStateToLocalStorage(); } catch (error) { console.error("Failed to fetch/render search results:", error); const { tableBody } = tabMappings[activeResultsTab]; if (tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error loading results: ${error.message}. Please try again.</td></tr>`; } Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; }); } }
            function populateQualityFilter(items = []) { if (!qualityFilterSelect) return; const currentSelectedValue = qualityFilterSelect.value; items.forEach(item => { if (item.displayQuality && item.displayQuality !== 'N/A') { uniqueQualities.add(item.displayQuality); } }); const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); }); while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); } sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } }); qualityFilterSelect.value = [...qualityFilterSelect.options].some(opt => opt.value === currentSelectedValue) ? currentSelectedValue : ""; updateFilterIndicator(); }
            function displayLoadError(message) { const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (sharedItemContent) sharedItemContent.innerHTML = ''; if (sharedItemView) sharedItemView.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'shared-view-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
            async function initializeApp() { const urlParams = new URLSearchParams(window.location.search); const shareId = urlParams.get('shareId'); isDirectShareLoad = !!shareId; if (pageLoader) pageLoader.style.display = 'flex'; if (isDirectShareLoad) { console.log("Direct share link detected for ID:", shareId); } else { console.log("Preparing homepage view (pre-data)."); if (searchFocusArea) searchFocusArea.style.display = 'flex'; if (pageFooter) pageFooter.style.display = 'flex'; if (resultsArea) resultsArea.style.display = 'none'; if (sharedItemView) sharedItemView.style.display = 'none'; const defaultMessageHTML = `<tr><td colspan="6" class="status-message">Enter search term above.</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) mapping.tableBody.innerHTML = defaultMessageHTML; if (mapping?.pagination) mapping.pagination.style.display = 'none'; }); } loadStateFromLocalStorage(); try { if (shareId) { await displaySharedItem(shareId); fetchApiData({limit: 100, sort: 'quality', sortDir: 'asc'}).then(data => { if (data && data.items) { populateQualityFilter(data.items.map(preprocessMovieData)); } }).catch(e => console.warn("Background quality fetch failed", e)); } else { await loadUpdatesPreview(); console.log("Fetching initial data for suggestions..."); const suggestionData = await fetchApiData({ limit: 5000, sort: 'lastUpdated', sortDir: 'desc' }); if(suggestionData && suggestionData.items) { localSuggestionData = suggestionData.items.map(preprocessMovieData); console.log(`Loaded ${localSuggestionData.length} items for suggestions.`); populateQualityFilter(localSuggestionData); } else { console.warn("Could not load initial data for suggestions/quality filter."); } setViewMode('homepage'); } if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); } } catch (error) { console.error('FATAL: Failed during app initialization:', error); displayLoadError(`Error initializing app: ${error.message}. Try refreshing.`); } finally { if (pageLoader) pageLoader.style.display = 'none'; } }
 
-           // --- Event Handling Setup (MODIFIED handleActionClick & NEW global handlers) ---
-           function handleActionClick(event) {
+
+           // --- Event Handling Setup ---
+           // ... (Keep unchanged: handleActionClick, handleGlobalCustomUrlClick, handleGlobalPlayCustomUrl, toggleCustomUrlInput, playFromCustomUrlInput, getMovieDataFromActionContainer) ...
+            function handleActionClick(event) {
                 const target = event.target;
                 // Look for buttons inside action containers OR the player's custom URL section
                 const button = target.closest('.action-buttons-container .button, #playerCustomUrlSection button'); // Removed .custom-url-container
 
                 if (button) {
                    const action = button.dataset.action;
-                   const url = button.dataset.url;
+                   const url = button.dataset.url; // This URL should already be encoded if needed
                    let title = button.dataset.title || button.dataset.titleRef;
                    const filename = button.dataset.filename;
                    const id = button.dataset.id;
@@ -2467,23 +2496,21 @@
                    // Handle internal actions
                    if (action === 'play' && url) {
                        isGlobalCustomUrlMode = false; // Ensure not global mode
-                       streamVideo(title, url, filename);
+                       streamVideo(title, url, filename); // Pass the (potentially encoded) URL
                    } else if (action === 'copy-vlc' && url) {
-                       copyVLCLink(button, url);
+                       copyVLCLink(button, url); // Pass the (potentially encoded) URL
                    } else if (action === 'open-intent' && url) {
-                       openWithIntent(url);
+                       openWithIntent(url); // Pass the (potentially encoded) URL
                    } else if (action === 'share' && id) {
                        handleShareClick(button);
                    } else if (action === 'toggle-custom-url') {
                        toggleCustomUrlInput(button); // Action row toggle
-                   } else if (action === 'bypass-hubcloud') { // NEW: Handle Bypass Click
+                   } else if (action === 'bypass-hubcloud') { // Handle Bypass Click
                        triggerHubCloudBypass(button);
                    }
                 }
            }
-
-           // --- NEW/MODIFIED: Custom URL Toggle and Play Functions ---
-           function handleGlobalCustomUrlClick(event) {
+            function handleGlobalCustomUrlClick(event) {
                 event.preventDefault();
                 lastFocusedElement = event.target;
                 if (!videoContainer || !playerCustomUrlSection || !playerCustomUrlInput) return;
@@ -2511,38 +2538,38 @@
                 // Focus the input field
                 setTimeout(() => playerCustomUrlInput.focus(), 50);
            }
-
            function handleGlobalPlayCustomUrl(event) {
                 event.preventDefault();
                 if (!playerCustomUrlInput || !playerCustomUrlFeedback) return;
 
-                const customUrl = playerCustomUrlInput.value.trim();
+                const customUrlRaw = playerCustomUrlInput.value.trim();
                 playerCustomUrlFeedback.textContent = ''; // Clear previous feedback
 
-                if (!customUrl) {
+                if (!customUrlRaw) {
                     playerCustomUrlFeedback.textContent = 'Please enter a URL.';
                     playerCustomUrlInput.focus();
                     return;
                 }
 
+                let customUrlEncoded = customUrlRaw;
                 try {
-                    new URL(customUrl); // Validate URL format
+                    new URL(customUrlRaw); // Validate basic format first
+                    // Now encode spaces specifically
+                    customUrlEncoded = customUrlRaw.replace(/ /g, '%20');
                 } catch (e) {
                     playerCustomUrlFeedback.textContent = 'Invalid URL format.';
                     playerCustomUrlInput.focus(); // Keep focus on input
                     return;
                 }
 
-                console.log(`Attempting to play global custom URL: ${customUrl}`);
+                console.log(`Attempting to play global custom URL: ${customUrlEncoded}`);
                 // Hide input, show player elements
                 if(playerCustomUrlSection) playerCustomUrlSection.style.display = 'none';
                 if(videoElement) videoElement.style.display = 'block';
                 if(customControlsContainer) customControlsContainer.style.display = 'flex';
 
-                streamVideo("Custom URL Video", customUrl, null, true); // Pass true for isFromCustom
+                streamVideo("Custom URL Video", customUrlEncoded, null, true); // Pass true for isFromCustom
            }
-
-           // MODIFIED: Handles toggle button within Action Rows/Shared view
            function toggleCustomUrlInput(toggleButton, triggeredByError = false) {
                 const actionContainer = toggleButton.closest('.action-row td, .preview-action-row, #shared-item-content');
                 if (!actionContainer || !videoContainer || !playerCustomUrlSection) return;
@@ -2608,9 +2635,7 @@
                 // Scroll player into view if needed
                 setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
            }
-
-            // MODIFIED: Handles play button for Action Rows/Shared view's custom input (inside player)
-            function playFromCustomUrlInput(playButton) {
+           function playFromCustomUrlInput(playButton) {
                 // This button is now always inside #playerCustomUrlSection
                 const container = playButton.closest('#playerCustomUrlSection');
                 if (!container) return;
@@ -2621,24 +2646,27 @@
 
                 if (!inputField || !feedbackSpan) return;
 
-                const customUrl = inputField.value.trim();
+                const customUrlRaw = inputField.value.trim();
                 feedbackSpan.textContent = ''; // Clear previous feedback
 
-                if (!customUrl) {
+                if (!customUrlRaw) {
                     feedbackSpan.textContent = 'Please enter a URL.';
                     inputField.focus();
                     return;
                 }
 
+                let customUrlEncoded = customUrlRaw;
                 try {
-                    new URL(customUrl);
+                    new URL(customUrlRaw); // Validate format
+                    // Encode spaces
+                    customUrlEncoded = customUrlRaw.replace(/ /g, '%20');
                 } catch (e) {
                     feedbackSpan.textContent = 'Invalid URL format.';
                     inputField.focus();
                     return;
                 }
 
-                console.log(`Attempting to play custom URL from item context: ${customUrl}`);
+                console.log(`Attempting to play custom URL from item context: ${customUrlEncoded}`);
                 isGlobalCustomUrlMode = false; // Not global mode
 
                 // Ensure player is in the correct parent action container (should already be)
@@ -2657,11 +2685,9 @@
                 if (videoElement) videoElement.style.display = 'block';
                 if (customControlsContainer) customControlsContainer.style.display = 'flex';
 
-                streamVideo(titleRef, customUrl, null, true); // Pass true for isFromCustom
+                streamVideo(titleRef, customUrlEncoded, null, true); // Pass true for isFromCustom
            }
-
-            // NEW: Get movie data associated with an action container
-            function getMovieDataFromActionContainer(actionContainer) {
+           function getMovieDataFromActionContainer(actionContainer) {
                  if (!actionContainer) return null;
                  // Find the associated main row/item or check if it's the shared content
                  if (actionContainer === sharedItemContent) {
@@ -2684,10 +2710,10 @@
                  }
                  return null;
             }
-           // --- END NEW/MODIFIED Custom URL Functions ---
 
-            // --- NEW: HubCloud Bypass Logic ---
-            async function triggerHubCloudBypass(buttonElement) {
+           // --- HubCloud Bypass Logic (MODIFIED for URL encoding) ---
+           async function triggerHubCloudBypass(buttonElement) {
+                // ... (Keep existing logic for getting URL, setting loading state) ...
                 const hubcloudUrl = buttonElement.dataset.hubcloudUrl;
                 const movieIndex = buttonElement.dataset.movieIndex; // Will be string or undefined
                 const movieRef = buttonElement.dataset.movieRef; // Will be 'shared' or undefined
@@ -2707,6 +2733,7 @@
                     console.error(`Bypass API call timed out after ${config.BYPASS_TIMEOUT / 1000}s`);
                     setBypassButtonState(buttonElement, 'error', 'Timeout');
                 }, config.BYPASS_TIMEOUT);
+
 
                 try {
                     const response = await fetch(config.BYPASS_API_URL, {
@@ -2730,7 +2757,13 @@
                     const result = await response.json();
 
                     if (result.success && result.finalUrl) {
-                        console.log(`Bypass successful! Final URL: ${result.finalUrl}`);
+                        console.log(`Bypass successful! Raw Final URL: ${result.finalUrl}`);
+
+                        // *** NEW: Encode spaces in the final URL ***
+                        const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20');
+                        console.log(`Encoded Final URL: ${encodedFinalUrl}`);
+                        // *** END NEW ***
+
                         setBypassButtonState(buttonElement, 'success', 'Success!'); // Show temporary success
 
                         // Find the correct movie data reference
@@ -2742,7 +2775,8 @@
                         }
 
                         if (dataRef !== null && !isNaN(dataRef) || dataRef === 'shared') {
-                            updateActionRowAfterBypass(buttonElement.closest('.action-buttons-container'), dataRef, result.finalUrl);
+                            // Pass the ENCODED URL to the update function
+                            updateActionRowAfterBypass(buttonElement.closest('.action-buttons-container'), dataRef, encodedFinalUrl);
                         } else {
                              console.error("Could not determine movie data reference (index/shared) after bypass success.");
                              setBypassButtonState(buttonElement, 'error', 'Internal Error'); // Should not happen
@@ -2753,7 +2787,8 @@
                     }
 
                 } catch (error) {
-                    clearTimeout(timeoutId); // Ensure timeout is cleared on error too
+                   // ... (Keep existing error handling) ...
+                   clearTimeout(timeoutId); // Ensure timeout is cleared on error too
                     if (error.name === 'AbortError' && !apiController.signal.aborted) {
                        // This means the timeout triggered the abort
                        console.error("Bypass aborted due to timeout.");
@@ -2768,8 +2803,9 @@
                 }
             }
 
-            function updateActionRowAfterBypass(actionButtonsContainer, movieIndexOrRef, finalUrl) {
-                if (!actionButtonsContainer) {
+           // Modified to accept the ALREADY ENCODED URL
+           function updateActionRowAfterBypass(actionButtonsContainer, movieIndexOrRef, encodedFinalUrl) {
+                 if (!actionButtonsContainer) {
                     console.error("Cannot update action row: container not found.");
                     return;
                 }
@@ -2799,11 +2835,11 @@
                     return;
                 }
 
-                // Update the URL in the movie data object (in memory)
-                movieData.url = finalUrl;
-                console.log(`Updated movie data (ID: ${movieData.id}) in memory with bypassed URL.`);
+                // Update the URL in the movie data object (in memory) with the ENCODED URL
+                movieData.url = encodedFinalUrl;
+                console.log(`Updated movie data (ID: ${movieData.id}) in memory with encoded bypassed URL.`);
 
-                // Re-render the action content HTML
+                // Re-render the action content HTML using the updated movieData
                 const actionHTML = createActionContentHTML(movieData, movieIndexOrRef);
 
                 // Find the correct container to replace content
@@ -2821,8 +2857,9 @@
                 } else {
                     console.error("Could not find the parent container to update after bypass.");
                 }
-            }
+           }
 
+            // ... (Keep unchanged: setBypassButtonState) ...
             function setBypassButtonState(buttonElement, state, message = null) {
                 if (!buttonElement) return;
                 const feedbackSpan = buttonElement.nextElementSibling;
@@ -2901,8 +2938,9 @@
             }
 
 
-           // --- Event Handling Setup (MODIFIED to include bypass) ---
-           function handleContentClick(event) {
+           // --- Event Handling Setup ---
+           // ... (Keep unchanged: handleContentClick, Add Event Listeners section) ...
+            function handleContentClick(event) {
                 const target = event.target;
 
                 // Prioritize View/Filename clicks for toggling action rows
