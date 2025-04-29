@@ -1,6 +1,8 @@
-# /api/gdflix.py (Version with Enhanced Headers for 403)
+# /api/gdflix.py (Version using cloudscraper for 403)
 
-import requests
+# --- Use cloudscraper ---
+import cloudscraper # Use cloudscraper instead of requests directly
+# Keep other imports
 from urllib.parse import urljoin, urlparse
 import time
 import re
@@ -24,37 +26,40 @@ except ImportError:
     print("Warning: lxml not found, using html.parser.", file=sys.stderr)
 
 # --- Constants ---
-REQUEST_TIMEOUT = 9
-OVERALL_TIMEOUT = 12
+REQUEST_TIMEOUT = 15     # Can potentially increase slightly with cloudscraper, but still watch Vercel limits
+OVERALL_TIMEOUT = 25     # Increase slightly, Cloudflare challenges take time
 POLL_INTERVAL = 3
 
-# --- Updated Headers ---
-# Mimic headers from a common browser version more closely
+# --- Headers (cloudscraper manages User-Agent internally, but we can add others) ---
 DEFAULT_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
     'Accept-Language': 'en-US,en;q=0.9',
-    'Accept-Encoding': 'gzip, deflate, br', # Explicitly accept common encodings
+    'Accept-Encoding': 'gzip, deflate, br',
     'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1', # Common browser header
+    'Upgrade-Insecure-Requests': '1',
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none', # Changed from cross-site as it's the initial request
+    'Sec-Fetch-Site': 'none',
     'Sec-Fetch-User': '?1',
-    'TE': 'trailers' # Sometimes included
-    # 'Referer' will be set dynamically based on context
-    # Avoid setting Sec-CH-UA headers unless you know the exact values matching the User-Agent, as mismatches can be suspicious
+    'TE': 'trailers'
+    # 'Referer' will be set dynamically
 }
 
 
-# --- Core GDFLIX Scraping Logic (Mostly unchanged from previous enhanced logging version) ---
+# --- Core GDFLIX Scraping Logic ---
 def get_gdflix_download_link(start_url, logs=None):
     if logs is None:
         logs = []
 
-    session = requests.Session()
-    # **Apply updated default headers to the session**
-    session.headers.update(DEFAULT_HEADERS)
+    # --- Use cloudscraper session ---
+    # delay is optional, helps avoid rate limits if making many requests quickly
+    scraper = cloudscraper.create_scraper(
+        browser=DEFAULT_HEADERS['User-Agent'], # Pass our desired UA
+        delay=2 # Add a small delay between challenge solving and request
+    )
+    # Apply other default headers
+    scraper.headers.update(DEFAULT_HEADERS)
+    # -----------------------------
 
     final_download_link = None
     overall_start_time = time.time()
@@ -69,40 +74,46 @@ def get_gdflix_download_link(start_url, logs=None):
 
     try:
         # --- Step 1: Fetch initial page ---
-        log_and_check_timeout(f"Step 1: Fetching initial URL: {start_url}")
-        initial_request_headers = session.headers.copy()
-        # Try without a Referer first for the very initial request
+        log_and_check_timeout(f"Step 1: Fetching initial URL with cloudscraper: {start_url}")
+        initial_request_headers = scraper.headers.copy()
         if 'Referer' in initial_request_headers:
-             del initial_request_headers['Referer']
+             del initial_request_headers['Referer'] # No referer for first hit
 
         try:
-            response1 = session.get(
+            # Use the scraper session like the requests session
+            response1 = scraper.get(
                 start_url,
                 allow_redirects=True,
                 timeout=REQUEST_TIMEOUT,
-                headers=initial_request_headers # Use potentially modified headers
+                headers=initial_request_headers
             )
-            # Log effective headers sent (requests adds some automatically)
-            # log_and_check_timeout(f"Step 1: Effective Headers Sent: {response1.request.headers}")
+            log_and_check_timeout(f"Step 1: Initial request status: {response1.status_code}")
+            # Cloudscraper might return 200 even if challenge failed internally sometimes,
+            # but raise_for_status() is still good practice.
             response1.raise_for_status()
-        except requests.exceptions.Timeout:
+
+        # cloudscraper might raise its own exceptions for challenge failures
+        except cloudscraper.exceptions.CloudflareChallengeError as cce:
+             logs.append(f"Error: Cloudflare challenge detected and could not be solved: {cce}")
+             return None
+        except requests.exceptions.Timeout: # Still catch standard timeouts
             logs.append(f"Error: Request timed out while fetching initial URL: {start_url}")
             return None
-        except requests.exceptions.RequestException as e:
-            # This is where the 403 error is caught!
+        except requests.exceptions.RequestException as e: # Catch 403, etc.
             logs.append(f"Error fetching initial URL {start_url}: {e}")
             if hasattr(e, 'response') and e.response is not None:
-                 logs.append(f"Response Status: {e.response.status_code}") # Should show 403 here
+                 logs.append(f"Response Status: {e.response.status_code}")
                  logs.append(f"Response Text Snippet: {e.response.text[:500]}")
-            return None # Return None because the initial fetch failed
+            return None
 
         page1_url = response1.url
-        log_and_check_timeout(f"Step 1: Success. Landed on: {page1_url} (Status: {response1.status_code})")
+        log_and_check_timeout(f"Step 1: Success. Landed on: {page1_url}")
 
-        # Update Referer in session for subsequent requests based on where we landed
-        session.headers.update({'Referer': page1_url, 'Sec-Fetch-Site': 'same-origin'})
+        # Update Referer in scraper session
+        scraper.headers.update({'Referer': page1_url, 'Sec-Fetch-Site': 'same-origin'})
 
         # --- Step 2: Parse page 1 ---
+        # ... (Rest of the logic remains largely the same, just use 'scraper' instead of 'session') ...
         log_and_check_timeout(f"Step 2: Parsing page 1 HTML ({len(response1.text)} bytes) using {PARSER}...")
         try:
             soup1 = BeautifulSoup(response1.text, PARSER)
@@ -113,7 +124,9 @@ def get_gdflix_download_link(start_url, logs=None):
         possible_tags_p1 = soup1.find_all(['a', 'button'])
         log_and_check_timeout(f"Step 2: Found {len(possible_tags_p1)} potential link/button tags.")
 
+
         # --- Step 3: Find "Fast Cloud Download" ---
+        # ... (logic unchanged) ...
         fast_cloud_link_tag = None
         fast_cloud_pattern = re.compile(r'fast\s+cloud\s+download', re.IGNORECASE)
         log_and_check_timeout("Step 3: Searching for 'Fast Cloud Download'...")
@@ -124,8 +137,10 @@ def get_gdflix_download_link(start_url, logs=None):
                 log_and_check_timeout(f"Step 3: Found 'Fast Cloud' element: <{tag.name}> Text: '{tag_text}'")
                 break
 
+
         # --- Action based on finding Fast Cloud ---
         if fast_cloud_link_tag:
+            # ... (logic unchanged, extract href) ...
             log_and_check_timeout("Step 3a: 'Fast Cloud' found. Proceeding to extract link...")
             fast_cloud_href = fast_cloud_link_tag.get('href')
             if not fast_cloud_href and fast_cloud_link_tag.name == 'button':
@@ -137,20 +152,22 @@ def get_gdflix_download_link(start_url, logs=None):
                      log_and_check_timeout("Step 3a: Button found, but no href or parent form action.")
             elif fast_cloud_href:
                 log_and_check_timeout("Step 3a: Extracted href directly from tag.")
-
             if not fast_cloud_href:
                 logs.append("Error: Found 'Fast Cloud' element but failed to extract URL (href/action).")
                 return None
-
             second_page_url = urljoin(page1_url, fast_cloud_href.strip())
             log_and_check_timeout(f"Step 3a: Resolved target URL: {second_page_url}")
 
-            # --- Step 4: Fetch second page ---
+            # --- Step 4: Fetch second page (use scraper) ---
             log_and_check_timeout(f"Step 4: Fetching second page: {second_page_url}")
             try:
-                # Headers already updated in session (includes Referer: page1_url)
-                response2 = session.get(second_page_url, timeout=REQUEST_TIMEOUT)
+                # Scraper session headers already include Referer: page1_url
+                response2 = scraper.get(second_page_url, timeout=REQUEST_TIMEOUT)
+                log_and_check_timeout(f"Step 4: Second page request status: {response2.status_code}")
                 response2.raise_for_status()
+            except cloudscraper.exceptions.CloudflareChallengeError as cce:
+                 logs.append(f"Error: Cloudflare challenge detected on second page fetch: {cce}")
+                 return None
             except requests.exceptions.Timeout:
                 logs.append(f"Error: Request timed out while fetching second page: {second_page_url}")
                 return None
@@ -162,11 +179,11 @@ def get_gdflix_download_link(start_url, logs=None):
                 return None
 
             page2_url = response2.url
-            log_and_check_timeout(f"Step 4: Success. Landed on second page: {page2_url} (Status: {response2.status_code})")
-            # Update Referer again
-            session.headers.update({'Referer': page2_url})
+            log_and_check_timeout(f"Step 4: Success. Landed on second page: {page2_url}")
+            scraper.headers.update({'Referer': page2_url}) # Update referer
 
             # --- Step 5: Parse page 2 ---
+            # ... (logic unchanged) ...
             log_and_check_timeout(f"Step 5: Parsing page 2 HTML ({len(response2.text)} bytes) using {PARSER}...")
             try:
                 soup2 = BeautifulSoup(response2.text, PARSER)
@@ -177,7 +194,9 @@ def get_gdflix_download_link(start_url, logs=None):
             possible_tags_p2 = soup2.find_all(['a', 'button'])
             log_and_check_timeout(f"Step 5: Found {len(possible_tags_p2)} potential link/button tags.")
 
+
             # --- Step 6: Find "Cloud Resume Download" ---
+            # ... (logic unchanged) ...
             resume_link_tag = None
             resume_text_pattern = re.compile(r'cloud\s+resume\s+download', re.IGNORECASE)
             log_and_check_timeout("Step 6: Searching for 'Cloud Resume Download'...")
@@ -202,12 +221,12 @@ def get_gdflix_download_link(start_url, logs=None):
 
                 final_download_link = urljoin(page2_url, final_link_href.strip())
                 logs.append(f"SUCCESS: Found final link directly on page 2: {final_download_link}")
-                return final_download_link # Success!
+                return final_download_link
 
             else:
-                 # --- Step 6b: Find "Generate Cloud Link" ---
+                # --- Step 6b: Find "Generate Cloud Link" ---
+                # ... (logic unchanged) ...
                 log_and_check_timeout("Step 6b: 'Cloud Resume' not found. Searching for 'Generate Cloud Link' (ID='cloud' or text)...")
-                # ... (find generate_tag as before) ...
                 generate_tag = soup2.find('button', id='cloud')
                 generate_tag_source = "ID='cloud'"
                 if not generate_tag:
@@ -223,28 +242,29 @@ def get_gdflix_download_link(start_url, logs=None):
                 if not generate_tag:
                     logs.append("Error: Failed to find EITHER 'Cloud Resume Download' OR 'Generate Cloud Link' on page 2.")
                     logs.append(f"Page 2 Body Snippet (first 1000 chars):\n{response2.text[:1000]}")
-                    return None # Critical failure
+                    return None
 
-                # --- Step 7: Simulate POST request ---
+                # --- Step 7: Simulate POST request (use scraper) ---
                 log_and_check_timeout(f"Step 7: Found 'Generate' button (by {generate_tag_source}). Simulating POST...")
-                # ... (prepare post_data and post_headers as before, ensuring Referer is page2_url from session) ...
                 post_data = {'action': 'cloud', 'key': '08df4425e31c4330a1a0a3cefc45c19e84d0a192', 'action_token': ''}
                 parsed_uri = urlparse(page2_url)
                 hostname = parsed_uri.netloc
-                # Headers for POST: session headers contain Referer: page2_url now
+                # Use scraper's current headers (includes cookies, Referer: page2_url)
                 post_headers = {'x-token': hostname, 'Origin': f"{parsed_uri.scheme}://{hostname}"}
-                post_headers.update(session.headers) # Includes Referer, Accept etc.
+                # Do not update scraper.headers directly here, pass explicitly
+                current_scraper_headers = scraper.headers.copy()
+                current_scraper_headers.update(post_headers)
 
                 log_and_check_timeout(f"Step 7: Sending POST to {page2_url} with data: {post_data}")
-                # ... (execute POST request, parse JSON, get page3_url as before) ...
                 page3_url = None
                 try:
-                    post_response = session.post(page2_url, data=post_data, headers=post_headers, timeout=REQUEST_TIMEOUT)
+                    post_response = scraper.post(page2_url, data=post_data, headers=current_scraper_headers, timeout=REQUEST_TIMEOUT)
                     log_and_check_timeout(f"Step 7: POST request completed. Status: {post_response.status_code}")
-                    post_response.raise_for_status() # Check HTTP errors
+                    post_response.raise_for_status()
 
                     content_type = post_response.headers.get('Content-Type', '').lower()
                     log_and_check_timeout(f"Step 7: POST Response Content-Type: {content_type}")
+                    # ... (JSON parsing and URL extraction logic unchanged) ...
                     if 'application/json' not in content_type:
                          logs.append(f"Error: POST response was not JSON (Content-Type: {content_type}). Cannot proceed.")
                          logs.append(f"POST Response Text Snippet: {post_response.text[:500]}")
@@ -270,9 +290,11 @@ def get_gdflix_download_link(start_url, logs=None):
                         logs.append("Error: POST response JSON missing expected 'error', 'visit_url', or 'url' key.")
                         return None
                     log_and_check_timeout(f"Step 7: POST successful. Polling URL obtained: {page3_url}")
-                    # Update Referer for polling
-                    session.headers.update({'Referer': page3_url})
+                    scraper.headers.update({'Referer': page3_url}) # Update referer for polling
 
+                except cloudscraper.exceptions.CloudflareChallengeError as cce:
+                    logs.append(f"Error: Cloudflare challenge detected during POST request: {cce}")
+                    return None
                 except requests.exceptions.Timeout:
                     logs.append(f"Error: POST request to {page2_url} timed out.")
                     return None
@@ -283,9 +305,9 @@ def get_gdflix_download_link(start_url, logs=None):
                          logs.append(f"Response Text Snippet: {post_err.response.text[:500]}")
                     return None
 
-                # --- Step 8: Polling Loop ---
+                # --- Step 8: Polling Loop (use scraper) ---
                 if page3_url:
-                     # ... (polling loop logic as before, using updated session headers) ...
+                    # ... (polling logic unchanged, but use scraper.get) ...
                     polling_start_time = time.time()
                     log_and_check_timeout(f"Step 8: Starting polling loop for {page3_url} (Interval: {POLL_INTERVAL}s)")
                     polled_resume_tag = None
@@ -303,8 +325,8 @@ def get_gdflix_download_link(start_url, logs=None):
                         time.sleep(wait_time)
                         log_and_check_timeout(f"Step 8: Polling URL: {page3_url}")
                         try:
-                            # Session headers include Referer: page3_url now
-                            poll_response = session.get(page3_url, timeout=REQUEST_TIMEOUT)
+                            # Use scraper session (includes Referer: page3_url)
+                            poll_response = scraper.get(page3_url, timeout=REQUEST_TIMEOUT)
                             log_and_check_timeout(f"Step 8: Poll request completed. Status: {poll_response.status_code}")
                             if poll_response.status_code != 200:
                                 log_and_check_timeout(f"Warning: Polling returned status {poll_response.status_code}. Continuing poll.")
@@ -325,6 +347,8 @@ def get_gdflix_download_link(start_url, logs=None):
                             if polled_resume_tag:
                                 break
                             log_and_check_timeout("Step 8: 'Cloud Resume' not found yet on polled page.")
+                        except cloudscraper.exceptions.CloudflareChallengeError as cce:
+                            logs.append(f"Warning: Cloudflare challenge detected during polling: {cce}. Continuing poll.")
                         except requests.exceptions.Timeout:
                             log_and_check_timeout("Warning: Polling request timed out. Continuing poll.")
                         except requests.exceptions.RequestException as poll_err:
@@ -343,17 +367,16 @@ def get_gdflix_download_link(start_url, logs=None):
                             return None
                         final_download_link = urljoin(page3_url, final_link_href.strip())
                         logs.append(f"SUCCESS: Found final link after polling: {final_download_link}")
-                        return final_download_link # Success!
+                        return final_download_link
                     else:
                         logs.append(f"Error: Polling loop finished after {time.time() - polling_start_time:.1f}s without finding 'Cloud Resume Download'.")
                         logs.append("Hint: Link generation might have failed or taken too long.")
                         return None
                 # else: page3_url was None (POST failed), handled above
 
-
         # --- Fallback: PixeldrainDL ---
         else:
-             # ... (Pixeldrain logic as before) ...
+            # ... (Pixeldrain logic unchanged) ...
             log_and_check_timeout("Step 3b: 'Fast Cloud' not found on page 1. Checking for 'PixeldrainDL' fallback...")
             pixeldrain_link_tag = None
             pixeldrain_pattern = re.compile(r'pixeldrain\s*dl', re.IGNORECASE)
@@ -377,27 +400,22 @@ def get_gdflix_download_link(start_url, logs=None):
                 return None
             pixeldrain_full_url = urljoin(page1_url, pixeldrain_href.strip())
             logs.append(f"SUCCESS: Found Pixeldrain link as fallback: {pixeldrain_full_url}")
-            return pixeldrain_full_url # Success via fallback
-
+            return pixeldrain_full_url
 
     except TimeoutError as te:
-         # Already logged within log_and_check_timeout
-         return None
+         return None # Already logged
     except Exception as e:
-        # Catch any other unexpected errors during the process
         logs.append(f"FATAL ERROR during GDFLIX processing: {e}\n{traceback.format_exc()}")
         return None
 
-    # Fallback if something went wrong without returning None explicitly
     logs.append("Error: Reached end of function unexpectedly without finding a link.")
     return None
 
 
-# --- Vercel Serverless Function Handler (Unchanged from previous enhanced version) ---
+# --- Vercel Serverless Function Handler (Unchanged) ---
 class handler(BaseHTTPRequestHandler):
-    # ... (Keep the enhanced handler class from the previous version) ...
-    # ... (It correctly handles logging, status codes, errors, etc.) ...
-
+    # ... (Keep the same handler class from the previous version) ...
+    # ... (It correctly handles logging, status codes, extracting errors from logs, etc.) ...
     def _set_headers(self, status_code=200, content_type='application/json'):
         if hasattr(self, '_headers_sent') and self._headers_sent:
              print("DEBUG: Headers already sent, skipping _set_headers.", file=sys.stderr)
@@ -519,7 +537,11 @@ class handler(BaseHTTPRequestHandler):
                 for log_entry in reversed(logs):
                     log_lower = log_entry.lower()
                     is_priority = False
-                    if "cloudflare" in log_lower or "captcha" in log_lower:
+                    # Prioritize specific known failure modes
+                    if "cloudflare challenge" in log_lower:
+                        priority_error = "Cloudflare challenge failed"
+                        is_priority = True
+                    elif "cloudflare" in log_lower or "captcha" in log_lower:
                         priority_error = "Potential Cloudflare/Captcha block"
                         is_priority = True
                     elif "403" in log_lower and ("forbidden" in log_lower or "client error" in log_lower):
@@ -529,7 +551,7 @@ class handler(BaseHTTPRequestHandler):
                          priority_error = "Operation Timed Out"
                          is_priority = True
 
-                    if priority_error: break
+                    if priority_error: break # Stop if we found a critical error
 
                     if any(indicator in log_lower for indicator in failure_indicators):
                         cleaned_error = log_entry.split(":", 1)[-1].strip() if ":" in log_entry else log_entry
