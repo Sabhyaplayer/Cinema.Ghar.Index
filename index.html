@@ -1990,7 +1990,7 @@
            }
            // --- END MODIFIED Data Preprocessing ---
 
-           // --- HTML Generation (MODIFIED for HubCloud Bypass Button) ---
+           // --- HTML Generation (MODIFIED for HubCloud Bypass Button + ALWAYS Show Link) ---
            function createActionContentHTML(movie, dataIndexOrRef = null) { // Added dataIndexOrRef
                // ... (Keep existing variable declarations: displayFilename, displaySize, etc.) ...
                const displayFilename = movie.displayFilename;
@@ -2063,8 +2063,9 @@
                urlDependentButtonsHTML = `<div class="url-actions-container" id="url-actions-container-${escapedId}">${urlDependentButtonsHTML}</div>`;
 
 
-               // 2. HubCloud Bypass Button (Show ONLY if no URL but HubCloud link exists)
-               if (!movie.url && movie.hubcloud_link) {
+               // 2. HubCloud Bypass Button (Show if HubCloud link exists)
+               // **** MODIFIED CONDITION ****
+               if (movie.hubcloud_link) {
                    // Use data-movie-index for table/preview, data-movie-ref="shared" for shared view
                    const movieRefAttr = (dataIndexOrRef === 'shared')
                        ? 'data-movie-ref="shared"'
@@ -2090,12 +2091,14 @@
                // Other links if available
                if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
                if (movie.gdflix_link) otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX</a>`;
+
+               // **** MODIFIED LOGIC FOR HUBLINK BUTTON ****
+               // Always show the HubCloud *Link* button if the link exists
                if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null') {
-                  // Only show the *link* if we *also* have a direct URL or couldn't show the bypass button
-                  if(movie.url || !hubCloudBypassButtonHTML) {
-                    otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`;
-                  }
+                   otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`;
                }
+               // **** END MODIFIED LOGIC ****
+
                if (movie.filepress_link) otherLinkButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
                if (movie.gdtot_link) otherLinkButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
                if (movie.id) { otherLinkButtonsHTML += `<button class="button share-button" data-action="share" data-id="${escapedId}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share Post</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`; }
