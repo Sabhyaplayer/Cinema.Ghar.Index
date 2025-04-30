@@ -794,9 +794,11 @@
     // --- Share Logic ---
     async function handleShareClick(buttonElement) { const itemId = buttonElement.dataset.id; const itemTitle = buttonElement.dataset.title || "Cinema Ghar Item"; const itemFilename = buttonElement.dataset.filename || ""; if (!itemId) { console.error("Share failed: Item ID missing."); alert("Cannot share this item (missing ID)."); return; } const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${encodeURIComponent(itemId)}`; const shareText = `Check out: ${itemTitle}\n${itemFilename ? `(${itemFilename})\n` : ''}`; const feedbackSpan = buttonElement.nextElementSibling; if (!feedbackSpan || !feedbackSpan.classList.contains('copy-feedback')) { console.warn("Share fallback feedback span not found next to button:", buttonElement); } if (navigator.share) { try { await navigator.share({ title: itemTitle, text: shareText, url: shareUrl, }); console.log('Successful share'); } catch (error) { console.error('Error sharing:', error); if (error.name !== 'AbortError') { if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Share failed!', true); } else { alert(`Share failed: ${error.message}`); } } } } else { console.log('Web Share API not supported, falling back to copy.'); await copyToClipboard(shareUrl, feedbackSpan); } }
 
-    // --- Item Detail Display Logic (Handles both shareId and viewId + TMDb) ---
+     // --- Item Detail Display Logic (Handles both shareId and viewId + TMDb + Race Condition Fix) ---
      async function displayItemDetail(itemId, isFromShareLink) {
          if (!itemId || !itemDetailView || !itemDetailContent) return;
+
+         const requestedItemId = itemId; // Store the ID we initially requested
 
          isShareMode = isFromShareLink; // Set the mode flag
          itemDetailContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading item details...</span></div>`;
@@ -810,27 +812,33 @@
 
          try {
              // 1. Fetch internal item data first
-             const params = { id: itemId };
+             const params = { id: requestedItemId }; // Use the requested ID
              const internalData = await fetchApiData(params);
+
+             // ** Check if we navigated away BEFORE internal data returned **
+             if (currentViewMode !== 'itemDetail' || requestedItemId !== (new URLSearchParams(window.location.search)).get('viewId') && requestedItemId !== (new URLSearchParams(window.location.search)).get('shareId')) {
+                 console.log(`Item changed (viewId=${(new URLSearchParams(window.location.search)).get('viewId')}, shareId=${(new URLSearchParams(window.location.search)).get('shareId')}) before internal data for ${requestedItemId} arrived. Aborting render.`);
+                 return; // Stop processing if item changed
+             }
 
              if (internalData && internalData.items && internalData.items.length > 0) {
                  const itemRaw = internalData.items[0];
+                 // ** Double-check the ID matches after fetch, just in case API returned wrong item **
+                 if (itemRaw.original_id != requestedItemId) {
+                    console.warn(`API returned item ID ${itemRaw.original_id} when ${requestedItemId} was requested. Aborting render.`);
+                    itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Data mismatch loading item ${sanitize(requestedItemId)}. Please try again.</div>`;
+                    return;
+                 }
+
                  currentItemDetailData = preprocessMovieData(itemRaw); // Store the fetched internal data
-                 console.log(`Displaying item detail for: ${currentItemDetailData.displayFilename} (isShare: ${isShareMode})`);
+                 console.log(`Displaying item detail for: ${currentItemDetailData.displayFilename} (ID: ${requestedItemId}, isShare: ${isShareMode})`);
 
                  // Set title early based on internal data
                  document.title = `${currentItemDetailData.displayFilename || 'Item Detail'} - Cinema Ghar`;
 
                  // --- START TMDb Fetch ---
                  if (currentItemDetailData.extractedTitle) {
-                     console.log(`Fetching TMDb details for: Title='${currentItemDetailData.extractedTitle}', Year='${currentItemDetailData.extractedYear || 'N/A'}', Type='${currentItemDetailData.isSeries ? 'tv' : 'movie'}'`);
-                     // Add a small delay before showing the "fetching TMDb" message
-                     setTimeout(() => {
-                        if (currentViewMode === 'itemDetail' && currentItemDetailData?.id === itemId && !tmdbDetails) { // Check if still relevant
-                            itemDetailContent.innerHTML += `<div class="tmdb-loading-indicator"><div class="spinner"></div> Fetching details from TMDb...</div>`;
-                        }
-                     }, 500); // 0.5 second delay
-
+                     console.log(`Fetching TMDb details for: ${currentItemDetailData.extractedTitle}`);
                      const tmdbQuery = new URLSearchParams();
                      tmdbQuery.set('query', currentItemDetailData.extractedTitle);
                      tmdbQuery.set('type', currentItemDetailData.isSeries ? 'tv' : 'movie');
@@ -845,80 +853,82 @@
                      try {
                          const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
                          clearTimeout(tmdbTimeoutId);
-                         if (tmdbResponse.ok) {
+
+                         // **** ADD CHECK HERE ****
+                         // Check if we are still supposed to be viewing *this specific item* AFTER the TMDb fetch returned.
+                         if (currentViewMode !== 'itemDetail' || !currentItemDetailData || currentItemDetailData.id != requestedItemId) {
+                             console.log(`Item changed (current ID: ${currentItemDetailData?.id}) while fetching TMDb for ${requestedItemId}, not rendering.`); // Log updated message
+                             // No need to return here, just don't assign tmdbDetails if item changed
+                             tmdbDetails = null; // Ensure we don't use stale TMDb data
+                         } else if (tmdbResponse.ok) {
                              tmdbDetails = await tmdbResponse.json();
                              console.log("TMDb details fetched successfully:", tmdbDetails);
                          } else {
-                             const errorBody = await tmdbResponse.text(); // Read body even if not JSON
+                             const errorBody = await tmdbResponse.text();
                              console.warn(`Failed to fetch TMDb details (${tmdbResponse.status}): ${errorBody}`);
-                             // Don't treat TMDb failure as a fatal error for the whole page
                          }
                      } catch (tmdbError) {
                          clearTimeout(tmdbTimeoutId);
                          if (tmdbError.name === 'AbortError') {
-                            console.warn(`TMDb fetch timed out or aborted for: ${currentItemDetailData.extractedTitle}`);
+                            console.warn(`TMDb fetch timed out or aborted for: ${currentItemDetailData?.extractedTitle || requestedItemId}`);
                          } else {
                             console.error("Error fetching TMDb details:", tmdbError);
                          }
-                          // Don't treat TMDb failure as a fatal error
+                         // Ensure tmdbDetails is null on error
+                         tmdbDetails = null;
                      }
                  } else {
                      console.warn("Cannot fetch TMDb details: No extracted title found.");
+                     tmdbDetails = null;
                  }
                  // --- END TMDb Fetch ---
 
-                 // 2. Render content using BOTH internal and TMDb data (tmdbDetails might be null)
-                 // Check if the item is still the one being viewed before rendering
-                 if (currentItemDetailData?.id === itemId) {
-                    const contentHTML = createItemDetailContentHTML(currentItemDetailData, tmdbDetails);
-                    itemDetailContent.innerHTML = contentHTML; // Replace loading/previous content
+                 // ** Final Check Before Rendering **
+                 // Ensure we are still in the correct view mode and processing the originally requested item before updating the DOM
+                  if (currentViewMode !== 'itemDetail' || !currentItemDetailData || currentItemDetailData.id != requestedItemId) {
+                       console.log(`Item changed (current ID: ${currentItemDetailData?.id}) just before final render for ${requestedItemId}. Aborting DOM update.`);
+                       return; // Exit function to prevent updating the wrong page
+                   }
 
-                     // Ensure player is hidden initially when showing details
-                     if (videoContainer) videoContainer.style.display = 'none';
-                 } else {
-                     console.log("Item changed while fetching TMDb, not rendering.");
-                 }
+
+                 // 2. Render content using BOTH internal and TMDb data (tmdbDetails might be null)
+                 const contentHTML = createItemDetailContentHTML(currentItemDetailData, tmdbDetails);
+                 itemDetailContent.innerHTML = contentHTML;
+
+                 // Ensure player is hidden initially when showing details
+                 if (videoContainer) videoContainer.style.display = 'none';
 
              } else {
-                 console.error(`Item not found via API for ID: ${itemId}`);
-                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Item with ID ${sanitize(itemId)} was not found. It might have been removed or the link is incorrect.</div>`;
+                 console.error(`Item not found via API for ID: ${requestedItemId}`);
+                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Item with ID ${sanitize(requestedItemId)} was not found. It might have been removed or the link is incorrect.</div>`;
                  document.title = "Item Not Found - Cinema Ghar Index";
              }
          } catch (error) {
              console.error("Failed to fetch or display item detail:", error);
-             itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item: ${error.message}. Please try again.</div>`;
-             document.title = "Error Loading Item - Cinema Ghar Index";
+             // Check if we should still show the error for the requested item
+             if(currentViewMode === 'itemDetail' && ( (new URLSearchParams(window.location.search)).get('viewId') == requestedItemId || (new URLSearchParams(window.location.search)).get('shareId') == requestedItemId) ){
+                itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item ${sanitize(requestedItemId)}: ${error.message}. Please try again.</div>`;
+                document.title = `Error Loading Item ${sanitize(requestedItemId)} - Cinema Ghar Index`;
+             } else {
+                 console.log("Error occurred but view changed, suppressing error display for stale item:", requestedItemId);
+             }
          } finally {
-             // Ensure view mode is correct and scroll to top
-             setViewMode('itemDetail');
-             window.scrollTo({ top: 0, behavior: 'smooth' });
-             // Hide page loader if it's still visible (shouldn't be normally, but just in case)
+            // This block runs regardless of errors or returns
+             // Re-evaluate view mode *after* all async operations, in case it changed during error handling
+             if (currentViewMode === 'itemDetail') {
+                const currentUrlId = (new URLSearchParams(window.location.search)).get('viewId') || (new URLSearchParams(window.location.search)).get('shareId');
+                 if (currentUrlId == requestedItemId) {
+                    // Only scroll/ensure view mode if we are *still* supposed to be on this item's page
+                    setViewMode('itemDetail'); // Re-affirm view mode just in case
+                     window.scrollTo({ top: 0, behavior: 'auto' }); // Use 'auto' as smooth might be weird if content just appeared
+                 }
+             }
+             // Hide page loader if it's still visible
              if (pageLoader && pageLoader.style.display !== 'none') {
                 pageLoader.style.display = 'none';
              }
          }
      }
-
-
-    // --- Player Logic ---
-    function streamVideo(title, url, filenameForAudioCheck, isFromCustom = false) {
-        let currentActionContainer = null;
-        // Determine the container where the player should be placed
-        if (isGlobalCustomUrlMode) {
-            // Player stays in its global container
-        } else if (currentViewMode === 'itemDetail' && itemDetailContent) {
-            currentActionContainer = itemDetailContent; // Player goes inside item detail content
-        } else {
-            console.warn("Cannot determine where to place the video player.");
-            // Fallback: maybe append to body or a generic container? Or just prevent playback?
-            // For now, let's try appending to itemDetailContent if it exists, otherwise log error.
-            if (itemDetailContent) {
-                 currentActionContainer = itemDetailContent;
-            } else {
-                console.error("Cannot stream video: No valid container found (itemDetailContent missing).");
-                return;
-            }
-        }
 
         if (!videoContainer || !videoElement) { console.error("Cannot stream: player or video element missing."); return; }
 
