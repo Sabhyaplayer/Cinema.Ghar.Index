@@ -462,11 +462,10 @@
 
         // Assemble final structure with TMDb section potentially at the top
         return `
-            ${tmdbSectionHTML} ${ /* Add TMDb section */ }
-            <hr class="detail-separator"> ${ /* Add a separator */ }
+            ${tmdbSectionHTML}
+            <hr class="detail-separator">
             ${internalInfoHTML}
             ${buttonsHTML}
-            ${ /* The video player container will be appended here by JS if needed */ }
         `;
     }
 
