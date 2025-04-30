@@ -2898,7 +2898,7 @@
          document.addEventListener('fullscreenchange', handleFullscreenChange); document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
          // History (Back/Forward Button) Handling
-         window.addEventListener('popstate', (event) => {
+         window.addEventListener('popstate', (event) => { // <--- Opening brace for callback
              console.log("Popstate event:", event.state, "Current Location:", window.location.href);
              const state = event.state;
              const urlParams = new URLSearchParams(window.location.search);
@@ -2917,12 +2917,11 @@
                  console.log("Popstate: Navigating back to homepage/initial state");
                  resetToHomepage(event, true); // Reset view, indicate from popstate
              }
-         });
+         }); // <--- **** ADD THE MISSING } HERE **** // Closes the popstate callback function
 
      }); // End DOMContentLoaded
 
-})(); // End of IIFE
-// --- END OF MODIFIED SCRIPT BLOCK ---
+ })(); // End of IIFE // <-- This should now be expected
 </script>
 <!-- END OF UPDATED SCRIPT BLOCK -->
 
