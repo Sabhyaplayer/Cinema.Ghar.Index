@@ -353,7 +353,6 @@
             <hr class="detail-separator">
             ${internalInfoHTML}
             ${buttonsHTML}
-            ${ /* The video player container will be appended here by JS if needed */ }
         `;
     } // End of createItemDetailContentHTML function
 
