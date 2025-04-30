@@ -1,4 +1,4 @@
-// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE) ---
+// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE + ORIGINAL LINK VISIBILITY FIX) ---
 (function() {
     'use strict';
 
@@ -247,13 +247,6 @@
         }
         // --- End Extraction ---
 
-        // Log extraction results for debugging
-        // if (filename && !processed.extractedTitle) {
-        //     console.warn(`Extraction failed for: "${filename}". Got Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}`);
-        // } else if (filename) {
-        //      console.log(`Extraction result for "${filename}": Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}, IsSeries: ${processed.isSeries}`);
-        // }
-
         return processed;
     }
 
@@ -433,16 +426,18 @@
         otherLinkButtonsHTML += externalInfoButtonHTML; // Use combined IMDb/TMDb button
         otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
 
-        // Always show original links if they exist
+        // --- START OF CORRECTION ---
+        // Always show original links if they exist, regardless of bypass button presence
         if (movie.telegram_link) {
              otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
         }
-        if (movie.gdflix_link && !bypassButtonsHTML.includes('bypass-gdflix')) { // Show original link only if bypass button isn't already there (though bypass usually means link exists)
+        if (movie.gdflix_link) { // REMOVED: && !bypassButtonsHTML.includes('bypass-gdflix')
             otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`;
         }
-        if (movie.hubcloud_link && !bypassButtonsHTML.includes('bypass-hubcloud')) { // Show original link only if bypass button isn't already there
+        if (movie.hubcloud_link) { // REMOVED: && !bypassButtonsHTML.includes('bypass-hubcloud')
             otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`;
         }
+        // --- END OF CORRECTION ---
 
         if (movie.filepress_link) otherLinkButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
         if (movie.gdtot_link) otherLinkButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
@@ -879,7 +874,7 @@
 
 
     // ==================================================================
-    // START OF CORRECTED BLOCK FOR ITEM DETAIL / TMDB / BYPASS
+    // START OF CORRECTED BLOCK FOR ITEM DETAIL / TMDB / BYPASS (FROM PREVIOUS FIX)
     // ==================================================================
 
     // --- Item Detail Display Logic (Handles both shareId and viewId + TMDb Persistence) ---
