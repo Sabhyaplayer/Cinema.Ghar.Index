@@ -1,30 +1,29 @@
-// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDb + Updates Function Order Fix) ---
+// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION) ---
 (function() {
     'use strict';
 
     // ===========================================================
-    // JAVASCRIPT SECTION (Updated for TMDb Integration & Function Order)
+    // JAVASCRIPT SECTION (Updated for TMDb Integration)
     // ===========================================================
     const config = {
         HDR_LOGO_URL: "https://as1.ftcdn.net/v2/jpg/05/32/83/72/1000_F_532837228_v8CGZRU0jy39uCtqFRnJz6xDntrGuLLx.webp",
         FOURK_LOGO_URL: "https://i.pinimg.com/736x/85/c4/b0/85c4b0a2fb8612825d0cd2f53460925f.jpg",
         ITEMS_PER_PAGE: 50,
-        LOCAL_STORAGE_KEY: 'cinemaGharState_v14_db', // Incremented version for item detail view
+        LOCAL_STORAGE_KEY: 'cinemaGharState_v15_tmdb', // Incremented version for TMDb
         PLAYER_VOLUME_KEY: 'cinemaGharPlayerVolume',
         PLAYER_SPEED_KEY: 'cinemaGharPlayerSpeed',
         SEARCH_DEBOUNCE_DELAY: 300,
         SUGGESTIONS_DEBOUNCE_DELAY: 250,
         MAX_SUGGESTIONS: 50,
-        UPDATES_PREVIEW_INITIAL_COUNT: 10, // Changed to 10
-        UPDATES_PREVIEW_LOAD_MORE_COUNT: 10, // Changed to 10
-        MOVIE_DATA_API_URL: '/api/movies',
+        UPDATES_PREVIEW_INITIAL_COUNT: 10,
+        UPDATES_PREVIEW_LOAD_MORE_COUNT: 10,
+        MOVIE_DATA_API_URL: '/api/movies', // Your backend API for movie list/search/ID lookup
         BYPASS_API_URL: 'https://hubcloud-bypass.onrender.com/api/hubcloud', // HubCloud Bypass API
         GDFLIX_BYPASS_API_URL: 'https://gdflix-bypass.onrender.com/api/gdflix', // GDFLIX Bypass API
         BYPASS_TIMEOUT: 60000, // 60 seconds timeout for bypass API calls (Shared)
-        TMDB_API_PROXY_URL: '/api/tmdb', // API proxy route
+        TMDB_API_PROXY_URL: '/api/tmdb', // <<< Your Vercel function endpoint for TMDb
         TMDB_FETCH_TIMEOUT: 15000 // Timeout for TMDb fetch (15 seconds)
     };
-
 
     // --- DOM Element References ---
     const container = document.getElementById('cinemaghar-container');
@@ -135,17 +134,18 @@
              audioWarningDiv.innerHTML = `<strong>Playback Error:</strong> ${sanitize(msg)} <br>Consider using 'Copy URL' with an external player (VLC/MX), 'Play in VLC or MX Player' (Android), or the 'Play Custom URL' option below.`;
              audioWarningDiv.style.display = 'block';
          }
+         // If not in global custom URL mode, try to show the custom URL toggle *within the item detail view*
          if (!isGlobalCustomUrlMode && currentViewMode === 'itemDetail' && itemDetailContent) {
              const customUrlToggleButton = itemDetailContent.querySelector('.custom-url-toggle-button');
              if (customUrlToggleButton) {
                  console.log("Playback error occurred in item detail view, showing item's custom URL toggle button.");
                  customUrlToggleButton.style.display = 'inline-flex';
                  if (playerCustomUrlSection && playerCustomUrlSection.style.display === 'none') {
-                     toggleCustomUrlInput(customUrlToggleButton, true);
+                     toggleCustomUrlInput(customUrlToggleButton, true); // Pass error flag
                  }
                  setTimeout(() => { customUrlToggleButton.focus(); }, 100);
              } else { console.warn("Could not find custom URL toggle button in item detail view after video error."); }
-         } else if (isGlobalCustomUrlMode) {
+         } else if (isGlobalCustomUrlMode) { // Handle error in global custom URL mode
              if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'flex';
              if (videoElement) videoElement.style.display = 'none';
              if (customControlsContainer) customControlsContainer.style.display = 'none';
@@ -158,13 +158,13 @@
     function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
     async function copyToClipboard(text, feedbackSpan) { console.log("Attempting to copy:", text); let success = false; if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) { try { await navigator.clipboard.writeText(text); success = true; console.log("navigator.clipboard.writeText SUCCEEDED"); } catch (err) { console.error("Async clipboard write failed:", err); success = false; } } if (!success) { console.warn("Using fallback copy method (execCommand)."); const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.top = "-9999px"; textArea.style.left = "-9999px"; textArea.style.opacity = "0"; textArea.setAttribute("readonly", ""); document.body.appendChild(textArea); try { textArea.select(); textArea.setSelectionRange(0, textArea.value.length); success = document.execCommand('copy'); console.log("Fallback execCommand result:", success); } catch (err) { console.error('Fallback copy execCommand failed:', err); success = false; } finally { document.body.removeChild(textArea); } } if (success) { console.log("Copy successful!"); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copied!', false); } } else { console.error("Copy FAILED."); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copy Failed!', true); } else { alert("Copy failed. Please try again or copy manually. Check console for errors (F12)."); } } return success; }
 
-    // --- Data Preprocessing (Handles HubCloud and GDFLIX links, encodes URL spaces) ---
+    // --- Data Preprocessing (Handles HubCloud and GDFLIX links, encodes URL spaces, extracts metadata) ---
     function preprocessMovieData(movie) {
         const processed = { ...movie };
-        processed.id = movie.original_id;
+        processed.id = movie.original_id; // Use original_id as the unique identifier
         processed.url = (movie.url && typeof movie.url === 'string' && movie.url.toLowerCase() !== 'null' && movie.url.trim() !== '') ? movie.url : null;
         if (processed.url) {
-            processed.url = processed.url.replace(/ /g, '%20');
+            processed.url = processed.url.replace(/ /g, '%20'); // Encode spaces
         }
         processed.hubcloud_link = (movie.hubcloud_link && typeof movie.hubcloud_link === 'string' && movie.hubcloud_link.toLowerCase() !== 'null' && movie.hubcloud_link.trim() !== '') ? movie.hubcloud_link : null;
         processed.gdflix_link = (movie.gdflix_link && typeof movie.gdflix_link === 'string' && movie.gdflix_link.toLowerCase() !== 'null' && movie.gdflix_link.trim() !== '') ? movie.gdflix_link : null;
@@ -172,7 +172,7 @@
         processed.displayFilename = sanitize(movie.filename || '');
         processed.sizeData = extractSizeData(movie.size_display);
         if (!processed.size_bytes && processed.sizeData.bytes > 0) { processed.size_bytes = processed.sizeData.bytes; }
-        processed.displayQuality = sanitize(movie.quality || 'N/A');
+        processed.displayQuality = sanitize(movie.quality || extractQualityFromFilename(movie.filename) || 'N/A'); // Use extracted if needed
         if (processed.displayQuality && processed.displayQuality !== 'N/A') { uniqueQualities.add(processed.displayQuality); }
         const tsString = movie.last_updated_ts;
         let dateObject = null;
@@ -183,29 +183,77 @@
         processed.searchText = normalizeTextForSearch(`${processed.id || ''} ${processed.displayFilename}`);
         processed.isSeries = !!movie.is_series;
         processed.extractedTitle = null; processed.extractedYear = null; processed.extractedSeason = null;
+
+        // --- Title/Year/Season Extraction Logic (Improved) ---
         const filename = processed.displayFilename;
         if (filename) {
-            const seasonMatch = filename.match(/[. ]S(\d{1,2})(?:E\d{1,2}|[. ])/i);
-            if (seasonMatch && seasonMatch[1]) {
-                processed.extractedSeason = parseInt(seasonMatch[1], 10);
+            let cleanedName = filename;
+
+            // 1. Remove quality/source tags first (common source of year-like numbers)
+            const qualityTagsRegex = /(\b(4k|2160p|1080p|720p|480p|web-?dl|webrip|bluray|bdrip|brrip|hdtv|hdrip|dvdrip|dvdscr|hdcam|hc|tc|ts|cam|hdr|dv|dolby.?vision|hevc|x265)\b)/gi;
+            cleanedName = cleanedName.replace(qualityTagsRegex, '');
+
+            // 2. Try to find Season (e.g., S01, Season 1)
+            const seasonMatch = cleanedName.match(/[. (_-](S(\d{1,2}))(?:E\d{1,2}|[. (_-])/i) || cleanedName.match(/[. (_-](Season[. _]?(\d{1,2}))(?:[. (_]|$)/i);
+            if (seasonMatch && (seasonMatch[2] || seasonMatch[3])) {
+                processed.extractedSeason = parseInt(seasonMatch[2] || seasonMatch[3], 10);
                 processed.isSeries = true;
+                // Take the part before the season marker as the title
                 const titleEndIndex = seasonMatch.index;
-                processed.extractedTitle = filename.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
-            }
-            if (!processed.extractedSeason) {
-                const yearMatch = filename.match(/[.(_[](\d{4})[.)_\]]/);
+                processed.extractedTitle = cleanedName.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
+
+                // Try to find year *within* the title part if it's a series
+                const yearInTitleMatch = processed.extractedTitle.match(/[.(_[](\d{4})[.)_\]]/);
+                if(yearInTitleMatch && yearInTitleMatch[1]) {
+                     const potentialYear = parseInt(yearInTitleMatch[1], 10);
+                     if (potentialYear > 1900 && potentialYear < 2050) {
+                         processed.extractedYear = potentialYear;
+                         // Refine title by removing year if it's at the end
+                         processed.extractedTitle = processed.extractedTitle.replace(new RegExp(`[.(_[]${potentialYear}[.)_\]]$`), '').trim();
+                     }
+                }
+
+            } else {
+                // 3. If not a series (or season not found), look for Year
+                processed.isSeries = false; // Assume movie unless season found
+                 // Look for year in common patterns like (YYYY), [YYYY], .YYYY.
+                const yearMatch = cleanedName.match(/[.(_[](\d{4})[.)_\]]/);
                 if (yearMatch && yearMatch[1]) {
                     const year = parseInt(yearMatch[1], 10);
                     if (year > 1900 && year < 2050) {
                         processed.extractedYear = year;
+                        // Take the part before the year marker as the title
                         const titleEndIndex = yearMatch.index;
-                        processed.extractedTitle = filename.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
+                        processed.extractedTitle = cleanedName.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
                     }
                 }
             }
-            if (!processed.extractedTitle) { processed.extractedTitle = filename.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim(); }
-            if (processed.extractedTitle) { processed.extractedTitle = processed.extractedTitle.replace(/ (1080p|720p|2160p|4k|web-?dl|bluray|hdtv|dvdrip|hdr|x265|hevc)$/i, '').trim(); }
+
+            // 4. Fallback Title Extraction (if no season/year match helped)
+            if (!processed.extractedTitle && cleanedName) {
+                processed.extractedTitle = cleanedName.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
+            }
+
+            // 5. Final Cleanup (Remove potential leftover artifacts or edge cases if needed)
+            if (processed.extractedTitle) {
+                // Remove trailing artifacts like '-' or common release groups if simple extraction left them
+                processed.extractedTitle = processed.extractedTitle.replace(/[- ]+$/, '').trim();
+            }
+            // Check if extracted title looks like a year, if so, discard it
+            if (processed.extractedTitle && /^\d{4}$/.test(processed.extractedTitle)) {
+                processed.extractedTitle = null; // Invalid title
+            }
         }
+        // --- End Extraction ---
+
+        // Log extraction results for debugging
+        if (filename && !processed.extractedTitle) {
+            console.warn(`Extraction failed for: "${filename}". Got Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}`);
+        } else if (filename) {
+             console.log(`Extraction result for "${filename}": Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}, IsSeries: ${processed.isSeries}`);
+        }
+
+
         return processed;
     }
 
@@ -232,11 +280,12 @@
         const escapedHubcloudUrl = movie.hubcloud_link ? movie.hubcloud_link.replace(/'/g, "\\'") : '';
         const escapedGdflixUrl = movie.gdflix_link ? movie.gdflix_link.replace(/'/g, "\\'") : '';
 
-        // --- Existing Trailer/IMDb Logic ---
+        // --- Trailer/IMDb/TMDb Link Logic ---
         let youtubeTrailerButtonHTML = '';
-        let imdbSearchButtonHTML = '';
+        let externalInfoButtonHTML = ''; // Combined IMDb/TMDb link button
+
         if (movie.extractedTitle) {
-             // YouTube Trailer
+            // YouTube Trailer
             let ytSearchTerms = [movie.extractedTitle];
             if (movie.isSeries && movie.extractedSeason) { ytSearchTerms.push(`Season ${movie.extractedSeason}`); }
             else if (!movie.isSeries && movie.extractedYear) { ytSearchTerms.push(String(movie.extractedYear)); }
@@ -248,89 +297,154 @@
             const youtubeIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.267,4,12,4,12,4S5.733,4,4.186,4.418 c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.734,2,12,2,12s0,4.266,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768 C5.733,20,12,20,12,20s6.267,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.266,22,12,22,12S22,7.734,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"></path></svg>`;
             youtubeTrailerButtonHTML = `<a href="${youtubeSearchUrl}" target="_blank" rel="noopener noreferrer" class="button youtube-button">${youtubeIconSVG} Watch Trailer</a>`;
 
-             // IMDb Link (using TMDb link if available, otherwise Google search)
-             const imdbIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`; // Placeholder icon
-             if (tmdbDetails && tmdbDetails.tmdbLink) {
-                  const tmdbLabel = movie.isSeries ? "View on TMDb (TV)" : "View on TMDb (Movie)";
-                  imdbSearchButtonHTML = `<a href="${sanitize(tmdbDetails.tmdbLink)}" target="_blank" rel="noopener noreferrer" class="button tmdb-link-button">${imdbIconSVG} ${tmdbLabel}</a>`;
-             } else {
-                 let imdbQueryTerms = [`"${movie.extractedTitle}"`];
-                 if (!movie.isSeries && movie.extractedYear) { imdbQueryTerms.push(String(movie.extractedYear)); }
-                 imdbQueryTerms.push("IMDb");
-                 const imdbSearchQuery = imdbQueryTerms.join(' ');
-                 const imdbSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(imdbSearchQuery)}&btnI=1`;
-                 imdbSearchButtonHTML = `<a href="${imdbSearchUrl}" target="_blank" rel="noopener noreferrer" class="button imdb-button">${imdbIconSVG} Find on IMDb</a>`;
-             }
-         }
+            // External Info Link (TMDb or IMDb)
+            const infoIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`; // Placeholder icon
+            if (tmdbDetails && tmdbDetails.tmdbLink) {
+                // Use direct TMDb link if we fetched it
+                 const tmdbLabel = movie.isSeries ? "View on TMDb (TV)" : "View on TMDb (Movie)";
+                 externalInfoButtonHTML = `<a href="${sanitize(tmdbDetails.tmdbLink)}" target="_blank" rel="noopener noreferrer" class="button tmdb-link-button">${infoIconSVG} ${tmdbLabel}</a>`;
+            } else {
+                // Fallback to Google "I'm Feeling Lucky" IMDb search
+                let imdbQueryTerms = [`"${movie.extractedTitle}"`];
+                if (!movie.isSeries && movie.extractedYear) { imdbQueryTerms.push(String(movie.extractedYear)); }
+                imdbQueryTerms.push("IMDb");
+                const imdbSearchQuery = imdbQueryTerms.join(' ');
+                const imdbSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(imdbSearchQuery)}&btnI=1`;
+                externalInfoButtonHTML = `<a href="${imdbSearchUrl}" target="_blank" rel="noopener noreferrer" class="button imdb-button">${infoIconSVG} Find on IMDb</a>`;
+            }
+        }
+
 
         // --- TMDb Details Section ---
         let tmdbSectionHTML = '';
         if (tmdbDetails && tmdbDetails.id) {
             const posterHTML = tmdbDetails.posterPath
-                ? `<img src="${sanitize(tmdbDetails.posterPath)}" alt="Poster for ${sanitize(tmdbDetails.title)}" class="tmdb-poster">`
+                ? `<img src="${sanitize(tmdbDetails.posterPath)}" alt="Poster for ${sanitize(tmdbDetails.title)}" class="tmdb-poster" loading="lazy">` // Added lazy loading
                 : '<div class="tmdb-poster-placeholder">No Poster</div>';
-            const ratingHTML = tmdbDetails.voteAverage && tmdbDetails.voteCount ? `<span class="tmdb-rating" title="${tmdbDetails.voteCount} votes">⭐ ${sanitize(tmdbDetails.voteAverage)}/10</span>` : '';
-            const genresHTML = tmdbDetails.genres && tmdbDetails.genres.length > 0 ? `<div class="tmdb-genres"><strong>Genres:</strong> ${tmdbDetails.genres.map(g => `<span class="genre-tag">${sanitize(g)}</span>`).join(' ')}</div>` : '';
-            const overviewHTML = tmdbDetails.overview ? `<div class="tmdb-overview"><strong>Overview:</strong><p>${sanitize(tmdbDetails.overview)}</p></div>` : '';
-            const releaseDateHTML = tmdbDetails.releaseDate ? `<div><strong>Released:</strong> ${sanitize(TimeAgo.formatFullDate(new Date(tmdbDetails.releaseDate), true))}</div>` : '';
-            const runtimeHTML = tmdbDetails.runtime ? `<div><strong>Runtime:</strong> ${sanitize(tmdbDetails.runtime)} min</div>` : '';
-            const taglineHTML = tmdbDetails.tagline ? `<div class="tmdb-tagline"><em>${sanitize(tmdbDetails.tagline)}</em></div>` : '';
-            const actorsHTML = tmdbDetails.actors && tmdbDetails.actors.length > 0 ? `<div class="tmdb-actors"><strong>Starring:</strong><ul>${tmdbDetails.actors.map(actor => `<li>${sanitize(actor.name)} (${sanitize(actor.character)})</li>`).join('')}</ul></div>` : '';
+
+            const ratingHTML = tmdbDetails.voteAverage && tmdbDetails.voteCount
+                 ? `<span class="tmdb-rating" title="${tmdbDetails.voteCount} votes">⭐ ${sanitize(tmdbDetails.voteAverage)}/10</span>`
+                 : '';
+
+            const genresHTML = tmdbDetails.genres && tmdbDetails.genres.length > 0
+                 ? `<div class="tmdb-genres"><strong>Genres:</strong> ${tmdbDetails.genres.map(g => `<span class="genre-tag">${sanitize(g)}</span>`).join(' ')}</div>`
+                 : '';
+
+            const overviewHTML = tmdbDetails.overview
+                ? `<div class="tmdb-overview"><strong>Overview:</strong><p>${sanitize(tmdbDetails.overview)}</p></div>`
+                : '';
+
+             const releaseDateHTML = tmdbDetails.releaseDate
+                 ? `<div><strong>Released:</strong> ${sanitize(TimeAgo.formatFullDate(new Date(tmdbDetails.releaseDate), true))}</div>` // Use short format
+                 : '';
+
+             const runtimeHTML = tmdbDetails.runtime
+                 ? `<div><strong>Runtime:</strong> ${sanitize(tmdbDetails.runtime)} min</div>`
+                 : '';
+
+             const taglineHTML = tmdbDetails.tagline
+                 ? `<div class="tmdb-tagline"><em>${sanitize(tmdbDetails.tagline)}</em></div>`
+                 : '';
+
+            // Basic Actor list (Example)
+             const actorsHTML = tmdbDetails.actors && tmdbDetails.actors.length > 0
+                 ? `<div class="tmdb-actors">
+                      <strong>Starring:</strong>
+                      <ul>
+                        ${tmdbDetails.actors.map(actor => `<li>${sanitize(actor.name)} (${sanitize(actor.character)})</li>`).join('')}
+                      </ul>
+                    </div>`
+                 : '';
+
 
             tmdbSectionHTML = `
                 <div class="tmdb-details-container">
-                    <div class="tmdb-poster-column">${posterHTML}</div>
+                    <div class="tmdb-poster-column">
+                        ${posterHTML}
+                    </div>
                     <div class="tmdb-info-column">
                         ${tmdbDetails.title ? `<h3 class="tmdb-title">${sanitize(tmdbDetails.title)}</h3>` : ''}
                         ${taglineHTML}
-                        <div class="tmdb-meta">${ratingHTML}${releaseDateHTML}${runtimeHTML}</div>
+                        <div class="tmdb-meta">
+                            ${ratingHTML}
+                            ${releaseDateHTML}
+                            ${runtimeHTML}
+                        </div>
                         ${genresHTML}
                         ${overviewHTML}
-                        ${actorsHTML}
+                        ${actorsHTML} ${ /* Optional: Added actors */}
                     </div>
-                </div>`;
+                </div>
+            `;
         } else if (movie.extractedTitle) {
-            tmdbSectionHTML = `<div class="tmdb-fetch-failed">Could not fetch additional details from TMDb.</div>`;
+            // Show a placeholder or message if TMDb fetch was attempted but failed/timed out/no result
+            // Check if fetch was attempted (i.e., displayItemDetail tried to fetch)
+             tmdbSectionHTML = `<div class="tmdb-fetch-failed">Could not fetch additional details from TMDb.</div>`;
         }
 
-        // --- Button Logic (Existing) ---
+
+        // --- Button Logic ---
         let urlDependentButtonsHTML = '';
         let bypassButtonsHTML = '';
         let otherLinkButtonsHTML = '';
+
         // 1. URL Dependent Buttons
-        if (movie.url) {
-             urlDependentButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play here</button>`;
-             urlDependentButtonsHTML += `<a class="button download-button" href="${movie.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`;
-             urlDependentButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`;
-             if (navigator.userAgent.toLowerCase().includes("android")) {
-                 urlDependentButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play in VLC or MX Player</button>`;
-             }
-         }
-         urlDependentButtonsHTML = `<div class="url-actions-container" id="url-actions-container-${escapedId}">${urlDependentButtonsHTML}</div>`;
+        if (movie.url) { // Use the potentially bypassed and encoded URL
+            urlDependentButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play here</button>`;
+            urlDependentButtonsHTML += `<a class="button download-button" href="${movie.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`;
+            urlDependentButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`;
+            if (navigator.userAgent.toLowerCase().includes("android")) {
+                urlDependentButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play in VLC or MX Player</button>`;
+            }
+        }
+        urlDependentButtonsHTML = `<div class="url-actions-container" id="url-actions-container-${escapedId}">${urlDependentButtonsHTML}</div>`;
 
         // 2. Bypass Buttons
-        const movieRefAttr = `data-movie-ref="detail"`;
+        const movieRefAttr = `data-movie-ref="detail"`; // Identify context as item detail view
         if (movie.hubcloud_link) {
-            bypassButtonsHTML += `<button class="button hubcloud-bypass-button" data-action="bypass-hubcloud" data-hubcloud-url="${escapedHubcloudUrl}" ${movieRefAttr}><span aria-hidden="true" class="button-icon">☁️</span><span class="button-spinner spinner"></span><span class="button-text">Bypass HubCloud</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`;
+            bypassButtonsHTML += `
+                <button class="button hubcloud-bypass-button"
+                        data-action="bypass-hubcloud"
+                        data-hubcloud-url="${escapedHubcloudUrl}"
+                        ${movieRefAttr}>
+                    <span aria-hidden="true" class="button-icon">☁️</span>
+                    <span class="button-spinner spinner"></span>
+                    <span class="button-text">Bypass HubCloud</span>
+                </button>
+                <span class="bypass-feedback" role="status" aria-live="polite"></span>
+            `;
         }
-        if (movie.gdflix_link) {
-            bypassButtonsHTML += `<button class="button gdflix-bypass-button" data-action="bypass-gdflix" data-gdflix-url="${escapedGdflixUrl}" ${movieRefAttr}><span aria-hidden="true" class="button-icon">🎬</span><span class="button-spinner spinner"></span><span class="button-text">Bypass GDFLIX</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`;
+        if (movie.gdflix_link) { // Check for GDFLIX link
+             bypassButtonsHTML += `
+                <button class="button gdflix-bypass-button"
+                        data-action="bypass-gdflix"
+                        data-gdflix-url="${escapedGdflixUrl}"
+                        ${movieRefAttr}>
+                    <span aria-hidden="true" class="button-icon">🎬</span> <!-- GDFLIX icon -->
+                    <span class="button-spinner spinner"></span>
+                    <span class="button-text">Bypass GDFLIX</span>
+                </button>
+                <span class="bypass-feedback" role="status" aria-live="polite"></span>
+            `;
         }
 
-         // 3. Other Link Buttons
-         otherLinkButtonsHTML += youtubeTrailerButtonHTML;
-         otherLinkButtonsHTML += imdbSearchButtonHTML; // Now includes TMDb link if available
-         otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
-         if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
-         if (movie.gdflix_link && !bypassButtonsHTML.includes('bypass-gdflix')) otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`;
-         if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null' && !bypassButtonsHTML.includes('bypass-hubcloud')) {
-             otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`;
-         }
-         if (movie.filepress_link) otherLinkButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
-         if (movie.gdtot_link) otherLinkButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
-         if (movie.id) { otherLinkButtonsHTML += `<button class="button share-button" data-action="share" data-id="${escapedId}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share Post</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`; }
+        // 3. Other Link Buttons
+        otherLinkButtonsHTML += youtubeTrailerButtonHTML;
+        otherLinkButtonsHTML += externalInfoButtonHTML; // Use combined IMDb/TMDb button
+        otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
+        // Original Links (Show only if no bypass button exists for that type)
+        if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
+        if (movie.gdflix_link && !bypassButtonsHTML.includes('bypass-gdflix')) otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`;
+        if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null' && !bypassButtonsHTML.includes('bypass-hubcloud')) {
+            otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`;
+        }
+        if (movie.filepress_link) otherLinkButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
+        if (movie.gdtot_link) otherLinkButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
+        // Share Button
+        if (movie.id) { otherLinkButtonsHTML += `<button class="button share-button" data-action="share" data-id="${escapedId}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share Post</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`; }
 
-        // --- Combine all parts ---
+
+        // --- Combine Internal Info and Buttons ---
         const internalInfoHTML = `
             <div class="action-info" data-stream-title="${escapedStreamTitle}">
                 <span class="info-item"><strong>Filename:</strong> ${displayFilename}</span>
@@ -339,22 +453,26 @@
                 <span class="info-item"><strong>Language:</strong> ${sanitize(movie.languages || 'N/A')}</span>
                 <span class="info-item"><strong>Updated:</strong> ${formattedDateFull} (${formattedDateRelative})</span>
                 ${movie.originalFilename ? `<span class="info-item"><strong>Original Name:</strong> ${sanitize(movie.originalFilename)}</span>` : ''}
-            </div>`;
+            </div>
+        `;
+
         const buttonsHTML = `
              <div class="action-buttons-container">
                  ${urlDependentButtonsHTML}
                  ${bypassButtonsHTML}
                  ${otherLinkButtonsHTML}
-             </div>`;
+             </div>
+        `;
 
-        // Assemble final structure
+        // Assemble final structure with TMDb section potentially at the top
         return `
-            ${tmdbSectionHTML}
-            <hr class="detail-separator">
+            ${tmdbSectionHTML} ${ /* Add TMDb section */ }
+            <hr class="detail-separator"> ${ /* Add a separator */ }
             ${internalInfoHTML}
             ${buttonsHTML}
+            ${ /* The video player container will be appended here by JS if needed */ }
         `;
-    } // End of createItemDetailContentHTML function
+    }
 
 
     // --- Table Row HTML (View button now triggers navigation) ---
@@ -371,17 +489,18 @@
         if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
         if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
 
+        // Add data-item-id to the row itself
         const mainRowHTML = `
         <tr class="movie-data-row" data-index="${dataIndex}" data-item-id="${sanitize(movie.id)}">
             <td class="col-id">${sanitize(movie.id || 'N/A')}</td>
-            <td class="col-filename" title="View details for: ${displayFilename}" data-item-id="${sanitize(movie.id)}">
+            <td class="col-filename" title="View details for: ${displayFilename}" data-item-id="${sanitize(movie.id)}"> <!-- Added data-item-id -->
                 ${displayFilename}${fourkLogoHtml}${hdrLogoHtml}
             </td>
             <td class="col-size">${displaySize}</td>
             <td class="col-quality">${displayQuality}</td>
             <td class="col-updated" title="${formattedDateFull}">${formattedDateRelative}</td>
             <td class="col-view">
-                <button class="button view-button" data-item-id="${sanitize(movie.id)}">View</button>
+                <button class="button view-button" data-item-id="${sanitize(movie.id)}">View</button> <!-- Added data-item-id -->
             </td>
         </tr>`;
         return mainRowHTML;
@@ -395,12 +514,14 @@
         currentViewMode = mode;
 
         if (mode !== previousMode) {
-            closePlayerIfNeeded(null);
+            closePlayerIfNeeded(null); // Close player when changing views
         }
 
+        // Toggle main container classes
         container.classList.toggle('results-active', mode === 'search');
-        container.classList.toggle('item-detail-active', mode === 'itemDetail');
+        container.classList.toggle('item-detail-active', mode === 'itemDetail'); // New class for item detail view
 
+        // Show/hide sections
         const showHomepage = mode === 'homepage';
         const showSearch = mode === 'search';
         const showItemDetail = mode === 'itemDetail';
@@ -408,9 +529,10 @@
         if (searchFocusArea) searchFocusArea.style.display = (showHomepage || showSearch) ? 'flex' : 'none';
         if (resultsArea) resultsArea.style.display = showSearch ? 'block' : 'none';
         if (itemDetailView) itemDetailView.style.display = showItemDetail ? 'block' : 'none';
-        if (updatesPreviewSection) updatesPreviewSection.style.display = showHomepage ? 'block' : 'none'; // Controlled later by loadUpdatesPreview
-        if (pageFooter) pageFooter.style.display = (showHomepage || showSearch) ? 'flex' : 'none';
+        if (updatesPreviewSection) updatesPreviewSection.style.display = showHomepage ? 'block' : 'none';
+        if (pageFooter) pageFooter.style.display = (showHomepage || showSearch) ? 'flex' : 'none'; // Hide footer in detail view
 
+        // Specific actions for entering homepage view
         if (showHomepage) {
             if (searchInput) searchInput.value = '';
             currentState.searchTerm = '';
@@ -418,60 +540,66 @@
             activeResultsTab = 'allFiles';
             currentState.currentPage = 1;
             currentState.typeFilter = '';
-            currentItemDetailData = null;
+            currentItemDetailData = null; // Clear item detail data
             isShareMode = false;
-            // Load updates if needed (loadUpdatesPreview handles visibility)
-            if (localSuggestionData.length > 0 && currentViewMode === 'homepage') { // Ensure it's still homepage
-                 loadUpdatesPreview();
-            } else if (localSuggestionData.length === 0 && currentViewMode === 'homepage') {
-                 // Data not yet loaded, initializeApp will call loadUpdatesPreview later
-                 if (updatesPreviewList) updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
-                 if (updatesPreviewSection) updatesPreviewSection.style.display = 'block'; // Show loading state
+            // Load updates if needed
+            if (weeklyUpdatesData.length > 0) {
+                displayInitialUpdates();
+            } else if (localSuggestionData.length > 0) {
+                 if (updatesPreviewList) updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>';
+                 if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none';
+            } else {
+                if (updatesPreviewList) updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
             }
             document.title = "Cinema Ghar Index";
         } else if (showSearch) {
-             currentItemDetailData = null;
+             currentItemDetailData = null; // Clear item detail data
              isShareMode = false;
-             if (updatesPreviewSection) updatesPreviewSection.style.display = 'none'; // Hide updates section
-            document.title = "Cinema Ghar Index";
+            document.title = "Cinema Ghar Index"; // Or update with search term later
         } else if (showItemDetail) {
-             if (updatesPreviewSection) updatesPreviewSection.style.display = 'none'; // Hide updates section
-             // Title is set when item data loads
+            // Title is set when item data loads
+            // Back button visibility is handled in displayItemDetail
         }
 
-        saveStateToLocalStorage();
-        isInitialLoad = false;
+        saveStateToLocalStorage(); // Save relevant state
+        isInitialLoad = false; // Any view change after init means it's not the initial load
     }
 
     window.resetToHomepage = function(event) {
         console.log("Resetting to homepage...");
+        // Clean the URL, removing query parameters like ?viewId= or ?shareId=
         if (window.history.pushState) {
             const cleanUrl = window.location.origin + window.location.pathname;
             window.history.pushState({ path: cleanUrl }, '', cleanUrl);
         } else {
-            window.location.hash = '';
+            window.location.hash = ''; // Fallback
         }
         isShareMode = false;
         currentItemDetailData = null;
         lastFocusedElement = event?.target;
         setViewMode('homepage');
         if (searchInput) {
-            setTimeout(() => searchInput.focus(), 100);
+            setTimeout(() => searchInput.focus(), 100); // Focus search input on homepage
         }
     }
 
+    // New function to go back from item detail view
     window.goBackToResults = function() {
         console.log("Navigating back from item detail view...");
-        currentItemDetailData = null;
+        currentItemDetailData = null; // Clear data before going back
         isShareMode = false;
+        // Use browser history to go back. The popstate listener will handle the view update.
         history.back();
     }
 
+    // Listen to popstate events (browser back/forward buttons)
     window.addEventListener('popstate', (event) => {
         console.log("Popstate event triggered", event.state);
-        handleUrlChange(true);
+        // When navigating back/forward, always re-evaluate the URL
+        handleUrlChange(true); // Pass true to indicate it's a popstate navigation
     });
 
+    // Handle URL changes (initial load and popstate)
     function handleUrlChange(isPopState = false) {
         const urlParams = new URLSearchParams(window.location.search);
         const shareId = urlParams.get('shareId');
@@ -481,26 +609,36 @@
 
         if (shareId) {
             console.log("Displaying shared item:", shareId);
-            displayItemDetail(shareId, true);
+            // Check if already showing this item to prevent redundant loads on history nav
+            if (currentViewMode !== 'itemDetail' || currentItemDetailData?.id !== shareId) {
+                 displayItemDetail(shareId, true); // true for isShare
+            }
         } else if (viewId) {
             console.log("Displaying viewed item:", viewId);
-            displayItemDetail(viewId, false);
+             // Check if already showing this item
+            if (currentViewMode !== 'itemDetail' || currentItemDetailData?.id !== viewId) {
+                displayItemDetail(viewId, false); // false for isShare
+            }
         } else {
-            if (!isInitialLoad && currentViewMode !== 'homepage' && currentViewMode !== 'search') {
-                 console.log("Navigating back to homepage view from item detail.");
-                 setViewMode('homepage'); // Go home if navigating back from detail view
-            } else if (isInitialLoad) {
-                 console.log("Initial load, setting view to homepage.");
-                 setViewMode('homepage'); // Ensure homepage on initial load without specific item
+            // No shareId or viewId in URL
+            // If we are navigating *back* to a state without these params, or on initial load
+            if (currentViewMode !== 'homepage' && currentViewMode !== 'search') {
+                console.log("Navigating back to homepage or search results view (from detail view potentially).");
+                // Check if there was a search term saved previously to decide between search/homepage
+                // For simplicity now, just go to homepage if not already there or in search view.
+                // A more complex state management could restore the last search view here.
+                 setViewMode('homepage');
+                 // If currentState still holds search term, perhaps trigger a search?
+                 // if(currentState.searchTerm) { handleSearchSubmit() } else { setViewMode('homepage'); }
             } else {
-                console.log("URL change without specific item, current view:", currentViewMode);
-                // If already on homepage or search, likely just a history state change, ensure view is correct
-                 if (currentViewMode !== 'homepage' && currentViewMode !== 'search') {
+                 // Already on homepage or search view, do nothing extra,
+                 // or if initial load, ensure homepage is set correctly.
+                 if (isInitialLoad) {
                      setViewMode('homepage');
                  }
             }
         }
-        // isInitialLoad is set to false within setViewMode
+        isInitialLoad = false; // Mark initial load as done after first handling
     }
 
 
@@ -508,7 +646,8 @@
     function handleSearchInput() { clearTimeout(suggestionDebounceTimeout); const searchTerm = searchInput.value.trim(); if (searchTerm.length < 2) { suggestionsContainer.style.display = 'none'; return; } suggestionDebounceTimeout = setTimeout(() => { fetchAndDisplaySuggestions(searchTerm); }, config.SUGGESTIONS_DEBOUNCE_DELAY); }
     function fetchAndDisplaySuggestions(term) { const normalizedTerm = normalizeTextForSearch(term); if (!normalizedTerm) { suggestionsContainer.style.display = 'none'; return; } const matchingItems = localSuggestionData.filter(movie => movie.searchText.includes(normalizedTerm)).slice(0, config.MAX_SUGGESTIONS); suggestionsContainer.innerHTML = ''; if (matchingItems.length > 0) { const fragment = document.createDocumentFragment(); matchingItems.forEach(item => { const div = document.createElement('div'); let displayText = item.displayFilename; let highlighted = false; if (term.length > 0) { try { const safeTerm = escapeRegExp(term); const regex = new RegExp(`(${safeTerm})`, 'i'); if ((item.displayFilename || '').match(regex)) { div.innerHTML = (item.displayFilename || '').replace(regex, '<strong>$1</strong>'); highlighted = true; } } catch (e) { console.warn("Regex error during highlighting:", e); } } if (!highlighted) { div.textContent = item.displayFilename; } div.title = item.displayFilename; div.onclick = () => selectSuggestion(item.displayFilename); fragment.appendChild(div); }); suggestionsContainer.appendChild(fragment); suggestionsContainer.style.display = 'block'; } else { suggestionsContainer.style.display = 'none'; } }
     function selectSuggestion(selectedValue) { searchInput.value = selectedValue; suggestionsContainer.style.display = 'none'; handleSearchSubmit(); }
-    window.handleSearchSubmit = function() { if (suggestionsContainer) { suggestionsContainer.style.display = 'none'; } const searchTerm = searchInput.value.trim(); console.log("Handling search submit for:", searchTerm); if (searchInput) { searchInput.blur(); } if (searchTerm.length === 0 && currentViewMode !== 'homepage') { resetToHomepage(); return; } if (searchTerm.length === 0 && currentViewMode === 'homepage') { return; }
+    window.handleSearchSubmit = function() { if (suggestionsContainer) { suggestionsContainer.style.display = 'none'; } const searchTerm = searchInput.value.trim(); console.log("Handling search submit for:", searchTerm); if (searchInput) { searchInput.blur(); } if (searchTerm.length === 0 && currentViewMode !== 'homepage') { resetToHomepage(); return; } if (searchTerm.length === 0 && currentViewMode === 'homepage') { return; } // If already home and search is cleared, do nothing
+        // Clean URL if navigating to search from item detail
         if (currentViewMode === 'itemDetail') {
             const cleanUrl = window.location.origin + window.location.pathname;
              history.pushState({ path: cleanUrl }, '', cleanUrl);
@@ -518,18 +657,19 @@
         currentState.currentPage = 1;
         currentState.searchTerm = searchTerm;
         currentState.qualityFilter = qualityFilterSelect.value || '';
-        currentState.typeFilter = '';
+        currentState.typeFilter = ''; // Reset to 'all' on new search
         updateActiveTabAndPanel();
         showLoadingStateInTables(`Searching for "${sanitize(searchTerm)}"...`);
         fetchAndRenderResults();
     }
-    function handleSearchClear() { clearTimeout(suggestionDebounceTimeout); suggestionsContainer.style.display = 'none';
+    function handleSearchClear() { clearTimeout(suggestionDebounceTimeout); suggestionsContainer.style.display = 'none'; // If search is cleared via 'x' button
         setTimeout(() => {
             if (searchInput.value.trim() === '') {
                  if (currentViewMode === 'search') {
                     console.log("Search input cleared via 'x' while in search view, resetting to homepage.");
                     resetToHomepage();
                  } else {
+                    // If cleared on homepage, just ensure state is clear
                     currentState.searchTerm = '';
                     saveStateToLocalStorage();
                  }
@@ -538,22 +678,51 @@
     }
     function showLoadingStateInTables(message = 'Loading...') { const loadingHTML = `<tr><td colspan="6" class="loading-message" role="status" aria-live="polite"><div class="spinner"></div>${sanitize(message)}</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) { mapping.tableBody.innerHTML = loadingHTML; } if (mapping?.pagination) { mapping.pagination.style.display = 'none'; } }); }
 
-    // ===================================================== //
-    // --- UPDATES PREVIEW LOGIC (REORDERED FUNCTIONS) --- //
-    // ===================================================== //
-
-    // Helper function to add update items to the list
-    function appendUpdatesToPreview(startIndex, endIndex) {
+    // --- Updates Preview Logic ---
+    async function loadUpdatesPreview() { if (currentViewMode !== 'homepage' || !updatesPreviewSection || !updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; showMoreUpdatesButton.style.display = 'none'; updatesPreviewShownCount = 0; weeklyUpdatesData = []; try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_INITIAL_COUNT, page: 1 }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { weeklyUpdatesData = data.items.map(preprocessMovieData); displayInitialUpdates(); console.log(`Loaded initial ${weeklyUpdatesData.length} updates. Total pages from API: ${data.totalPages}`); } else { updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; } } catch (error) { console.error("Failed to load updates preview:", error); updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Could not load updates. ${error.message}</div>`; showMoreUpdatesButton.style.display = 'none'; } }
+    function displayInitialUpdates() { if (!updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = ''; updatesPreviewShownCount = 0;
+         if (weeklyUpdatesData.length === 0) { updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; return; } const initialCount = Math.min(weeklyUpdatesData.length, config.UPDATES_PREVIEW_INITIAL_COUNT); appendUpdatesToPreview(0, initialCount); updatesPreviewShownCount = initialCount; const potentiallyMore = weeklyUpdatesData.length >= config.UPDATES_PREVIEW_INITIAL_COUNT; // Check if the *first* batch filled the initial count
+         if (potentiallyMore) { // If first fetch returned max items, assume there might be more
+             showMoreUpdatesButton.style.display = 'block';
+             showMoreUpdatesButton.disabled = false;
+             showMoreUpdatesButton.textContent = "Show More";
+         } else {
+             showMoreUpdatesButton.style.display = 'none';
+         } }
+    window.appendMoreUpdates = async function() { if (!updatesPreviewList || !showMoreUpdatesButton) return; showMoreUpdatesButton.disabled = true; showMoreUpdatesButton.textContent = "Loading..."; // Calculate next page based on items *currently* loaded vs the 'load more' count
+         const currentPage = Math.floor(updatesPreviewShownCount / config.UPDATES_PREVIEW_LOAD_MORE_COUNT); const nextPage = currentPage + 1; // Always fetch the next logical page
+         console.log(`Attempting to load page ${nextPage} for updates preview (currently showing ${updatesPreviewShownCount}).`); try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_LOAD_MORE_COUNT, page: nextPage }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { const newItems = data.items.map(preprocessMovieData); const startIndex = updatesPreviewShownCount; // Start appending after current items
+             // Append new items to the DOM
+             appendUpdatesToPreview(startIndex, startIndex + newItems.length); // Pass correct indices
+             // Add new items to the weeklyUpdatesData array as well, if needed for future reference
+             // weeklyUpdatesData.push(...newItems); // Optional: only needed if you re-filter updates later
+             updatesPreviewShownCount += newItems.length; // Increment shown count
+             console.log(`Loaded ${newItems.length} more updates. Total now showing: ${updatesPreviewShownCount}. Current API page fetched: ${data.page}, Total API pages: ${data.totalPages}`); // Log shown count
+             if (data.page >= data.totalPages || newItems.length < config.UPDATES_PREVIEW_LOAD_MORE_COUNT) {
+                // Stop loading if we reached the last page OR the API returned fewer items than requested
+                 showMoreUpdatesButton.textContent = "All Updates Shown";
+                 showMoreUpdatesButton.disabled = true; // Keep disabled
+                 // Optionally hide after a delay: setTimeout(() => { showMoreUpdatesButton.style.display = 'none'; }, 2000);
+             } else {
+                 showMoreUpdatesButton.disabled = false;
+                 showMoreUpdatesButton.textContent = "Show More";
+             } } else { console.log("No more updates found from API."); showMoreUpdatesButton.textContent = "No More Updates"; showMoreUpdatesButton.disabled = true; } } catch (error) { console.error("Failed to load more updates:", error); showMoreUpdatesButton.textContent = "Error Loading"; showMoreUpdatesButton.disabled = false; } }
+    function appendUpdatesToPreview(startIndex, endIndex) { // startIndex/endIndex are relative to the data source (weeklyUpdatesData if using it, or just used for indexing)
         if (!updatesPreviewList) return;
         const fragment = document.createDocumentFragment();
+        // Use the data source that holds the items to append (could be weeklyUpdatesData or directly from fetch)
+        // Here, assuming we fetched new items and are just rendering them
+        // We need the actual items. Let's assume the caller passes the items.
+        // --- REVISED ---: Let's stick to using weeklyUpdatesData as the single source
         const itemsToAppend = weeklyUpdatesData.slice(startIndex, endIndex);
+
         itemsToAppend.forEach((movie, indexInSlice) => {
-            const overallIndex = startIndex + indexInSlice;
+            const overallIndex = startIndex + indexInSlice; // Represents index in weeklyUpdatesData
             if (!movie || !movie.id) return; // Ensure movie and ID exist
 
             const itemDiv = document.createElement('div');
             itemDiv.className = 'update-item';
-            itemDiv.dataset.index = overallIndex;
+            itemDiv.dataset.index = overallIndex; // Use overall index if needed
             itemDiv.dataset.itemId = sanitize(movie.id); // Add item ID
 
             let hdrLogoHtml = ''; let fourkLogoHtml = '';
@@ -580,125 +749,11 @@
             fragment.appendChild(itemDiv);
         });
         const initialLoader = updatesPreviewList.querySelector('.loading-inline-spinner');
-        if (initialLoader && startIndex === 0) {
+        if (initialLoader && startIndex === 0) { // Only remove if it's the very first append
             initialLoader.remove();
         }
         updatesPreviewList.appendChild(fragment);
     }
-
-    // Function to display the first batch of updates
-    function displayInitialUpdates() {
-        if (!updatesPreviewList || !showMoreUpdatesButton) return;
-        updatesPreviewList.innerHTML = '';
-        updatesPreviewShownCount = 0;
-
-        if (weeklyUpdatesData.length === 0) {
-            updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>';
-            showMoreUpdatesButton.style.display = 'none';
-            return;
-        }
-        const initialCount = Math.min(weeklyUpdatesData.length, config.UPDATES_PREVIEW_INITIAL_COUNT);
-        appendUpdatesToPreview(0, initialCount); // Calls the helper function defined above
-        updatesPreviewShownCount = initialCount;
-
-        const potentiallyMoreBasedOnLimit = initialCount >= config.UPDATES_PREVIEW_INITIAL_COUNT;
-        const showButton = potentiallyMoreBasedOnLimit;
-
-        if (showButton) {
-            showMoreUpdatesButton.style.display = 'block';
-            showMoreUpdatesButton.disabled = false;
-            showMoreUpdatesButton.textContent = "Show More";
-        } else {
-            showMoreUpdatesButton.style.display = 'none';
-        }
-    }
-
-    // Function to load more updates when the button is clicked
-    window.appendMoreUpdates = async function() {
-        if (!updatesPreviewList || !showMoreUpdatesButton) return;
-        showMoreUpdatesButton.disabled = true;
-        showMoreUpdatesButton.textContent = "Loading...";
-
-        const currentPage = Math.floor(updatesPreviewShownCount / config.UPDATES_PREVIEW_LOAD_MORE_COUNT);
-        const nextPage = currentPage + 1;
-        console.log(`Attempting to load page ${nextPage} for updates preview.`);
-
-        try {
-            const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_LOAD_MORE_COUNT, page: nextPage };
-            const data = await fetchApiData(params);
-
-            if (data && data.items && data.items.length > 0) {
-                const newItems = data.items.map(preprocessMovieData);
-                const startIndex = weeklyUpdatesData.length;
-                weeklyUpdatesData.push(...newItems);
-                appendUpdatesToPreview(startIndex, weeklyUpdatesData.length);
-                updatesPreviewShownCount = weeklyUpdatesData.length;
-
-                console.log(`Loaded ${newItems.length} more updates. Total now: ${updatesPreviewShownCount}. Current API page: ${data.page}, Total API pages: ${data.totalPages}`);
-
-                if (data.page >= data.totalPages) {
-                    showMoreUpdatesButton.textContent = "All Updates Shown";
-                    // Keep disabled=true;
-                } else {
-                    showMoreUpdatesButton.disabled = false;
-                    showMoreUpdatesButton.textContent = "Show More";
-                }
-            } else {
-                console.log("No more updates found from API.");
-                showMoreUpdatesButton.textContent = "No More Updates";
-                // Keep disabled=true;
-            }
-        } catch (error) {
-            console.error("Failed to load more updates:", error);
-            showMoreUpdatesButton.textContent = "Error Loading";
-            showMoreUpdatesButton.disabled = false;
-        }
-    }
-
-    // Main function to initiate loading the updates preview
-    async function loadUpdatesPreview() {
-        if (currentViewMode !== 'homepage' || !updatesPreviewSection || !updatesPreviewList || !showMoreUpdatesButton) {
-            console.log("Skipping updates preview load (not homepage or elements missing).");
-            if (updatesPreviewSection) updatesPreviewSection.style.display = 'none';
-            return;
-        }
-
-        updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
-        showMoreUpdatesButton.style.display = 'none';
-        updatesPreviewSection.style.display = 'block'; // Ensure section is visible
-
-        updatesPreviewShownCount = 0;
-        weeklyUpdatesData = [];
-
-        try {
-            // Fetch *only* the initial amount needed for the preview
-            const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_INITIAL_COUNT, page: 1 };
-            const data = await fetchApiData(params);
-
-            if (data && data.items && data.items.length > 0) {
-                weeklyUpdatesData = data.items.map(preprocessMovieData);
-                // Call the function defined above
-                displayInitialUpdates(); // This function now handles the showMore button logic
-                console.log(`Loaded initial ${weeklyUpdatesData.length} updates. Total pages from API: ${data.totalPages}`);
-            } else {
-                // No updates found
-                updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>';
-                showMoreUpdatesButton.style.display = 'none';
-            }
-            // Keep the section visible to show either updates or the "No updates" message
-            if (updatesPreviewSection) updatesPreviewSection.style.display = 'block';
-
-        } catch (error) {
-            console.error("Failed to load updates preview:", error);
-            // Display the error message within the updates list area
-            updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Could not load updates. ${error.message}</div>`;
-            showMoreUpdatesButton.style.display = 'none';
-            // Keep the section visible to show the error message
-            if (updatesPreviewSection) updatesPreviewSection.style.display = 'block';
-        }
-    }
-
-    // --- END OF UPDATES PREVIEW LOGIC ---
 
 
     // --- Filtering, Sorting ---
@@ -719,7 +774,7 @@
          const totalItems = apiResponse.totalItems || 0;
          const currentPage = apiResponse.page || 1;
          const totalPages = apiResponse.totalPages || 1;
-         currentSearchResultsData = itemsToRender.map(preprocessMovieData);
+         currentSearchResultsData = itemsToRender.map(preprocessMovieData); // Store preprocessed results data
          let tableHtml = '';
          if (totalItems === 0) {
              let message = `No ${tabMappings[activeResultsTab].typeFilter || 'files'} found`;
@@ -758,14 +813,25 @@
             return;
         }
         console.log(`Navigating to view item: ${itemId}`);
-        lastFocusedElement = document.activeElement;
+        lastFocusedElement = document.activeElement; // Store focus before navigation
 
         const newUrl = `${window.location.origin}${window.location.pathname}?viewId=${encodeURIComponent(itemId)}`;
+
+        // Use pushState to change URL without full reload
         try {
-            history.pushState({ viewId: itemId }, '', newUrl);
-            displayItemDetail(itemId, false);
+            // Check if already on the same view to prevent pushing identical state
+             const currentParams = new URLSearchParams(window.location.search);
+             if(currentParams.get('viewId') !== itemId) {
+                history.pushState({ viewId: itemId }, '', newUrl);
+             } else {
+                 console.log("Already on the correct viewId URL, not pushing state.");
+             }
+            // Now display the content for this item ID (will fetch data)
+            displayItemDetail(itemId, false); // false = not a share link
         } catch (e) {
             console.error("History pushState failed:", e);
+            // Fallback: might need a full page load if pushState fails badly
+             // window.location.href = newUrl; // Uncomment for full reload fallback (use cautiously)
         }
     }
 
@@ -777,12 +843,13 @@
      async function displayItemDetail(itemId, isFromShareLink) {
          if (!itemId || !itemDetailView || !itemDetailContent) return;
 
-         isShareMode = isFromShareLink;
+         isShareMode = isFromShareLink; // Set the mode flag
          itemDetailContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading item details...</span></div>`;
-         setViewMode('itemDetail');
-         currentItemDetailData = null;
-         let tmdbDetails = null;
+         setViewMode('itemDetail'); // Set the main view mode
+         currentItemDetailData = null; // Clear previous data
+         let tmdbDetails = null; // Variable to hold TMDb data
 
+         // Show the correct back button
          if (backToHomeButtonShared) backToHomeButtonShared.style.display = isShareMode ? 'inline-flex' : 'none';
          if (backToResultsButton) backToResultsButton.style.display = isShareMode ? 'none' : 'inline-flex';
 
@@ -793,22 +860,28 @@
 
              if (internalData && internalData.items && internalData.items.length > 0) {
                  const itemRaw = internalData.items[0];
-                 currentItemDetailData = preprocessMovieData(itemRaw);
+                 currentItemDetailData = preprocessMovieData(itemRaw); // Store the fetched internal data
                  console.log(`Displaying item detail for: ${currentItemDetailData.displayFilename} (isShare: ${isShareMode})`);
+
+                 // Set title early based on internal data
                  document.title = `${currentItemDetailData.displayFilename || 'Item Detail'} - Cinema Ghar`;
 
                  // --- START TMDb Fetch ---
+                 let tmdbFetchAttempted = false; // Flag to know if we tried fetching
                  if (currentItemDetailData.extractedTitle) {
-                     console.log(`Fetching TMDb details for: ${currentItemDetailData.extractedTitle}`);
+                     tmdbFetchAttempted = true; // Mark that we are attempting the fetch
+                     console.log(`Fetching TMDb details for: Title='${currentItemDetailData.extractedTitle}', Year='${currentItemDetailData.extractedYear || 'N/A'}', Type='${currentItemDetailData.isSeries ? 'tv' : 'movie'}'`);
                      const tmdbQuery = new URLSearchParams();
                      tmdbQuery.set('query', currentItemDetailData.extractedTitle);
                      tmdbQuery.set('type', currentItemDetailData.isSeries ? 'tv' : 'movie');
                      if (!currentItemDetailData.isSeries && currentItemDetailData.extractedYear) {
                          tmdbQuery.set('year', currentItemDetailData.extractedYear);
                      }
+
                      const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
                      const tmdbController = new AbortController();
                      const tmdbTimeoutId = setTimeout(() => tmdbController.abort(), config.TMDB_FETCH_TIMEOUT);
+
                      try {
                          const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
                          clearTimeout(tmdbTimeoutId);
@@ -816,8 +889,9 @@
                              tmdbDetails = await tmdbResponse.json();
                              console.log("TMDb details fetched successfully:", tmdbDetails);
                          } else {
-                             const errorBody = await tmdbResponse.text();
+                             const errorBody = await tmdbResponse.text(); // Read body even if not JSON
                              console.warn(`Failed to fetch TMDb details (${tmdbResponse.status}): ${errorBody}`);
+                             // Don't treat TMDb failure as a fatal error for the whole page
                          }
                      } catch (tmdbError) {
                          clearTimeout(tmdbTimeoutId);
@@ -826,15 +900,19 @@
                          } else {
                             console.error("Error fetching TMDb details:", tmdbError);
                          }
+                          // Don't treat TMDb failure as a fatal error
                      }
                  } else {
                      console.warn("Cannot fetch TMDb details: No extracted title found.");
                  }
                  // --- END TMDb Fetch ---
 
-                 // 2. Render content using BOTH internal and TMDb data
-                 const contentHTML = createItemDetailContentHTML(currentItemDetailData, tmdbDetails);
+                 // 2. Render content using BOTH internal and TMDb data (tmdbDetails might be null)
+                 // Pass the tmdbFetchAttempted flag to createItemDetailContentHTML
+                 const contentHTML = createItemDetailContentHTML(currentItemDetailData, tmdbDetails, tmdbFetchAttempted);
                  itemDetailContent.innerHTML = contentHTML;
+
+                 // Ensure player is hidden initially when showing details
                  if (videoContainer) videoContainer.style.display = 'none';
 
              } else {
@@ -847,8 +925,10 @@
              itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item: ${error.message}. Please try again.</div>`;
              document.title = "Error Loading Item - Cinema Ghar Index";
          } finally {
+             // Ensure view mode is correct and scroll to top
              setViewMode('itemDetail');
              window.scrollTo({ top: 0, behavior: 'smooth' });
+             // Hide page loader if it's still visible
              if (pageLoader && pageLoader.style.display !== 'none') {
                 pageLoader.style.display = 'none';
              }
@@ -858,12 +938,14 @@
     // --- Player Logic ---
     function streamVideo(title, url, filenameForAudioCheck, isFromCustom = false) {
         let currentActionContainer = null;
+        // Determine the container where the player should be placed
         if (isGlobalCustomUrlMode) {
-            // Player stays global
+            // Player stays in its global container
         } else if (currentViewMode === 'itemDetail' && itemDetailContent) {
-            currentActionContainer = itemDetailContent;
+            currentActionContainer = itemDetailContent; // Player goes inside item detail content
         } else {
-             if (itemDetailContent) {
+            console.warn("Cannot determine where to place the video player.");
+            if (itemDetailContent) {
                  currentActionContainer = itemDetailContent;
             } else {
                 console.error("Cannot stream video: No valid container found (itemDetailContent missing).");
@@ -873,6 +955,7 @@
 
         if (!videoContainer || !videoElement) { console.error("Cannot stream: player or video element missing."); return; }
 
+        // Reset player state before starting
         if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none';
         if (videoElement) videoElement.style.display = 'block';
         if (customControlsContainer) customControlsContainer.style.display = 'flex';
@@ -880,12 +963,24 @@
         if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; }
         clearCopyFeedback();
 
+        // Move the player container if needed (only if not global custom mode)
         if (!isGlobalCustomUrlMode && currentActionContainer && videoContainer.parentElement !== currentActionContainer) {
             console.log("Moving video container to active container:", currentActionContainer);
-             if (videoContainer.parentElement) {
+             // Find the end of the item detail content to append the player
+             const separator = currentActionContainer.querySelector('hr.detail-separator');
+             const targetElement = separator ? separator.nextElementSibling : currentActionContainer.firstChild; // Append after separator or at start
+
+            if (videoContainer.parentElement) {
                  videoContainer.parentElement.removeChild(videoContainer);
+            }
+            // Insert before the internal info/buttons section if possible, otherwise just append
+            if (targetElement && targetElement.nextSibling) {
+                 currentActionContainer.insertBefore(videoContainer, targetElement.nextSibling); // Place after info/buttons usually
+             } else {
+                 currentActionContainer.appendChild(videoContainer); // Fallback append
              }
-            currentActionContainer.appendChild(videoContainer);
+
+            // Reset source if moving
             if (videoElement.hasAttribute('src')) {
                 videoElement.pause();
                 videoElement.removeAttribute('src');
@@ -895,6 +990,7 @@
             if (vlcBox) vlcBox.style.display = 'none';
         }
 
+        // Set volume and speed from storage
         const savedVolume = localStorage.getItem(config.PLAYER_VOLUME_KEY);
         const savedSpeed = localStorage.getItem(config.PLAYER_SPEED_KEY);
         videoElement.volume = (savedVolume !== null) ? Math.max(0, Math.min(1, parseFloat(savedVolume))) : 1;
@@ -905,19 +1001,23 @@
         updateMuteButton();
         videoElement.currentTime = 0;
 
+        // Check for audio warnings based on filename
         const ddp51Regex = /\bDDP?([ ._-]?5\.1)?\b/i; const advancedAudioRegex = /\b(DTS|ATMOS|TrueHD)\b/i; const multiAudioHintRegex = /\b(Multi|Dual)[ ._-]?Audio\b/i;
         let warningText = "";
         if (filenameForAudioCheck && !isFromCustom) { const lowerFilename = (filenameForAudioCheck || '').toLowerCase(); if (ddp51Regex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DDP audio might not work in browser. Use 'Copy URL' or 'Play in VLC or MX Player'."; } else if (advancedAudioRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DTS/Atmos/TrueHD audio likely unsupported. Use external player."; } else if (multiAudioHintRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> May contain multiple audio tracks. Use selector below or external player."; } }
         if (warningText && audioWarningDiv) { audioWarningDiv.innerHTML = warningText; audioWarningDiv.style.display = 'block'; }
 
+        // Set title and VLC link
         if (videoTitle) videoTitle.innerText = title || "Video";
-        if (vlcText) vlcText.innerText = url;
+        if (vlcText) vlcText.innerText = url; // URL already potentially encoded
         if (vlcBox) vlcBox.style.display = 'block';
 
+        // Set source and play
         videoElement.src = url;
         videoElement.load();
         videoElement.play().catch(e => { console.log("Autoplay was prevented or failed:", e.message); });
 
+        // Make player visible and focus/scroll
         if (videoContainer.style.display === 'none') {
             videoContainer.style.display = 'flex';
         }
@@ -925,6 +1025,8 @@
             const closeButton = videoContainer.querySelector('.close-btn');
             if (closeButton) { setTimeout(() => closeButton.focus(), 100); }
             setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
+        } else {
+            // Maybe focus something in the global player?
         }
     }
     window.closePlayer = function(elementToFocusAfter = null) {
@@ -932,16 +1034,21 @@
          if (!videoContainer || !videoElement) return;
 
          const wasPlaying = videoContainer.style.display !== 'none';
-         const parentContainer = videoContainer.parentElement;
+         const parentContainer = videoContainer.parentElement; // Container it was in (e.g., itemDetailContent)
          const wasGlobalMode = isGlobalCustomUrlMode;
 
+         // Exit fullscreen if active
          try { const fsElement = document.fullscreenElement || document.webkitFullscreenElement; if (fsElement && (fsElement === videoElement || fsElement === videoContainer)) { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch(err) { console.error("Error exiting fullscreen:", err); }
 
+         // Stop playback and reset source
          videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load();
+
+         // Hide player and reset state
          videoContainer.style.display = 'none';
          videoContainer.classList.remove('global-custom-url-mode', 'is-fullscreen');
          isGlobalCustomUrlMode = false;
 
+         // Hide player elements
          if (vlcBox) vlcBox.style.display = 'none';
          if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; }
          if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; }
@@ -951,34 +1058,33 @@
          clearBypassFeedback();
          if (videoTitle) videoTitle.innerText = '';
 
-         if (!wasGlobalMode) {
-            const mainBodyContainer = document.getElementById('cinemaghar-container');
-             if (mainBodyContainer && videoContainer.parentElement !== mainBodyContainer) {
-                 if (parentContainer && parentContainer.contains(videoContainer)) {
-                     parentContainer.removeChild(videoContainer);
-                     console.log("Detached video player from its container.");
-                 } else {
-                     console.log("Player parent doesn't exist or doesn't contain player, assuming already moved or removed.");
-                 }
-             } else if (!mainBodyContainer) {
-                 console.warn("Main container #cinemaghar-container not found, cannot handle player movement properly.");
-             }
+         // Move player back to main container only if it's not already there (and not global mode)
+         // --- Revised: We don't need to move it back to the main container. It stays detached until next streamVideo call.
+         if (!wasGlobalMode && parentContainer && parentContainer.contains(videoContainer)) {
+             parentContainer.removeChild(videoContainer);
+             console.log("Detached video player from its container.");
          }
 
+         // Restore focus
          let finalFocusTarget = elementToFocusAfter || lastFocusedElement;
+          // Special focus handling if closed within item detail view
          if (!wasGlobalMode && currentViewMode === 'itemDetail') {
-             const playButton = itemDetailContent?.querySelector('.play-button');
+             const playButton = itemDetailContent?.querySelector('.play-button'); // Try to focus the play button of the item
              if (playButton) {
                  finalFocusTarget = playButton;
              } else {
+                 // Fallback to a general element in the detail view if play button isn't there
                  const firstButton = itemDetailContent?.querySelector('.button');
                  if (firstButton) finalFocusTarget = firstButton;
+                 else finalFocusTarget = itemDetailContent; // Fallback to content area itself
              }
          }
 
          if (finalFocusTarget && typeof finalFocusTarget.focus === 'function') {
              console.log("Returning focus to:", finalFocusTarget);
-             setTimeout(() => finalFocusTarget.focus(), 50);
+             setTimeout(() => {
+                 try { finalFocusTarget.focus(); } catch(e) { console.warn("Focus failed:", e)}
+             }, 50);
          }
          lastFocusedElement = null;
     }
@@ -998,7 +1104,21 @@
     function showCopyFeedback(spanElement, message = 'Copied!', isError = false) { if (!spanElement) return; clearTimeout(copyFeedbackTimeout); spanElement.textContent = message; spanElement.classList.toggle('error', isError); spanElement.classList.remove('share-fallback'); if (spanElement.classList.contains('share-fallback')) { spanElement.classList.add('share-fallback'); } spanElement.style.display = 'inline-block'; spanElement.classList.add('show'); copyFeedbackTimeout = setTimeout(() => { spanElement.classList.remove('show', 'error'); setTimeout(() => { if (!spanElement.classList.contains('show')) { spanElement.style.display = 'none'; spanElement.textContent = spanElement.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; } }, 300); }, 2500); }
     function clearCopyFeedback() { clearTimeout(copyFeedbackTimeout); document.querySelectorAll('.copy-feedback.show').forEach(span => { span.classList.remove('show', 'error'); span.style.display = 'none'; span.textContent = span.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; }); }
     function clearBypassFeedback() { clearTimeout(bypassFeedbackTimeout); document.querySelectorAll('.bypass-feedback.show').forEach(span => { span.classList.remove('show', 'error', 'loading'); span.style.display = 'none'; span.textContent = ''; }); }
-    function highlightVlcText() { const activeContext = (currentViewMode === 'itemDetail') ? itemDetailContent : null; if (!activeContext) return; const currentVlcText = activeContext.querySelector('#vlcBox code'); if (currentVlcText && currentVlcText.closest('#vlcBox')?.style.display !== 'none') { try { const range = document.createRange(); range.selectNodeContents(currentVlcText); const selection = window.getSelection(); if (selection) { selection.removeAllRanges(); selection.addRange(range); } console.log("Highlighted VLC text as fallback."); } catch (selectErr) { console.warn("Could not highlight VLC text:", selectErr); } } }
+    function highlightVlcText() {
+        // Try finding VLC text in the current item detail view context
+        const currentVlcText = itemDetailContent?.querySelector('#vlcBox code');
+        if (currentVlcText && currentVlcText.closest('#vlcBox')?.style.display !== 'none') {
+            try {
+                const range = document.createRange();
+                range.selectNodeContents(currentVlcText);
+                const selection = window.getSelection();
+                if (selection) { selection.removeAllRanges(); selection.addRange(range); }
+                console.log("Highlighted VLC text as fallback.");
+            } catch (selectErr) {
+                console.warn("Could not highlight VLC text:", selectErr);
+            }
+        }
+    }
     function handlePlayerKeyboardShortcuts(event) { if (!videoContainer || videoContainer.style.display === 'none' || !videoElement) return; const targetTagName = event.target.tagName.toLowerCase(); if (targetTagName === 'input' || targetTagName === 'select' || targetTagName === 'textarea') return; const key = event.key; let prevented = false; switch (key) { case ' ': case 'k': togglePlayPause(); prevented = true; break; case 'ArrowLeft': seekVideo(-10); prevented = true; break; case 'ArrowRight': seekVideo(10); prevented = true; break; case 'ArrowUp': setVolume(Math.min(videoElement.volume + 0.05, 1)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'ArrowDown': setVolume(Math.max(videoElement.volume - 0.05, 0)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'm': toggleMute(); prevented = true; break; case 'f': toggleFullscreen(); prevented = true; break; } if (prevented) event.preventDefault(); }
 
 
@@ -1007,8 +1127,8 @@
     function loadStateFromLocalStorage() { try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; console.log("Loaded state:", { sortColumn: currentState.sortColumn, sortDirection: currentState.sortDirection, qualityFilter: currentState.qualityFilter }); } else { currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; console.log("No saved state found, using defaults."); } } catch (e) { console.error("Failed to load or parse state from localStorage:", e); localStorage.removeItem(config.LOCAL_STORAGE_KEY); currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; } currentState.searchTerm = ''; currentState.currentPage = 1; currentState.typeFilter = ''; activeResultsTab = 'allFiles'; currentItemDetailData = null; isShareMode = false; lastFocusedElement = null; }
 
     // --- Initial Data Loading and Setup ---
-    async function fetchApiData(params = {}) { if (searchAbortController) { searchAbortController.abort(); } searchAbortController = new AbortController(); const signal = searchAbortController.signal; const query = new URLSearchParams();
-         if (!params.id) {
+    async function fetchApiData(params = {}) { if (searchAbortController) { searchAbortController.abort(); } searchAbortController = new AbortController(); const signal = searchAbortController.signal; const query = new URLSearchParams(); // Default params for search/list views
+         if (!params.id) { // Only add pagination/sorting/filtering if NOT fetching by specific ID
              query.set('page', params.page || currentState.currentPage);
              query.set('limit', params.limit || currentState.limit);
              query.set('sort', params.sort || currentState.sortColumn);
@@ -1019,88 +1139,92 @@
              if (qualityFilter) query.set('quality', qualityFilter);
              const typeFilter = params.type !== undefined ? params.type : currentState.typeFilter;
              if (typeFilter) query.set('type', typeFilter);
-         } else {
+         } else { // If fetching by ID, only include the ID
              query.set('id', params.id);
-         } const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`; console.log(`Fetching API: ${url}`); try { const response = await fetch(url, { signal }); if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); } const data = await response.json(); console.log(`API data received:`, data);
+         } const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`; console.log(`Fetching API: ${url}`); try { const response = await fetch(url, { signal }); if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); } const data = await response.json(); console.log(`API data received:`, data); // Update total pages in dataset if applicable
              if (!params.id && tabMappings[activeResultsTab]) {
                 const activePagination = tabMappings[activeResultsTab]?.pagination;
                 if (activePagination && data.totalPages !== undefined) {
                     activePagination.dataset.totalPages = data.totalPages;
                 }
              } return data; } catch (error) { if (error.name === 'AbortError') { console.log('API fetch aborted.'); return null; } console.error(`Error fetching data from ${url}:`, error); throw error; } finally { if (signal === searchAbortController?.signal) { searchAbortController = null; } } }
-    async function fetchAndRenderResults() { if (currentViewMode !== 'search') return; try { const apiResponse = await fetchApiData(); if (apiResponse === null) return;
+    async function fetchAndRenderResults() { if (currentViewMode !== 'search') return; try { const apiResponse = await fetchApiData(); if (apiResponse === null) return; // Aborted
          renderActiveResultsView(apiResponse); saveStateToLocalStorage(); } catch (error) { console.error("Failed to fetch/render search results:", error); const { tableBody } = tabMappings[activeResultsTab]; if (tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error loading results: ${error.message}. Please try again.</td></tr>`; } Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; }); } }
     function populateQualityFilter(items = []) { if (!qualityFilterSelect) return; const currentSelectedValue = qualityFilterSelect.value; items.forEach(item => { if (item.displayQuality && item.displayQuality !== 'N/A') { uniqueQualities.add(item.displayQuality); } }); const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); }); while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); } sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } }); qualityFilterSelect.value = [...qualityFilterSelect.options].some(opt => opt.value === currentSelectedValue) ? currentSelectedValue : ""; updateFilterIndicator(); }
     function displayLoadError(message) { const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (itemDetailContent) itemDetailContent.innerHTML = ''; if (itemDetailView) itemDetailView.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'item-detail-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
     async function initializeApp() {
-        isInitialLoad = true;
+        isInitialLoad = true; // Set flag before first URL handling
         if (pageLoader) pageLoader.style.display = 'flex';
 
-        // Load state first
+        // Load state from localStorage FIRST
         loadStateFromLocalStorage();
 
-        // Handle URL early to set initial view mode
-        handleUrlChange();
-
-        // Apply loaded quality filter state if applicable
-        if (qualityFilterSelect) {
-             qualityFilterSelect.value = currentState.qualityFilter || '';
-             updateFilterIndicator();
-        }
+        // Setup initial view based on URL (after loading state)
+        handleUrlChange(); // This will determine if we show homepage or item detail based on URL
 
         try {
-            // Fetch suggestion/quality data in the background
+            // Fetch suggestion/quality data in the background regardless of initial view
             console.log("Fetching initial data for suggestions/quality filter...");
-            // Fetch a reasonable number, maybe not 5000 if it causes perf issues?
-            // Adjust limit based on backend performance and data size. Let's try 2000.
-            const suggestionData = await fetchApiData({ limit: 2000, sort: 'lastUpdated', sortDir: 'desc' });
+            fetchApiData({ limit: 5000, sort: 'lastUpdated', sortDir: 'desc' }) // Fetch a large batch initially
+                .then(suggestionData => {
+                    if (suggestionData && suggestionData.items) {
+                        localSuggestionData = suggestionData.items.map(preprocessMovieData);
+                        console.log(`Loaded ${localSuggestionData.length} items for suggestions.`);
+                        populateQualityFilter(localSuggestionData);
+                         // If we are on homepage (determined by handleUrlChange), load updates preview
+                         if (currentViewMode === 'homepage') {
+                             loadUpdatesPreview(); // This function now uses the first part of localSuggestionData if available
+                         }
+                    } else {
+                        console.warn("Could not load initial data for suggestions/quality filter.");
+                         if (currentViewMode === 'homepage' && updatesPreviewList) {
+                             updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">Could not load recent updates.</div>';
+                         }
+                    }
+                }).catch(e => {
+                    console.error("Background suggestion/quality fetch failed:", e);
+                     if (currentViewMode === 'homepage' && updatesPreviewList) {
+                        updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Error loading updates: ${e.message}.</div>`;
+                     }
+                });
 
-            if (suggestionData && suggestionData.items) {
-                localSuggestionData = suggestionData.items.map(preprocessMovieData);
-                console.log(`Loaded ${localSuggestionData.length} items for suggestions.`);
-                populateQualityFilter(localSuggestionData);
-            } else {
-                console.warn("Could not load initial data for suggestions/quality filter.");
+            // Apply loaded quality filter state to the dropdown
+            if (qualityFilterSelect) {
+                qualityFilterSelect.value = currentState.qualityFilter || '';
+                updateFilterIndicator();
             }
-
-             // Now, trigger updates preview load *only if* we are still on the homepage
-             if (currentViewMode === 'homepage') {
-                  await loadUpdatesPreview(); // Use await to ensure it tries to load before hiding loader
-             } else {
-                 // If not on homepage (e.g., direct link to item), hide the preview section
-                 if (updatesPreviewSection) updatesPreviewSection.style.display = 'none';
-             }
+            // No need to explicitly set view mode to homepage here, handleUrlChange does it.
 
         } catch (error) {
             console.error('FATAL: Failed during app initialization:', error);
             displayLoadError(`Error initializing app: ${error.message}. Try refreshing.`);
-            // No finally block for loader needed here, error handles display
-            return; // Stop initialization on fatal error
+        } finally {
+            // Only hide loader if not showing item detail (detail view hides it itself)
+            if (currentViewMode !== 'itemDetail' && pageLoader) {
+                pageLoader.style.display = 'none';
+            }
+             isInitialLoad = false; // Mark initial setup phase as done
         }
-
-        // Hide loader only after essential setup and potentially first data load attempt
-        if (pageLoader) pageLoader.style.display = 'none';
-        isInitialLoad = false; // Mark initial setup phase as done AFTER loader hides
     }
 
 
     // --- Event Handling Setup ---
-    function handleActionClick(event) {
+    function handleActionClick(event) { // Handles clicks within Item Detail View or Player
          const target = event.target;
-         const button = target.closest('#item-detail-content .button, #playerCustomUrlSection button');
+         const button = target.closest('#item-detail-content .button, #playerCustomUrlSection button'); // Scope actions
 
          if (button) {
             const action = button.dataset.action;
-            const url = button.dataset.url;
-            let title = button.dataset.title || button.dataset.titleRef || currentItemDetailData?.displayFilename;
+            const url = button.dataset.url; // Already encoded if needed
+            let title = button.dataset.title || currentItemDetailData?.displayFilename; // Get title
             const filename = button.dataset.filename || currentItemDetailData?.displayFilename;
             const id = button.dataset.id || currentItemDetailData?.id;
             lastFocusedElement = button;
 
             if (button.tagName === 'A' && button.href && button.target === '_blank') {
-                return;
+                return; // Browser handles external links
             }
-            event.preventDefault();
+            event.preventDefault(); // Prevent default for button actions
 
             console.log(`Action clicked: ${action}`);
 
@@ -1114,12 +1238,12 @@
             } else if (action === 'share' && id) {
                 handleShareClick(button);
             } else if (action === 'toggle-custom-url') {
-                toggleCustomUrlInput(button);
+                toggleCustomUrlInput(button); // Toggle input within item detail/player
             } else if (action === 'bypass-hubcloud') {
                 triggerHubCloudBypass(button);
-            } else if (action === 'bypass-gdflix') {
+            } else if (action === 'bypass-gdflix') { // Handle GDFLIX Bypass
                 triggerGDFLIXBypass(button);
-            } else if (target.matches('#playerPlayCustomUrlButton')) {
+            } else if (target.matches('#playerPlayCustomUrlButton')) { // Check if it's the player's custom URL play button
                  if (isGlobalCustomUrlMode) {
                      handleGlobalPlayCustomUrl(event);
                  } else {
@@ -1131,10 +1255,12 @@
     function handleGlobalCustomUrlClick(event) {
          event.preventDefault(); lastFocusedElement = event.target;
          if (!videoContainer || !playerCustomUrlSection || !playerCustomUrlInput) return;
-         console.log("Global Play Custom URL clicked."); closePlayerIfNeeded();
+         console.log("Global Play Custom URL clicked."); closePlayerIfNeeded(); // Close any existing player
+         // Ensure other views are hidden if necessary (though should be via setViewMode)
          if(resultsArea) resultsArea.style.display = 'none';
          if(itemDetailView) itemDetailView.style.display = 'none';
-         if(searchFocusArea) searchFocusArea.style.display = 'none';
+         if(searchFocusArea) searchFocusArea.style.display = 'none'; // Hide search too
+         if(pageFooter) pageFooter.style.display = 'none'; // Hide footer too
 
          isGlobalCustomUrlMode = true; videoContainer.classList.add('global-custom-url-mode');
          if (videoElement) videoElement.style.display = 'none'; if (customControlsContainer) customControlsContainer.style.display = 'none';
@@ -1154,16 +1280,28 @@
          streamVideo("Custom URL Video", customUrlEncoded, null, true);
     }
     function toggleCustomUrlInput(toggleButton, triggeredByError = false) {
-         const contextContainer = toggleButton.closest('#item-detail-content') || toggleButton.closest('#videoContainer');
+         const contextContainer = toggleButton.closest('#item-detail-content') || toggleButton.closest('#videoContainer'); // Find context (detail view or player itself)
          if (!contextContainer || !videoContainer || !playerCustomUrlSection) {
              console.error("Cannot toggle custom URL input: context or player elements missing.");
              return;
          }
 
+         // Ensure player is inside the item detail content if triggered from there
          if (contextContainer.id === 'item-detail-content' && videoContainer.parentElement !== contextContainer) {
              console.warn("Player not in item detail container, moving it for custom URL toggle.");
+            // --- Revised Player Placement Logic ---
+            const separator = contextContainer.querySelector('hr.detail-separator');
+            const targetElement = separator ? separator.nextElementSibling : contextContainer.firstChild;
+
              if(videoContainer.parentElement) videoContainer.parentElement.removeChild(videoContainer);
-             contextContainer.appendChild(videoContainer);
+              if (targetElement && targetElement.nextSibling) {
+                 contextContainer.insertBefore(videoContainer, targetElement.nextSibling); // Place after info/buttons
+             } else {
+                 contextContainer.appendChild(videoContainer); // Fallback append
+             }
+             // --- End Revised ---
+
+             // Reset player if moving
              if (videoElement && videoElement.hasAttribute('src')) { videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); }
              if (vlcBox) vlcBox.style.display = 'none';
              if (audioWarningDiv) audioWarningDiv.style.display = 'none';
@@ -1177,12 +1315,15 @@
          customControlsContainer.style.display = isHidden ? 'none' : 'flex';
          if(vlcBox) vlcBox.style.display = isHidden ? 'none' : 'block';
 
+         // Handle audio warning visibility
          if(audioWarningDiv) {
+            // Hide normal warning when showing input, unless it's an error message
              if (isHidden && audioWarningDiv.style.display !== 'none' && !audioWarningDiv.innerHTML.includes('Playback Error:')) {
                  audioWarningDiv.style.display = 'none';
              }
+             // Show normal warning when hiding input if applicable (and not already showing error)
              else if (!isHidden && audioWarningDiv.style.display === 'none') {
-                 const movieData = currentItemDetailData;
+                 const movieData = currentItemDetailData; // Get data from state
                  if (movieData && movieData.displayFilename) {
                      const ddp51Regex = /\bDDP?([ ._-]?5\.1)?\b/i;
                      const advancedAudioRegex = /\b(DTS|ATMOS|TrueHD)\b/i;
@@ -1197,6 +1338,7 @@
              }
          }
 
+         // Ensure player container is visible
          if (videoContainer.style.display === 'none') {
              videoContainer.style.display = 'flex';
          }
@@ -1209,9 +1351,12 @@
           } else if (!isHidden) {
              setTimeout(() => toggleButton.focus(), 50);
           }
+
+          // Scroll player into view if needed
           setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
     }
     function playFromCustomUrlInput(playButton) {
+         // This function is now only called from the player's internal button
          const container = playButton.closest('#playerCustomUrlSection');
          if (!container) return;
          const inputField = container.querySelector('#playerCustomUrlInput');
@@ -1227,19 +1372,21 @@
          try { new URL(customUrlRaw); customUrlEncoded = customUrlRaw.replace(/ /g, '%20'); } catch (e) { feedbackSpan.textContent = 'Invalid URL format.'; inputField.focus(); return; }
 
          console.log(`Attempting to play custom URL from item context: ${customUrlEncoded}`);
-         isGlobalCustomUrlMode = false;
+         isGlobalCustomUrlMode = false; // Ensure not in global mode
 
+         // Hide input, show player elements
          if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none';
          if (videoElement) videoElement.style.display = 'block';
          if (customControlsContainer) customControlsContainer.style.display = 'flex';
 
-         streamVideo(titleRef, customUrlEncoded, null, true);
+         streamVideo(titleRef, customUrlEncoded, null, true); // Stream the custom URL
     }
+
 
     // --- HubCloud/GDFLIX Bypass Logic ---
     async function triggerHubCloudBypass(buttonElement) {
          const hubcloudUrl = buttonElement.dataset.hubcloudUrl;
-         const movieRefType = buttonElement.dataset.movieRef;
+         const movieRefType = buttonElement.dataset.movieRef; // Should be 'detail'
          if (!hubcloudUrl) { console.error("Bypass failed: HubCloud URL missing from button data."); setBypassButtonState(buttonElement, 'error', 'Missing URL'); return; }
          if (movieRefType !== 'detail' || !currentItemDetailData) { console.error("Bypass failed: Invalid context or missing item data."); setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
 
@@ -1253,18 +1400,18 @@
              if (result.success && result.finalUrl) {
                  console.log(`HubCloud Bypass successful! Raw Final URL: ${result.finalUrl}`); const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20'); console.log(`Encoded Final URL: ${encodedFinalUrl}`);
                  setBypassButtonState(buttonElement, 'success', 'Success!');
-                 updateItemDetailAfterBypass(encodedFinalUrl);
+                 updateItemDetailAfterBypass(encodedFinalUrl); // Update the current item's view
              } else { throw new Error(result.details || result.error || 'Unknown HubCloud bypass failure'); }
          } catch (error) {
              clearTimeout(timeoutId);
-             if (error.name === 'AbortError' && !apiController.signal.aborted) { console.error("HubCloud Bypass aborted due to timeout."); setBypassButtonState(buttonElement, 'error', 'Timeout'); }
+             if (error.name === 'AbortError' && !apiController.signal.aborted) { console.error("HubCloud Bypass aborted due to timeout."); setBypassButtonState(buttonElement, 'error', 'Timeout'); } // Show timeout error
              else if (error.name === 'AbortError') { console.log("HubCloud Bypass fetch aborted by user/navigation."); setBypassButtonState(buttonElement, 'idle'); }
              else { console.error("HubCloud Bypass failed:", error); setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); }
          }
      }
-    async function triggerGDFLIXBypass(buttonElement) {
+    async function triggerGDFLIXBypass(buttonElement) { // New GDFLIX function
          const gdflixUrl = buttonElement.dataset.gdflixUrl;
-         const movieRefType = buttonElement.dataset.movieRef;
+         const movieRefType = buttonElement.dataset.movieRef; // Should be 'detail'
          if (!gdflixUrl) { console.error("Bypass failed: GDFLIX URL missing from button data."); setBypassButtonState(buttonElement, 'error', 'Missing URL'); return; }
          if (movieRefType !== 'detail' || !currentItemDetailData) { console.error("Bypass failed: Invalid context or missing item data."); setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
 
@@ -1278,43 +1425,51 @@
              if (result.success && result.finalUrl) {
                  console.log(`GDFLIX Bypass successful! Raw Final URL: ${result.finalUrl}`); const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20'); console.log(`Encoded Final URL: ${encodedFinalUrl}`);
                  setBypassButtonState(buttonElement, 'success', 'Success!');
-                 updateItemDetailAfterBypass(encodedFinalUrl);
+                 updateItemDetailAfterBypass(encodedFinalUrl); // Update the current item's view
              } else { throw new Error(result.error || 'Unknown GDFLIX bypass failure'); }
          } catch (error) {
              clearTimeout(timeoutId);
-             if (error.name === 'AbortError' && !apiController.signal.aborted) { console.error("GDFLIX Bypass aborted due to timeout."); setBypassButtonState(buttonElement, 'error', 'Timeout'); }
+             if (error.name === 'AbortError' && !apiController.signal.aborted) { console.error("GDFLIX Bypass aborted due to timeout."); setBypassButtonState(buttonElement, 'error', 'Timeout'); } // Show timeout error
              else if (error.name === 'AbortError') { console.log("GDFLIX Bypass fetch aborted by user/navigation."); setBypassButtonState(buttonElement, 'idle'); }
              else { console.error("GDFLIX Bypass failed:", error); setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); }
          }
      }
-    function updateItemDetailAfterBypass(encodedFinalUrl) {
+    function updateItemDetailAfterBypass(encodedFinalUrl) { // Reusable function for item detail view
           if (!currentItemDetailData || !itemDetailContent) {
               console.error("Cannot update item detail view: missing data or container.");
               return;
           }
+          // Update the data in memory
           currentItemDetailData.url = encodedFinalUrl;
           console.log(`Updated item detail data (ID: ${currentItemDetailData.id}) in memory with bypassed URL.`);
 
-          const actionHTML = createItemDetailContentHTML(currentItemDetailData, null); // Pass null for tmdbDetails initially, re-fetch happens in displayItemDetail
-          itemDetailContent.innerHTML = actionHTML;
+          // Re-render the content area (TMDb details are already fetched, no need to re-fetch)
+          // Create HTML using the updated currentItemDetailData and the *existing* tmdbDetails (which are null if fetch failed)
+          const contentHTML = createItemDetailContentHTML(currentItemDetailData, currentItemDetailData.tmdbDetails); // Assuming tmdbDetails are stored on item data now, or retrieve from a module variable if stored differently
+          itemDetailContent.innerHTML = contentHTML;
           console.log(`Successfully re-rendered item detail content for item ID: ${currentItemDetailData.id} after bypass.`);
 
-          // Re-fetch TMDb data as well, as the item content was fully replaced
-          // This reuses the logic already in displayItemDetail to handle TMDb fetch
-          displayItemDetail(currentItemDetailData.id, isShareMode);
-
-
+          // Focus the new play button if it exists
           const playButton = itemDetailContent.querySelector('.play-button');
           if(playButton) {
               setTimeout(() => playButton.focus(), 50);
           }
 
-           if (videoContainer.parentElement && videoContainer.style.display !== 'none') {
+           // If player was open, re-attach it inside the new content
+          if (videoContainer.parentElement && videoContainer.style.display !== 'none') {
              console.log("Re-attaching player to updated item detail content.");
-             itemDetailContent.appendChild(videoContainer);
+              // --- Revised Player Placement Logic ---
+             const separator = itemDetailContent.querySelector('hr.detail-separator');
+             const targetElement = separator ? separator.nextElementSibling : itemDetailContent.firstChild;
+             if (targetElement && targetElement.nextSibling) {
+                  itemDetailContent.insertBefore(videoContainer, targetElement.nextSibling);
+              } else {
+                  itemDetailContent.appendChild(videoContainer);
+              }
+              // --- End Revised ---
            }
      }
-    function setBypassButtonState(buttonElement, state, message = null) {
+    function setBypassButtonState(buttonElement, state, message = null) { // Handles both button types
          if (!buttonElement) return;
          const feedbackSpan = buttonElement.nextElementSibling; const iconSpan = buttonElement.querySelector('.button-icon'); const spinnerSpan = buttonElement.querySelector('.button-spinner'); const textSpan = buttonElement.querySelector('.button-text');
          const isHubCloud = buttonElement.classList.contains('hubcloud-bypass-button'); const defaultText = isHubCloud ? 'Bypass HubCloud' : 'Bypass GDFLIX'; const defaultIconHTML = isHubCloud ? '☁️' : '🎬';
@@ -1323,17 +1478,18 @@
          clearTimeout(bypassFeedbackTimeout);
          switch (state) {
              case 'loading': buttonElement.classList.add('loading'); buttonElement.disabled = true; if (textSpan) textSpan.textContent = 'Bypassing...'; if (spinnerSpan) spinnerSpan.style.display = 'inline-block'; if (iconSpan) iconSpan.style.display = 'none'; if (feedbackSpan) { feedbackSpan.textContent = 'Please wait...'; feedbackSpan.className = 'bypass-feedback loading show'; feedbackSpan.style.display = 'inline-block'; } break;
-             case 'success': buttonElement.classList.add('success'); buttonElement.disabled = true; /* Keep disabled */ if (textSpan) textSpan.textContent = 'Success!'; if (iconSpan) iconSpan.innerHTML = '✅'; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.textContent = message || 'Success! Play button updated.'; feedbackSpan.className = 'bypass-feedback success show'; feedbackSpan.style.display = 'inline-block'; } break;
-             case 'error': buttonElement.classList.add('error'); buttonElement.disabled = false; /* Allow retry */ if (textSpan) textSpan.textContent = defaultText; if (iconSpan) iconSpan.innerHTML = defaultIconHTML; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.textContent = message || 'Failed'; feedbackSpan.className = 'bypass-feedback error show'; feedbackSpan.style.display = 'inline-block'; bypassFeedbackTimeout = setTimeout(() => { feedbackSpan.classList.remove('show', 'error', 'loading'); feedbackSpan.style.display = 'none'; feedbackSpan.textContent = ''; }, 4000); } break;
+             case 'success': buttonElement.classList.add('success'); buttonElement.disabled = true; /* Keep disabled after success */ if (textSpan) textSpan.textContent = 'Success!'; if (iconSpan) iconSpan.innerHTML = '✅'; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.textContent = message || 'Success! Play button updated.'; feedbackSpan.className = 'bypass-feedback success show'; feedbackSpan.style.display = 'inline-block'; } break; // Success message
+             case 'error': buttonElement.classList.add('error'); buttonElement.disabled = false; /* Allow retry on error */ if (textSpan) textSpan.textContent = defaultText; if (iconSpan) iconSpan.innerHTML = defaultIconHTML; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.textContent = message || 'Failed'; feedbackSpan.className = 'bypass-feedback error show'; feedbackSpan.style.display = 'inline-block'; bypassFeedbackTimeout = setTimeout(() => { feedbackSpan.classList.remove('show', 'error', 'loading'); feedbackSpan.style.display = 'none'; feedbackSpan.textContent = ''; }, 4000); } break;
              case 'idle': default: buttonElement.disabled = false; if (textSpan) textSpan.textContent = defaultText; if (iconSpan) iconSpan.innerHTML = defaultIconHTML; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.classList.remove('show', 'error', 'loading'); feedbackSpan.style.display = 'none'; feedbackSpan.textContent = ''; } break;
          }
      }
 
 
     // --- Event Delegation Setup ---
-     function handleContentClick(event) {
+     function handleContentClick(event) { // Main delegation function
          const target = event.target;
 
+         // 1. Check for clicks within Results or Updates Preview that should navigate
          const viewTrigger = target.closest('.movie-data-row .view-button, .movie-data-row .col-filename, .update-item .view-button, .update-item .preview-col-filename');
          if (viewTrigger) {
              event.preventDefault();
@@ -1343,62 +1499,81 @@
              } else {
                  console.error("Could not find item ID for navigation.");
              }
-             return;
+             return; // Stop further processing
          }
 
-         const actionTrigger = target.closest('#item-detail-content .button, #videoContainer .button:not(.close-btn)');
-         if (actionTrigger && !actionTrigger.closest('.custom-controls')) {
-             handleActionClick(event);
-             return;
+         // 2. Check for action clicks within the Item Detail view or Player controls
+         const actionTrigger = target.closest('#item-detail-content .button, #videoContainer .button:not(.close-btn)'); // Include player controls except close
+         if (actionTrigger && !actionTrigger.closest('.custom-controls')) { // Exclude player's own media controls like seek/vol etc
+             handleActionClick(event); // Handle play, copy, bypass, share etc.
+             return; // Stop further processing
          }
 
+          // 3. Handle Player Close Button separately
           if (target.matches('.close-btn') && target.closest('#videoContainer')) {
               lastFocusedElement = target;
               closePlayer(lastFocusedElement);
               return;
           }
 
+          // 4. Handle clicks on sortable table headers
          if (target.closest('th.sortable')) {
              handleSort(event);
              return;
          }
+
+         // Add other specific click handlers if needed...
     }
 
     // --- Add Event Listeners ---
     document.addEventListener('DOMContentLoaded', async () => {
-         await initializeApp(); // Call initializeApp here
+         // Initialize App handles initial URL and setup
+         await initializeApp();
 
+         // Search Input Listeners
          if (searchInput) {
              searchInput.addEventListener('input', handleSearchInput);
              searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); handleSearchSubmit(); } else if (event.key === 'Escape') { suggestionsContainer.style.display = 'none'; } });
-             searchInput.addEventListener('search', handleSearchClear);
+             searchInput.addEventListener('search', handleSearchClear); // Handles 'x' button
              searchInput.addEventListener('blur', () => { setTimeout(() => { const searchButton = document.getElementById('searchSubmitButton'); if (document.activeElement !== searchInput && !suggestionsContainer.contains(document.activeElement) && document.activeElement !== searchButton) { suggestionsContainer.style.display = 'none'; } }, 150); });
          }
 
+         // Filter Listener
          if (qualityFilterSelect) { qualityFilterSelect.addEventListener('change', triggerFilterChange); }
 
+         // Delegated Click Listener for main content areas
          if (resultsArea) { resultsArea.addEventListener('click', handleContentClick); }
          if (updatesPreviewList) { updatesPreviewList.addEventListener('click', handleContentClick); }
-         if (itemDetailView) { itemDetailView.addEventListener('click', handleContentClick); }
+         if (itemDetailView) { itemDetailView.addEventListener('click', handleContentClick); } // Handles actions inside detail view
 
+         // Global Custom URL Button
          if (playCustomUrlGlobalButton) { playCustomUrlGlobalButton.addEventListener('click', handleGlobalCustomUrlClick); }
 
+         // Player Keyboard Shortcuts
          document.addEventListener('keydown', handlePlayerKeyboardShortcuts);
 
+         // Click outside player/suggestions handler
          document.addEventListener('click', (event) => {
+             // Close suggestions if clicked outside
              if (searchInput && suggestionsContainer && suggestionsContainer.style.display === 'block') { const searchWrapper = searchInput.closest('.search-input-wrapper'); if (searchWrapper && !searchWrapper.contains(event.target)) { suggestionsContainer.style.display = 'none'; } }
+
+             // Close player if clicked outside its context (unless global custom URL mode is active and click is not on trigger)
              if (videoContainer && videoContainer.style.display !== 'none' && !isGlobalCustomUrlMode) {
                  const clickedInsidePlayer = videoContainer.contains(event.target);
                  const clickedInsideDetailContent = itemDetailContent?.contains(event.target);
+
                  if (!clickedInsidePlayer && !clickedInsideDetailContent) {
-                     let triggerElement = lastFocusedElement;
-                     let clickedOnTrigger = triggerElement && triggerElement.contains(event.target);
+                     // Check if the click was on the element that *triggered* the player (e.g., a play button)
+                     let triggerElement = lastFocusedElement; // Check the last focused element before player opened
+                     let clickedOnTrigger = triggerElement && event.target.closest('.button') === triggerElement;
+
                       if (!clickedOnTrigger) {
                          console.log("Clicked outside player's detail view context. Closing player.");
-                         closePlayer(event.target);
+                         closePlayer(event.target); // Pass click target for potential focus restoration
                      }
                  }
              } else if (videoContainer && videoContainer.style.display !== 'none' && isGlobalCustomUrlMode) {
+                 // If in global custom URL mode, close only if click is outside player AND outside the global trigger button
                  const clickedInsidePlayer = videoContainer.contains(event.target);
                  const clickedOnGlobalTrigger = playCustomUrlGlobalButton && playCustomUrlGlobalButton.contains(event.target);
                  if (!clickedInsidePlayer && !clickedOnGlobalTrigger) {
@@ -1408,6 +1583,7 @@
              }
          }, false);
 
+         // Player Event Listeners
          if(videoElement) {
              videoElement.addEventListener('volumechange', () => { if (volumeSlider && Math.abs(parseFloat(volumeSlider.value) - videoElement.volume) > 0.01) { volumeSlider.value = videoElement.volume; } updateMuteButton(); try { localStorage.setItem(config.PLAYER_VOLUME_KEY, String(videoElement.volume)); } catch (e) { console.warn("LocalStorage volume save failed", e); } });
              videoElement.addEventListener('ratechange', () => { if(playbackSpeedSelect && playbackSpeedSelect.value !== String(videoElement.playbackRate)) { playbackSpeedSelect.value = String(videoElement.playbackRate); } try { localStorage.setItem(config.PLAYER_SPEED_KEY, String(videoElement.playbackRate)); } catch (e) { console.warn("LocalStorage speed save failed", e); } });
@@ -1415,6 +1591,7 @@
              videoElement.removeEventListener('error', handleVideoError); videoElement.addEventListener('error', handleVideoError);
          }
 
+         // Fullscreen Change Listener
          document.addEventListener('fullscreenchange', handleFullscreenChange); document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
      }); // End DOMContentLoaded
