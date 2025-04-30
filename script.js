@@ -688,24 +688,63 @@
          } else {
              showMoreUpdatesButton.style.display = 'none';
          } }
-    window.appendMoreUpdates = async function() { if (!updatesPreviewList || !showMoreUpdatesButton) return; showMoreUpdatesButton.disabled = true; showMoreUpdatesButton.textContent = "Loading..."; // Calculate next page based on items *currently* loaded vs the 'load more' count
-         const currentPage = Math.floor(updatesPreviewShownCount / config.UPDATES_PREVIEW_LOAD_MORE_COUNT); const nextPage = currentPage + 1; // Always fetch the next logical page
-         console.log(`Attempting to load page ${nextPage} for updates preview (currently showing ${updatesPreviewShownCount}).`); try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_LOAD_MORE_COUNT, page: nextPage }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { const newItems = data.items.map(preprocessMovieData); const startIndex = updatesPreviewShownCount; // Start appending after current items
-             // Append new items to the DOM
-             appendUpdatesToPreview(startIndex, startIndex + newItems.length); // Pass correct indices
-             // Add new items to the weeklyUpdatesData array as well, if needed for future reference
-             // weeklyUpdatesData.push(...newItems); // Optional: only needed if you re-filter updates later
-             updatesPreviewShownCount += newItems.length; // Increment shown count
-             console.log(`Loaded ${newItems.length} more updates. Total now showing: ${updatesPreviewShownCount}. Current API page fetched: ${data.page}, Total API pages: ${data.totalPages}`); // Log shown count
-             if (data.page >= data.totalPages || newItems.length < config.UPDATES_PREVIEW_LOAD_MORE_COUNT) {
+    window.appendMoreUpdates = async function() {
+    if (!updatesPreviewList || !showMoreUpdatesButton) return;
+    showMoreUpdatesButton.disabled = true;
+    showMoreUpdatesButton.textContent = "Loading...";
+    // Calculate next page based on items *currently* loaded vs the 'load more' count
+    // Example: If shownCount is 10 and load_more is 10, currentPage = 1, nextPage = 2.
+    // If shownCount is 20 and load_more is 10, currentPage = 2, nextPage = 3.
+    const currentPage = Math.floor(updatesPreviewShownCount / config.UPDATES_PREVIEW_LOAD_MORE_COUNT);
+    const nextPage = currentPage + 1; // Always fetch the next logical page
+    console.log(`Attempting to load page ${nextPage} for updates preview (currently showing ${updatesPreviewShownCount}).`);
+
+    try {
+        const params = {
+            sort: 'lastUpdated',
+            sortDir: 'desc',
+            limit: config.UPDATES_PREVIEW_LOAD_MORE_COUNT,
+            page: nextPage
+        };
+        const data = await fetchApiData(params);
+
+        if (data && data.items && data.items.length > 0) {
+            const newItems = data.items.map(preprocessMovieData);
+            const startIndex = updatesPreviewShownCount; // Index in weeklyUpdatesData where new items *will* start
+
+            // *** FIX: Add the newly fetched items to the main data array FIRST ***
+            weeklyUpdatesData.push(...newItems);
+
+            // Now append the items using the updated weeklyUpdatesData
+            // appendUpdatesToPreview will slice from weeklyUpdatesData[startIndex] onwards
+            appendUpdatesToPreview(startIndex, startIndex + newItems.length); // Pass correct indices relative to the FULL array
+
+            updatesPreviewShownCount += newItems.length; // Increment shown count *after* successful append
+            console.log(`Loaded ${newItems.length} more updates. Total now showing: ${updatesPreviewShownCount}. Current API page fetched: ${data.page}, Total API pages: ${data.totalPages}`); // Log shown count
+
+            // Check if we should stop loading more
+            if (data.page >= data.totalPages || newItems.length < config.UPDATES_PREVIEW_LOAD_MORE_COUNT) {
                 // Stop loading if we reached the last page OR the API returned fewer items than requested
-                 showMoreUpdatesButton.textContent = "All Updates Shown";
-                 showMoreUpdatesButton.disabled = true; // Keep disabled
-                 // Optionally hide after a delay: setTimeout(() => { showMoreUpdatesButton.style.display = 'none'; }, 2000);
-             } else {
-                 showMoreUpdatesButton.disabled = false;
-                 showMoreUpdatesButton.textContent = "Show More";
-             } } else { console.log("No more updates found from API."); showMoreUpdatesButton.textContent = "No More Updates"; showMoreUpdatesButton.disabled = true; } } catch (error) { console.error("Failed to load more updates:", error); showMoreUpdatesButton.textContent = "Error Loading"; showMoreUpdatesButton.disabled = false; } }
+                showMoreUpdatesButton.textContent = "All Updates Shown";
+                showMoreUpdatesButton.disabled = true; // Keep disabled
+                // Optionally hide after a delay: setTimeout(() => { showMoreUpdatesButton.style.display = 'none'; }, 2000);
+            } else {
+                showMoreUpdatesButton.disabled = false;
+                showMoreUpdatesButton.textContent = "Show More";
+            }
+        } else {
+            // API returned no items for this page
+            console.log("No more updates found from API.");
+            showMoreUpdatesButton.textContent = "No More Updates";
+            showMoreUpdatesButton.disabled = true;
+        }
+    } catch (error) {
+        console.error("Failed to load more updates:", error);
+        showMoreUpdatesButton.textContent = "Error Loading";
+        // Re-enable button to allow retry after error
+        showMoreUpdatesButton.disabled = false;
+    }
+}
     function appendUpdatesToPreview(startIndex, endIndex) { // startIndex/endIndex are relative to the data source (weeklyUpdatesData if using it, or just used for indexing)
         if (!updatesPreviewList) return;
         const fragment = document.createDocumentFragment();
