@@ -317,9 +317,11 @@
 
         // --- TMDb Details Section ---
         let tmdbSectionHTML = '';
+        // Assuming you might pass tmdbFetchAttempted or handle it similarly
+        const tmdbFetchAttempted = !!tmdbDetails; // Simple check if details exist
         if (tmdbDetails && tmdbDetails.id) {
             const posterHTML = tmdbDetails.posterPath
-                ? `<img src="${sanitize(tmdbDetails.posterPath)}" alt="Poster for ${sanitize(tmdbDetails.title)}" class="tmdb-poster" loading="lazy">` // Added lazy loading
+                ? `<img src="${sanitize(tmdbDetails.posterPath)}" alt="Poster for ${sanitize(tmdbDetails.title)}" class="tmdb-poster" loading="lazy">`
                 : '<div class="tmdb-poster-placeholder">No Poster</div>';
 
             const ratingHTML = tmdbDetails.voteAverage && tmdbDetails.voteCount
@@ -335,7 +337,7 @@
                 : '';
 
              const releaseDateHTML = tmdbDetails.releaseDate
-                 ? `<div><strong>Released:</strong> ${sanitize(TimeAgo.formatFullDate(new Date(tmdbDetails.releaseDate), true))}</div>` // Use short format
+                 ? `<div><strong>Released:</strong> ${sanitize(TimeAgo.formatFullDate(new Date(tmdbDetails.releaseDate), true))}</div>`
                  : '';
 
              const runtimeHTML = tmdbDetails.runtime
@@ -346,7 +348,6 @@
                  ? `<div class="tmdb-tagline"><em>${sanitize(tmdbDetails.tagline)}</em></div>`
                  : '';
 
-            // Basic Actor list (Example)
              const actorsHTML = tmdbDetails.actors && tmdbDetails.actors.length > 0
                  ? `<div class="tmdb-actors">
                       <strong>Starring:</strong>
@@ -376,9 +377,7 @@
                     </div>
                 </div>
             `;
-        } else if (movie.extractedTitle) {
-            // Show a placeholder or message if TMDb fetch was attempted but failed/timed out/no result
-            // Check if fetch was attempted (i.e., displayItemDetail tried to fetch)
+        } else if (movie.extractedTitle && tmdbFetchAttempted) { // Check if fetch was attempted but no details resulted
              tmdbSectionHTML = `<div class="tmdb-fetch-failed">Could not fetch additional details from TMDb.</div>`;
         }
 
@@ -397,7 +396,9 @@
                 urlDependentButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play in VLC or MX Player</button>`;
             }
         }
-        urlDependentButtonsHTML = `<div class="url-actions-container" id="url-actions-container-${escapedId}">${urlDependentButtonsHTML}</div>`;
+        // This container is mainly for styling/layout if needed, but buttons are added individually below
+        // urlDependentButtonsHTML = `<div class="url-actions-container" id="url-actions-container-${escapedId}">${urlDependentButtonsHTML}</div>`;
+         // Let's add the URL buttons directly to the main button container later
 
         // 2. Bypass Buttons
         const movieRefAttr = `data-movie-ref="detail"`; // Identify context as item detail view
@@ -432,12 +433,19 @@
         otherLinkButtonsHTML += youtubeTrailerButtonHTML;
         otherLinkButtonsHTML += externalInfoButtonHTML; // Use combined IMDb/TMDb button
         otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
-        // Original Links (Show only if no bypass button exists for that type)
-        if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
-        if (movie.gdflix_link && !bypassButtonsHTML.includes('bypass-gdflix')) otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`;
-        if (movie.hubcloud_link && movie.hubcloud_link.toLowerCase() !== 'null' && !bypassButtonsHTML.includes('bypass-hubcloud')) {
+
+        // --- FIX START: Always show original links if they exist ---
+        if (movie.telegram_link) { // Simplified check, preprocess handles null/empty
+             otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
+        }
+        if (movie.gdflix_link) { // Simplified check
+            otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`;
+        }
+        if (movie.hubcloud_link) { // Simplified check
             otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`;
         }
+        // --- FIX END ---
+
         if (movie.filepress_link) otherLinkButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
         if (movie.gdtot_link) otherLinkButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
         // Share Button
@@ -458,9 +466,9 @@
 
         const buttonsHTML = `
              <div class="action-buttons-container">
-                 ${urlDependentButtonsHTML}
-                 ${bypassButtonsHTML}
-                 ${otherLinkButtonsHTML}
+                 ${urlDependentButtonsHTML}  <!-- Add URL dependent buttons first -->
+                 ${bypassButtonsHTML}      <!-- Then Bypass buttons -->
+                 ${otherLinkButtonsHTML}   <!-- Then all other links/buttons -->
              </div>
         `;
 
