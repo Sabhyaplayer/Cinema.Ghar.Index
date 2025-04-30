@@ -1,4 +1,4 @@
-/* style.css */
+/* --- START OF style.css (with HubCloud & GDFLIX Bypass updates) --- */
 :root {
     --primary-color: #0d6efd; /* Bootstrap blue */
     --primary-hover: #0b5ed7;
@@ -21,6 +21,8 @@
     --warning-bg: #fff3cd;
     --warning-text: #856404;
     --warning-border: #ffeeba;
+    --info-color: #0dcaf0; /* Bootstrap info for bypass */
+    --info-hover: #0baccc;
     --pagination-active-bg: var(--primary-color);
     --pagination-active-border: var(--primary-color);
     --pagination-hover-bg: #e9ecef;
@@ -37,21 +39,36 @@
     --button-primary-hover: var(--primary-hover); /* Added for Search button */
     --button-share-bg: #6f42c1; /* Bootstrap purple for share */
     --button-share-hover: #5a349b;
+    --button-youtube-bg: #FF0000; /* YouTube Red */
+    --button-youtube-hover: #cc0000;
+    --button-imdb-bg: var(--secondary-color); /* Using secondary color for IMDb button */
+    --button-imdb-hover: var(--secondary-hover);
+    --button-custom-url-bg: #ffc107; /* Bootstrap yellow */
+    --button-custom-url-hover: #e0a800;
+    --button-custom-url-text: #343a40; /* Dark text for yellow bg */
+    --button-custom-url-toggle-bg: var(--secondary-color); /* Use secondary color for toggle */
+    --button-custom-url-toggle-hover: var(--secondary-hover);
+    --button-custom-url-global-bg: var(--secondary-color);
+    --button-custom-url-global-hover: var(--secondary-hover);
+    --button-bypass-bg: var(--info-color); /* HubCloud Bypass Button Color */
+    --button-bypass-hover: var(--info-hover);
+    --button-bypass-text: white;
+    --button-gdflix-bypass-bg: #E50914; /* GDFLIX Bypass Button Color */
+    --button-gdflix-bypass-hover: #B81D24; /* GDFLIX Bypass Button Hover Color */
+    --button-gdflix-bypass-text: white;
 
-    --border-radius-sm: 0.375rem; /* 4px -> MODIFIED TO 0.375rem (6px) */
+    --border-radius-sm: 0.375rem; /* 6px */
     --border-radius-md: 0.5rem;
-    --border-radius-lg: 0.75rem; /* MODIFIED TO 0.75rem */
+    --border-radius-lg: 0.75rem;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
     --shadow-md: 0 4px 10px rgba(0,0,0,0.08);
     --shadow-lg: 0 8px 25px rgba(0,0,0,0.1);
 
-    /* For preview item layout */
     --preview-col-width-id: 10%;
     --preview-col-width-filename: 55%;
     --preview-col-width-date: 20%;
     --preview-col-width-view: 15%;
 
-    /* Transitions */
     --transition-speed: 0.3s;
     --transition-timing: ease;
 }
@@ -63,35 +80,33 @@
 }
 
 html {
-    height: 100%; /* Ensure html takes full height */
-    scroll-behavior: smooth; /* Smooth scrolling for anchors/JS scrolls */
+    height: 100%;
+    scroll-behavior: smooth;
 }
 
 body {
-    font-family: 'Poppins', 'Product Sans', Arial, sans-serif; /* Add Product Sans fallback */
-    /* Simpler background */
+    font-family: 'Poppins', 'Product Sans', Arial, sans-serif;
     background-color: var(--container-bg);
     color: var(--text-color);
     line-height: 1.6;
     width: 100%;
-    min-height: 100vh; /* Ensure body takes at least full viewport height */
+    min-height: 100vh;
     display: flex;
-    flex-direction: column; /* Stack header/content/footer vertically */
-    margin: 0; /* Remove default body margin */
+    flex-direction: column;
+    margin: 0;
 }
 
-/* Page Loader - Initially visible */
 #page-loader {
     position: fixed;
     inset: 0;
-    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white */
+    background-color: rgba(255, 255, 255, 0.9);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 9999;
     transition: opacity 0.3s ease-out;
 }
-#page-loader .spinner-container { /* Added container for spinner + text */
+#page-loader .spinner-container {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -103,40 +118,35 @@ body {
     width: 50px;
     height: 50px;
     border-width: 5px;
-    margin: 0; /* Remove auto margin */
+    margin: 0;
 }
-/* Hide loader via JS by setting display: none */
-
 
 #cinemaghar-container {
     background-color: transparent;
-    margin: 0 auto; /* Center horizontally */
-    padding: 20px 0 0 0; /* NO bottom padding, footer will handle it */
+    margin: 0 auto;
+    padding: 20px 0 0 0;
     width: 100%;
-    max-width: 1300px; /* Max width */
-    border-radius: 0; /* No radius */
-    box-shadow: none; /* No shadow */
+    max-width: 1300px;
+    border-radius: 0;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
-    flex-grow: 1; /* Allow container to grow */
-    overflow: visible; /* Allow absolute elements */
-    position: relative; /* For absolute positioning (though not used for footer now) */
+    flex-grow: 1;
+    overflow: visible;
+    position: relative;
     color: var(--text-color);
     transition: background-color var(--transition-speed) var(--transition-timing),
                 padding var(--transition-speed) var(--transition-timing);
 }
 
-/* Style container when results are shown */
 #cinemaghar-container.results-active {
-    padding-top: 0; /* Remove top padding when results show */
+    padding-top: 0;
 }
 
-/* --- Search Focus Area (Handles Centering Logic) --- */
 #search-focus-area {
-    display: flex; /* Default state is flex */
+    display: flex;
     flex-direction: column;
-    align-items: center; /* Center horizontally */
-    /* Adjusted padding to account for missing top-right buttons space */
+    align-items: center;
     padding: 100px 20px 20px 20px;
     text-align: center;
     transition: flex-grow var(--transition-speed) var(--transition-timing),
@@ -145,120 +155,113 @@ body {
                 background-color var(--transition-speed) var(--transition-timing),
                 border-bottom var(--transition-speed) var(--transition-timing);
     width: 100%;
-    flex-grow: 1; /* Takes up space initially */
+    flex-grow: 1;
     justify-content: center;
 }
 
-/* State when results are shown: Shrink and align to top */
 #cinemaghar-container.results-active #search-focus-area {
-    flex-grow: 0; /* Don't grow */
-    justify-content: flex-start; /* Align content (search bar) to the top */
-    padding: 20px 20px 10px 20px; /* REDUCED PADDING */
-    background-color: var(--header-bg); /* Need background when results show */
-    border-bottom: 1px solid var(--border-color); /* Separator line */
+    flex-grow: 0;
+    justify-content: flex-start;
+    padding: 20px 20px 10px 20px;
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
 }
-/* Hide search focus area completely when showing shared item */
 #cinemaghar-container.shared-view-active #search-focus-area {
-    display: none; /* Hide when shared view is active */
+    display: none;
 }
 
-/* --- Simplified Title --- */
 #search-focus-area .simple-title {
     font-family: 'Poppins', 'Product Sans', Arial, sans-serif;
-    font-size: 60px; /* Adjusted size */
-    font-weight: 500; /* Medium weight */
-    color: var(--text-color); /* Changed from var(--primary-color) */
-    margin-bottom: 5px; /* Reduced margin to bring signature closer */
-    cursor: pointer; /* For reset functionality */
+    font-size: 60px;
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 5px;
+    cursor: pointer;
     transition: opacity var(--transition-speed) var(--transition-timing),
                 max-height var(--transition-speed) var(--transition-timing),
                 margin var(--transition-speed) var(--transition-timing);
     overflow: hidden;
-    max-height: 150px; /* Adjust as needed */
+    max-height: 150px;
     opacity: 1;
     line-height: 1.2;
-    letter-spacing: -0.5px; /* Optional subtle tightening */
+    letter-spacing: -0.5px;
 }
 
-/* Signature Style */
 #search-focus-area .signature {
-    display: block; /* Ensure it takes block level */
-    width: 100%; /* Allow full width for text-align */
-    max-width: 700px; /* Match search bar area width */
-    margin: -5px auto 25px auto; /* Adjusted margin: Negative top to pull up, bottom space */
+    display: block;
+    width: 100%;
+    max-width: 700px;
+    margin: -5px auto 25px auto;
     font-size: 13px;
     color: var(--text-muted);
     font-style: normal;
     font-weight: 400;
-    text-align: right; /* RIGHT ALIGNED */
+    text-align: right;
     transition: opacity var(--transition-speed) var(--transition-timing),
                 max-height var(--transition-speed) var(--transition-timing),
                 margin var(--transition-speed) var(--transition-timing);
     overflow: hidden;
-    max-height: 50px; /* Adjust as needed */
+    max-height: 50px;
     opacity: 1;
 }
 
-/* Hide Title, Signature, and Prompt when results are shown */
 #cinemaghar-container.results-active #search-focus-area .simple-title,
 #cinemaghar-container.results-active #search-focus-area .signature {
     opacity: 0;
     max-height: 0;
     margin-top: 0;
     margin-bottom: 0;
-    padding: 0; /* Prevent padding from taking space */
-    border: none; /* Prevent border from taking space */
-    overflow: hidden; /* Ensure fully hidden */
+    padding: 0;
+    border: none;
+    overflow: hidden;
 }
 
 .search-input-wrapper {
     position: relative;
     width: 100%;
-    max-width: 700px; /* Consistent width */
-    margin: 0 auto 25px auto;
+    max-width: 700px;
+    margin: 0 auto 25px auto; /* Reduced margin to make space for actions */
     display: flex;
     align-items: center;
-    gap: 0; /* No gap needed if button is attached */
+    gap: 0;
 }
 
-/* Box Style Search Input */
 #cinemaghar-container #mainSearchInput {
     flex-grow: 1;
     min-width: 0;
     width: auto;
-    padding: 12px 18px 12px 45px; /* Adjust padding for icon and box shape */
-    border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm); /* Square left corners */
-    border: 1px solid var(--border-color); /* Consistent border */
-    border-right: none; /* Remove right border to join with button */
+    padding: 12px 18px 12px 45px;
+    border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    border-right: none;
     font-size: 16px;
     box-shadow: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    height: 46px; /* Adjusted height */
+    height: 46px;
     outline: none;
     background-color: var(--container-bg);
 }
 #cinemaghar-container #mainSearchInput:hover {
-    border-color: #adb5bd; /* Darker border on hover */
+    border-color: #adb5bd;
     box-shadow: var(--shadow-sm);
 }
 #cinemaghar-container #mainSearchInput:focus {
-    border-color: var(--primary-color); /* Blue border on focus */
-    box-shadow: 0 0 0 1px var(--primary-color); /* Subtle focus ring */
-    z-index: 3; /* Ensure focus outline is on top */
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color);
+    z-index: 3;
 }
 
-/* Box Style Search Button */
 #cinemaghar-container .search-input-wrapper #searchSubmitButton {
     flex-shrink: 0;
     margin: 0;
-    height: 46px; /* Match input height */
+    height: 46px;
     padding: 0 22px;
     font-size: 14px;
     font-weight: 500;
-    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0; /* Square right corners */
-    background-color: var(--button-primary-bg); /* BLUE Background */
-    color: white !important; /* WHITE Text */
-    border: 1px solid var(--button-primary-bg); /* BLUE Border */
+    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+    background-color: var(--button-primary-bg);
+    color: white !important;
+    border: 1px solid var(--button-primary-bg);
     box-shadow: none;
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -269,43 +272,41 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
-/* Search Icon */
 .search-input-wrapper::before {
     content: '';
     position: absolute;
-    left: 15px; /* Adjust icon position for box */
+    left: 15px;
     top: 50%;
     transform: translateY(-50%);
-    width: 18px; /* Icon size */
+    width: 18px;
     height: 18px;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="%236c757d" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>'); /* Grey icon */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="%236c757d" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>');
     background-repeat: no-repeat;
     background-size: contain;
-    opacity: 0.7; /* Slightly softer icon */
+    opacity: 0.7;
     pointer-events: none;
     z-index: 2;
 }
 
-/* Search Suggestions */
 #searchInputSuggestions {
     position: absolute;
-    top: calc(100% + 1px); /* Position below input */
+    top: calc(100% + 1px);
     left: 0;
-    width: 100%; /* Full width of wrapper */
+    width: 100%;
     max-width: 100%;
     background-color: var(--container-bg);
-    border: 1px solid var(--border-color); /* Match input border */
+    border: 1px solid var(--border-color);
     border-top: none;
-    border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm); /* Match box shape */
-    box-shadow: var(--shadow-md); /* Consistent shadow */
+    border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
+    box-shadow: var(--shadow-md);
     z-index: 10;
     max-height: 350px;
     overflow-y: auto;
     display: none;
 }
 #searchInputSuggestions div {
-    padding: 10px 18px 10px 45px; /* Match input padding */
-    font-size: 15px; /* Slightly smaller than input */
+    padding: 10px 18px 10px 45px;
+    font-size: 15px;
     cursor: pointer;
     border: none;
     white-space: nowrap;
@@ -317,28 +318,26 @@ body {
 #searchInputSuggestions div:hover { background-color: var(--suggestion-hover-bg); }
 #searchInputSuggestions div strong { font-weight: 600; color: var(--primary-color); }
 
-/* Buttons below search bar */
 .search-actions {
     display: flex;
     gap: 15px;
     justify-content: center;
-    margin-top: 20px; /* Increased space */
-    margin-bottom: 30px; /* Added margin below this area */
+    margin-top: 15px; /* Added margin */
+    margin-bottom: 30px;
     transition: opacity var(--transition-speed) var(--transition-timing),
                 max-height var(--transition-speed) var(--transition-timing),
                 margin var(--transition-speed) var(--transition-timing);
     overflow: hidden;
-    max-height: 100px; /* Adjust as needed */
+    max-height: 100px;
     opacity: 1;
 }
-/* Style these like secondary buttons */
 #cinemaghar-container .search-actions .button {
     padding: 9px 18px;
     font-size: 14px;
     background-color: var(--light-bg);
     color: var(--text-color);
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm); /* Match box shape */
+    border-radius: var(--border-radius-sm);
     box-shadow: none;
     transition: all 0.2s ease;
     font-weight: 500;
@@ -349,8 +348,17 @@ body {
     box-shadow: var(--shadow-sm);
     transform: translateY(-1px);
 }
+/* Specific style for the global custom URL button */
+#cinemaghar-container .search-actions #playCustomUrlGlobalButton {
+    background-color: var(--button-custom-url-global-bg);
+    color: white !important;
+    border-color: var(--button-custom-url-global-bg);
+}
+#cinemaghar-container .search-actions #playCustomUrlGlobalButton:hover {
+    background-color: var(--button-custom-url-global-hover);
+    border-color: var(--button-custom-url-global-hover);
+}
 
-/* Hide search action buttons WHEN RESULTS ARE SHOWN */
 #cinemaghar-container.results-active .search-actions {
     opacity: 0;
     max-height: 0;
@@ -359,32 +367,31 @@ body {
     border: none;
 }
 
-/* --- Updates Preview Section --- */
 #updates-preview-section {
     width: 100%;
     max-width: 850px;
-    margin: 10px auto 0 auto; /* Center below search actions */
+    margin: 10px auto 0 auto;
     padding: 20px;
-    background-color: transparent; /* Make transparent */
-    border: none; /* Remove border */
-    border-radius: 0; /* No radius */
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
     text-align: left;
-    display: none; /* Hidden by default, shown by JS */
+    display: none;
     transition: opacity var(--transition-speed) var(--transition-timing),
                 transform var(--transition-speed) var(--transition-timing);
     opacity: 1;
     transform: translateY(0);
 }
 #updates-preview-section h3 {
-    font-size: 16px; /* Smaller heading */
+    font-size: 16px;
     font-weight: 500;
     margin-bottom: 15px;
-    color: var(--text-muted); /* Muted color */
+    color: var(--text-muted);
     text-align: center;
 }
 #updates-preview-list {
     margin-bottom: 20px;
-    border-top: 1px solid var(--border-color); /* Add top border */
+    border-top: 1px solid var(--border-color);
     padding-top: 15px;
 }
 .update-item {
@@ -425,17 +432,16 @@ body {
     width: var(--preview-col-width-filename);
     word-break: break-word;
     white-space: normal;
-    cursor: pointer; /* <<<<< ADDED CURSOR POINTER */
+    cursor: pointer;
     font-weight: 500;
-    color: var(--text-color); /* Changed from primary-color to default text */
+    color: var(--text-color);
     padding-right: 10px;
     overflow: hidden;
     min-width: 0;
-    transition: color 0.2s ease; /* Added transition */
+    transition: color 0.2s ease;
 }
 .update-item .preview-col-filename:hover {
-    color: var(--primary-color); /* <<<<< CHANGE COLOR ON HOVER */
-    /* text-decoration: underline; */ /* Optional underline */
+    color: var(--primary-color);
 }
 .update-item .preview-col-filename .quality-logo {
     height: 1.1em;
@@ -480,10 +486,7 @@ body {
     padding: 20px 15px;
     background-color: #f0f2f5;
     border-bottom: 1px solid var(--border-color);
-    /* box-shadow: inset 0 3px 5px rgba(0,0,0,0.04); */ /* MODIFIED: Commented out */
 }
-/* Common action row styles applied below */
-
 
 #showMoreUpdatesButton {
     display: block;
@@ -493,7 +496,7 @@ body {
     background-color: var(--button-secondary-bg);
     color: white !important;
     border: none;
-    border-radius: var(--border-radius-sm); /* Match box theme */
+    border-radius: var(--border-radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -507,7 +510,6 @@ body {
     opacity: 0.7;
 }
 
-/* Hide updates preview section when results are active or shared view is active */
 #cinemaghar-container.results-active #updates-preview-section,
 #cinemaghar-container.shared-view-active #updates-preview-section {
     opacity: 0;
@@ -526,38 +528,36 @@ body {
 
 
 /* --- Results Area (Hidden by Default) --- */
-#results-area { /* This is now a <main> tag in HTML */
-    display: none; /* Hidden initially - JS controls display: block */
-    padding: 15px 25px 20px 25px; /* Padding */
-    background-color: var(--container-bg); /* White background */
-    /* flex-grow: 1; */ /* Let content determine height */
-    overflow: hidden; /* Contain elements */
-    width: 100%; /* Ensure it spans width */
+#results-area {
+    display: none;
+    padding: 15px 25px 20px 25px;
+    background-color: var(--container-bg);
+    overflow: hidden;
+    width: 100%;
     opacity: 0;
     transform: translateY(10px);
     transition: opacity var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2),
                 transform var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2);
 }
 #cinemaghar-container.results-active #results-area {
-    display: block; /* Show when results are active */
+    display: block;
     opacity: 1;
     transform: translateY(0);
 }
-/* Hide results area completely when showing shared item */
 #cinemaghar-container.shared-view-active #results-area {
     display: none;
 }
 
 /* --- Shared Item View (Hidden by Default) --- */
-#shared-item-view { /* This is now a <main> tag in HTML */
-    display: none; /* Hidden initially */
+#shared-item-view {
+    display: none;
     padding: 25px;
     margin-top: 20px;
     background-color: var(--container-bg);
     border-radius: var(--border-radius-md);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-md);
-    max-width: 850px; /* Limit width like action rows */
+    max-width: 850px;
     margin-left: auto;
     margin-right: auto;
     opacity: 0;
@@ -566,23 +566,22 @@ body {
                 transform var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2);
 }
 #cinemaghar-container.shared-view-active #shared-item-view {
-    display: block; /* Show when shared view is active */
+    display: block;
     opacity: 1;
     transform: translateY(0);
 }
 #shared-item-view .back-button {
-    margin-bottom: 25px; /* Space below back button */
+    margin-bottom: 25px;
 }
 #shared-item-content {
-    /* Styles similar to action row content */
     padding: 20px 15px;
     background-color: #f0f2f5;
     border-radius: var(--border-radius-sm);
-    /* box-shadow: inset 0 3px 5px rgba(0,0,0,0.04); */ /* MODIFIED: Commented out */
+    /* Needed for positioning player inside */
+    position: relative;
 }
 #shared-item-content .action-info,
 #shared-item-content .action-buttons-container {
-    /* Reuse existing action row styles */
     margin-bottom: 20px;
 }
 #shared-item-content .action-buttons-container {
@@ -597,19 +596,17 @@ body {
     color: var(--text-muted);
 }
 #shared-item-view .error-message {
-    color: var(--error-text); /* Use defined error text color */
+    color: var(--error-text);
     background-color: var(--error-bg);
     border: 1px solid var(--error-border);
     border-radius: var(--border-radius-sm);
     font-weight: 500;
 }
 
-
-/* MODIFICATION: Back Button Styling */
 #cinemaghar-container .back-button {
-    display: none; /* Hidden by default */
-    align-items: center; /* Align icon and text */
-    margin-bottom: 15px; /* Space below */
+    display: none;
+    align-items: center;
+    margin-bottom: 15px;
     padding: 8px 16px;
     font-size: 14px;
     background-color: var(--light-bg);
@@ -620,23 +617,18 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     font-weight: 500;
-    align-self: flex-start; /* Keep it left-aligned */
-    width: max-content; /* Prevent taking full width */
+    align-self: flex-start;
+    width: max-content;
 }
-
 #cinemaghar-container .back-button:hover {
     border-color: #adb5bd;
     background-color: #e9ecef;
     box-shadow: var(--shadow-sm);
 }
-
-/* Show back button only when results or shared view are active */
 #cinemaghar-container.results-active #backToHomeButtonResults,
 #cinemaghar-container.shared-view-active #backToHomeButtonShared {
-    display: inline-flex; /* Use inline-flex to allow margin */
+    display: inline-flex;
 }
-/* No need for explicit hide rules, default is display: none */
-
 
 /* --- Results Filter Area --- */
 .results-filter-area {
@@ -652,7 +644,7 @@ body {
 .results-filter-area label { font-size: 14px; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
 #cinemaghar-container #mainQualityFilterSelect {
     padding: 9px 12px;
-    border-radius: var(--border-radius-sm); /* Match box theme */
+    border-radius: var(--border-radius-sm);
     border: 1px solid var(--border-color);
     font-size: 14px;
     background-color: white;
@@ -671,18 +663,18 @@ body {
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
 }
 #cinemaghar-container #mainQualityFilterSelect.filter-active {
-     border-color: var(--primary-color); /* Indicate filter is active */
+     border-color: var(--primary-color);
      font-weight: 500;
 }
 
 /* --- Tab Navigation --- */
-.tab-navigation { /* This is now a <nav> tag in HTML */
+.tab-navigation {
     display: flex;
     margin-bottom: 25px;
     border-bottom: 1px solid var(--border-color);
     flex-wrap: wrap;
 }
-.tab-navigation .tab-button { /* Specificity increased slightly due to <nav> */
+.tab-navigation .tab-button {
     padding: 12px 25px;
     cursor: pointer;
     background-color: transparent;
@@ -715,7 +707,7 @@ body {
 #cinemaghar-container .table-container {
     overflow-x: auto;
     background: var(--container-bg);
-    border-radius: var(--border-radius-sm); /* Match box theme */
+    border-radius: var(--border-radius-sm);
     box-shadow: none;
     margin-bottom: 15px;
     border: 1px solid var(--border-color);
@@ -766,7 +758,7 @@ body {
 
 /* Action Row (Table) */
 #cinemaghar-container tr.action-row { display: none; background-color: #f8f9fa; }
-#cinemaghar-container .action-row td { padding: 25px 20px; text-align: left; border-bottom: none; /* box-shadow: inset 0 3px 5px rgba(0,0,0,0.04); */ /* MODIFIED: Commented out */ }
+#cinemaghar-container .action-row td { padding: 25px 20px; text-align: left; border-bottom: none; position: relative; } /* Added position relative */
 /* Common Action Info/Buttons styles used by table, preview, and shared view */
 #cinemaghar-container .action-info,
 #cinemaghar-container .preview-action-row .action-info,
@@ -802,84 +794,302 @@ body {
     border-top: none;
     padding-top: 0;
 }
+/* Container for URL-dependent buttons (might be initially empty) */
+#cinemaghar-container .url-actions-container {
+    display: contents; /* Act as if the container isn't there for flex layout */
+}
 
+
+/* --- Custom URL Input Section Styles (Inside Action Rows / Shared View) --- */
+#cinemaghar-container .custom-url-section {
+  display: none; /* Hidden by default, shown by JS */
+  margin-top: 20px; /* Space above the custom URL area */
+  padding-top: 20px; /* Space inside */
+  border-top: 1px dashed var(--border-color); /* Separator */
+}
+#cinemaghar-container .custom-url-container {
+    display: flex;
+    flex-direction: column; /* Stack label, input, button */
+    gap: 10px;
+    margin-top: 15px; /* Space below the toggle button */
+    padding: 15px;
+    background-color: #e9ecef; /* Slightly different background */
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+}
+#cinemaghar-container .custom-url-container label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: -5px; /* Pull input closer */
+}
+#cinemaghar-container .custom-url-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+#cinemaghar-container .custom-url-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 0 0 2px rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+#cinemaghar-container .play-custom-url-button {
+    align-self: flex-start; /* Align button to the left */
+    padding: 8px 16px;
+    font-size: 13px;
+}
+ #cinemaghar-container .custom-url-feedback {
+    font-size: 12px;
+    color: var(--error-color);
+    margin-top: 5px;
+    min-height: 1em; /* Reserve space */
+}
 
 /* --- Buttons General Styling --- */
-/* Excludes search button, footer buttons, preview view button, table view button, back button */
+/* Excludes search, footer, view buttons, back button */
 #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) {
-    display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; margin: 2px 0; color: white !important; border: none; border-radius: var(--border-radius-sm); /* Match box theme */ text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; white-space: nowrap; line-height: 1.4; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm);
+    display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; margin: 2px 0; color: white !important; border: none; border-radius: var(--border-radius-sm); text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; white-space: nowrap; line-height: 1.4; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm);
 }
-/* MODIFIED: Added span style for emojis */
 #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) span[aria-hidden="true"] {
     margin-right: 0.5em;
-    font-size: 1.1em; /* Slightly larger emoji */
-    line-height: 1; /* Ensure alignment */
+    font-size: 1.1em;
+    line-height: 1;
+}
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) svg,
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) .button-spinner /* Spinner inside button */ {
+    width: 1.1em;
+    height: 1.1em;
+    margin-right: 0.5em;
+    fill: currentColor;
+}
+ /* Specific styling for spinner inside button */
+.button-spinner {
+    display: none; /* Hidden by default */
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s ease infinite;
+    margin-left: -0.5em; /* Adjust positioning if needed */
+}
+.button.loading .button-spinner {
+    display: inline-block;
+}
+.button.loading span[aria-hidden="true"]:not(.button-spinner),
+.button.loading svg {
+    display: none; /* Hide original icon when loading */
 }
 
-#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):hover {
+
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):hover:not(:disabled) {
     opacity: 0.9; filter: brightness(1.1); box-shadow: 0 3px 7px rgba(0,0,0,0.12); transform: translateY(-1px);
 }
-#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):active {
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):active:not(:disabled) {
     filter: brightness(0.9); transform: translateY(0); box-shadow: var(--shadow-sm);
 }
+ #cinemaghar-container .button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    filter: grayscale(30%);
+ }
 
-/* Specific Button Colors (Adjust radius) */
-#cinemaghar-container .movie-data-row .view-button { background-color: var(--button-secondary-bg); padding: 6px 12px !important; /* Smaller padding */ font-size: 12px !important; min-width: 55px; border-radius: var(--border-radius-sm) !important; border: none; color: white !important; } /* Table row view button */
+/* Specific Button Colors */
+#cinemaghar-container .movie-data-row .view-button { background-color: var(--button-secondary-bg); padding: 6px 12px !important; font-size: 12px !important; min-width: 55px; border-radius: var(--border-radius-sm) !important; border: none; color: white !important; }
 #cinemaghar-container .movie-data-row .view-button:hover { background-color: var(--button-secondary-hover); }
-#cinemaghar-container .play-button { background-color: var(--success-color); border-radius: var(--border-radius-sm); }
-#cinemaghar-container .intent-button { background-color: #17a2b8; border-radius: var(--border-radius-sm); }
-#cinemaghar-container .vlc-button { background-color: #fd7e14; border-radius: var(--border-radius-sm); }
-#cinemaghar-container .download-button { background-color: var(--primary-color); border-radius: var(--border-radius-sm); }
-#cinemaghar-container .telegram-button:not(#page-footer .button) { background-color: #0088cc; border-radius: var(--border-radius-sm); } /* Avoid conflict with footer */
-#cinemaghar-container .gdflix-button { background-color: #E50914; border-radius: var(--border-radius-sm); }
-#cinemaghar-container .hubcloud-button { background-color: #1E90FF; border-radius: var(--border-radius-sm); }
-#cinemaghar-container .filepress-button { background-color: #6c757d; border-radius: var(--border-radius-sm); }
-#cinemaghar-container .gdtot-button { background-color: #ffc107; color: #333 !important; border-radius: var(--border-radius-sm); }
-/* Share Button Style */
-#cinemaghar-container .share-button { background-color: var(--button-share-bg); border-radius: var(--border-radius-sm); }
+#cinemaghar-container .play-button { background-color: var(--success-color); }
+#cinemaghar-container .intent-button { background-color: #17a2b8; }
+#cinemaghar-container .vlc-button { background-color: #fd7e14; }
+#cinemaghar-container .download-button { background-color: var(--primary-color); }
+#cinemaghar-container .telegram-button:not(#page-footer .button) { background-color: #0088cc; }
+#cinemaghar-container .gdflix-button { background-color: #E50914; } /* Style for the *link* button */
+#cinemaghar-container .hubcloud-button { background-color: #1E90FF; } /* Style for the *link* button */
+#cinemaghar-container .filepress-button { background-color: #6c757d; }
+#cinemaghar-container .gdtot-button { background-color: #ffc107; color: #333 !important; }
+#cinemaghar-container .share-button { background-color: var(--button-share-bg); }
 #cinemaghar-container .share-button:hover { background-color: var(--button-share-hover); }
+#cinemaghar-container .youtube-button { background-color: var(--button-youtube-bg); }
+#cinemaghar-container .youtube-button:hover { background-color: var(--button-youtube-hover); }
+#cinemaghar-container .youtube-button svg { fill: white; }
+#cinemaghar-container .imdb-button { background-color: var(--button-imdb-bg); }
+#cinemaghar-container .imdb-button:hover { background-color: var(--button-imdb-hover); }
+#cinemaghar-container .imdb-button svg { fill: white; }
+/* Custom URL Buttons */
+#cinemaghar-container .custom-url-toggle-button {
+  background-color: var(--button-custom-url-toggle-bg); /* Use specific color for toggle */
+  display: none; /* Hidden by default, shown by JS on error */
+}
+#cinemaghar-container .custom-url-toggle-button:hover {
+    background-color: var(--button-custom-url-toggle-hover);
+}
+#cinemaghar-container .play-custom-url-button,
+#cinemaghar-container #playerCustomUrlSection button /* Global Player button */ {
+    background-color: var(--button-custom-url-bg);
+    color: var(--button-custom-url-text) !important; /* Ensure text is dark */
+    font-weight: 600;
+}
+#cinemaghar-container .play-custom-url-button:hover,
+#cinemaghar-container #playerCustomUrlSection button:hover /* Global Player button hover */ {
+    background-color: var(--button-custom-url-hover);
+    filter: brightness(1.05); /* Slight brighten instead of darken */
+}
+/* HubCloud Bypass Button */
+#cinemaghar-container .hubcloud-bypass-button {
+    background-color: var(--button-bypass-bg);
+    color: var(--button-bypass-text) !important;
+}
+#cinemaghar-container .hubcloud-bypass-button:hover:not(:disabled) {
+    background-color: var(--button-bypass-hover);
+}
+#cinemaghar-container .hubcloud-bypass-button.loading { /* Style when bypassing */
+    filter: brightness(0.9);
+}
+/* NEW: GDFLIX Bypass Button */
+#cinemaghar-container .gdflix-bypass-button {
+    background-color: var(--button-gdflix-bypass-bg);
+    color: var(--button-gdflix-bypass-text) !important;
+}
+#cinemaghar-container .gdflix-bypass-button:hover:not(:disabled) {
+    background-color: var(--button-gdflix-bypass-hover);
+}
+#cinemaghar-container .gdflix-bypass-button.loading { /* Style when bypassing */
+    filter: brightness(0.9);
+}
 
-
-/* --- Copy Feedback (Shared Class) --- */
-#cinemaghar-container .copy-feedback {
-    display: none; /* Initially hidden */
+/* --- Copy Feedback & Bypass Feedback (Shared Class & Specific) --- */
+#cinemaghar-container .copy-feedback,
+#cinemaghar-container .bypass-feedback {
+    display: none;
     margin-left: 10px;
     font-size: 13px;
     color: var(--success-color);
     font-weight: 600;
-    opacity: 0; /* Start transparent */
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease, color 0.3s ease;
     vertical-align: middle;
-    transform: translateY(3px) scale(0.95); /* Start slightly down and smaller */
-    pointer-events: none; /* Don't block clicks */
+    transform: translateY(3px) scale(0.95);
+    pointer-events: none;
+    white-space: nowrap;
 }
-#cinemaghar-container .copy-feedback.show {
+#cinemaghar-container .copy-feedback.show,
+#cinemaghar-container .bypass-feedback.show {
     opacity: 1;
-    transform: translateY(0) scale(1); /* Animate to normal position and size */
+    transform: translateY(0) scale(1);
 }
-/* Specific styling for the share fallback message if needed */
 #cinemaghar-container .copy-feedback.share-fallback {
-     color: var(--text-muted); /* Make it less prominent */
+     color: var(--text-muted);
 }
-/* Error state for feedback */
-#cinemaghar-container .copy-feedback.error {
+#cinemaghar-container .copy-feedback.error,
+#cinemaghar-container .bypass-feedback.error {
      color: var(--error-color);
+}
+ #cinemaghar-container .bypass-feedback.loading {
+     color: var(--text-muted); /* Loading text color */
+     font-style: italic;
 }
 
 /* --- Video Player Container --- */
-#cinemaghar-container .video-container { margin: 20px auto 0 auto; background: #f0f2f5; padding: 50px 20px 20px 20px; border-radius: var(--border-radius-sm); /* Match box theme */ box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; width: 100%; max-width: 850px; text-align: center; display: flex; flex-direction: column; }
-#cinemaghar-container .close-btn { position: absolute; top: 15px; right: 18px; background: var(--error-color); color: white !important; border: none; padding: 6px 12px; border-radius: var(--border-radius-sm); /* Match box theme */ cursor: pointer; font-size: 14px; font-weight: 500; z-index: 10; transition: background-color 0.2s ease; }
+/* Position it generally, will be moved or displayed */
+#cinemaghar-container .video-container {
+    margin: 20px auto 0 auto;
+    background: #f0f2f5;
+    padding: 20px;
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 850px;
+    text-align: center;
+    display: none; /* Initially hidden */
+    flex-direction: column;
+    z-index: 900; /* Ensure it's above table content */
+}
+/* Styles when used for global custom URL */
+#cinemaghar-container .video-container.global-custom-url-mode {
+   display: flex; /* Make visible */
+   position: fixed; /* Float above */
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   width: 90%;
+   max-width: 600px; /* Limit width for modal-like appearance */
+   z-index: 9998; /* High z-index */
+   padding: 30px 25px;
+   border: 1px solid var(--border-color);
+}
+
+#cinemaghar-container .close-btn {
+    position: absolute;
+    top: 15px;
+    right: 18px;
+    background: var(--error-color);
+    color: white !important;
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10; /* Above other player elements */
+    transition: background-color 0.2s ease;
+}
 #cinemaghar-container .close-btn:hover { background-color: #c82333; }
-#cinemaghar-container #audioWarning { display: none; background-color: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); padding: 12px; margin-bottom: 15px; border-radius: var(--border-radius-sm); /* Match box theme */ font-size: 14px; text-align: center; position: relative; z-index: 1; line-height: 1.5; flex-shrink: 0; }
+
+/* NEW: Custom URL section inside the player */
+#cinemaghar-container #playerCustomUrlSection {
+    display: none; /* Hidden by default */
+    padding: 20px 10px 10px 10px;
+    text-align: left;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px; /* Space below */
+    border-bottom: 1px dashed var(--border-color);
+}
+#cinemaghar-container #playerCustomUrlSection label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+#cinemaghar-container #playerCustomUrlSection input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+#cinemaghar-container #playerCustomUrlSection input:focus {
+     border-color: var(--primary-color);
+     box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 0 0 2px rgba(13, 110, 253, 0.25);
+     outline: none;
+}
+#cinemaghar-container #playerCustomUrlSection button {
+     align-self: flex-start; /* Align button to the left */
+     padding: 9px 18px;
+     font-size: 14px;
+}
+#cinemaghar-container #playerCustomUrlSection .player-custom-url-feedback {
+    font-size: 13px;
+    color: var(--error-color);
+    margin-top: 5px;
+    min-height: 1.2em; /* Reserve space */
+    font-weight: 500;
+}
+
+#cinemaghar-container #audioWarning { display: none; background-color: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); padding: 12px; margin-bottom: 15px; border-radius: var(--border-radius-sm); font-size: 14px; text-align: center; position: relative; z-index: 1; line-height: 1.5; flex-shrink: 0; }
 #cinemaghar-container #audioWarning strong { font-weight: 600; }
-#cinemaghar-container #html5VideoPlayer { width: 100%; max-height: 480px; display: block; margin: 10px auto 15px auto; background: black; border-radius: var(--border-radius-sm); /* Match box theme */ outline: none; box-shadow: var(--shadow-md); flex-shrink: 1; flex-grow: 1; object-fit: contain; cursor: default; }
+#cinemaghar-container #html5VideoPlayer { width: 100%; max-height: 480px; display: block; margin: 10px auto 15px auto; background: black; border-radius: var(--border-radius-sm); outline: none; box-shadow: var(--shadow-md); flex-shrink: 1; flex-grow: 1; object-fit: contain; cursor: default; }
 #cinemaghar-container .custom-controls { margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0; position: relative; }
-#cinemaghar-container .custom-controls .button { background-color: #5a6268; min-width: 60px; font-size: 12px; padding: 6px 10px; color: white !important; border-radius: var(--border-radius-sm); /* Match box theme */ border: none;}
+#cinemaghar-container .custom-controls .button { background-color: #5a6268; min-width: 60px; font-size: 12px; padding: 6px 10px; color: white !important; border-radius: var(--border-radius-sm); border: none;}
 #cinemaghar-container .custom-controls .button:hover { background-color: #495057; }
-#cinemaghar-container #audioTrackSelect { padding: 6px 10px; border-radius: var(--border-radius-sm); /* Match box theme */ background-color: #e9ecef; border: 1px solid var(--border-color); font-size: 13px; font-family: inherit; cursor: pointer; max-width: 150px; display: none; transition: border-color 0.2s ease; height: 30px; line-height: 1; vertical-align: middle; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%236c757d" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>'); background-repeat: no-repeat; background-position: right 5px center; background-size: 12px 10px; padding-right: 25px; }
+#cinemaghar-container #audioTrackSelect { padding: 6px 10px; border-radius: var(--border-radius-sm); background-color: #e9ecef; border: 1px solid var(--border-color); font-size: 13px; font-family: inherit; cursor: pointer; max-width: 150px; display: none; transition: border-color 0.2s ease; height: 30px; line-height: 1; vertical-align: middle; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%236c757d" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>'); background-repeat: no-repeat; background-position: right 5px center; background-size: 12px 10px; padding-right: 25px; }
 #cinemaghar-container #audioTrackSelect:focus { border-color: var(--primary-color); outline: none; }
 #cinemaghar-container #videoTitle { font-weight: 600; margin-bottom: 15px; font-size: 18px; color: var(--text-color); position: relative; z-index: 1; padding-top: 0; text-align: left; word-break: break-word; flex-shrink: 0; }
-#cinemaghar-container .vlc-copy-box { margin-top: 20px; background: #e9ecef; padding: 12px 15px; border-radius: var(--border-radius-sm); /* Match box theme */ font-size: 14px; word-wrap: break-word; line-height: 1.6; color: var(--text-muted); text-align: left; border: 1px solid var(--border-color); flex-shrink: 0; display: none; }
+#cinemaghar-container .vlc-copy-box { margin-top: 20px; background: #e9ecef; padding: 12px 15px; border-radius: var(--border-radius-sm); font-size: 14px; word-wrap: break-word; line-height: 1.6; color: var(--text-muted); text-align: left; border: 1px solid var(--border-color); flex-shrink: 0; display: none; }
 #cinemaghar-container .vlc-copy-box strong { color: var(--text-color); font-weight: 600; display: block; margin-bottom: 5px; }
 #cinemaghar-container .vlc-copy-box code { background: #dcdcdc; padding: 3px 6px; border-radius: var(--border-radius-sm); font-family: 'Courier New', Courier, monospace; word-break: break-all; color: #333; font-size: 13px; display: block; margin-top: 3px; user-select: all; }
 .player-control-group { display: flex; align-items: center; gap: 6px; } .player-control-group label { font-size: 12px; color: var(--text-muted); white-space: nowrap; } #volumeSlider { width: 80px; cursor: pointer; height: 5px; transition: opacity 0.2s ease; vertical-align: middle; accent-color: var(--primary-color); } #playbackSpeedSelect { padding: 4px 8px; font-size: 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background-color: #fff; height: 30px; line-height: 1; vertical-align: middle; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%236c757d" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>'); background-repeat: no-repeat; background-position: right 5px center; background-size: 12px 10px; padding-right: 25px; }
@@ -887,11 +1097,19 @@ body {
 /* --- Fullscreen Player Styles --- */
 #cinemaghar-container .video-container.is-fullscreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; max-width: none; padding: 0; margin: 0; border-radius: 0; background-color: black; z-index: 2147483647; display: flex; flex-direction: column; justify-content: center; }
 #cinemaghar-container .video-container.is-fullscreen #html5VideoPlayer { width: 100%; height: 100%; max-height: none; flex-grow: 1; flex-shrink: 1; border-radius: 0; box-shadow: none; margin: 0; object-fit: contain; cursor: default; }
-#cinemaghar-container .video-container.is-fullscreen .custom-controls, #cinemaghar-container .video-container.is-fullscreen .close-btn, #cinemaghar-container .video-container.is-fullscreen #videoTitle, #cinemaghar-container .video-container.is-fullscreen #audioWarning, #cinemaghar-container .video-container.is-fullscreen .vlc-copy-box { display: none !important; }
+/* Hide everything except video in fullscreen */
+#cinemaghar-container .video-container.is-fullscreen .custom-controls,
+#cinemaghar-container .video-container.is-fullscreen .close-btn,
+#cinemaghar-container .video-container.is-fullscreen #videoTitle,
+#cinemaghar-container .video-container.is-fullscreen #audioWarning,
+#cinemaghar-container .video-container.is-fullscreen .vlc-copy-box,
+#cinemaghar-container .video-container.is-fullscreen #playerCustomUrlSection /* Hide custom URL input too */ {
+    display: none !important;
+}
 
 /* --- Pagination --- */
 .pagination-container { text-align: center; margin: 30px 0 15px 0; user-select: none; }
-.pagination-container button, .pagination-container span { display: inline-block; padding: 9px 16px; margin: 0 4px; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); /* Match box theme */ background-color: white; color: var(--primary-color); cursor: pointer; font-size: 14px; transition: all 0.2s ease; vertical-align: middle; }
+.pagination-container button, .pagination-container span { display: inline-block; padding: 9px 16px; margin: 0 4px; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); background-color: white; color: var(--primary-color); cursor: pointer; font-size: 14px; transition: all 0.2s ease; vertical-align: middle; }
 .pagination-container button:hover:not(:disabled) { background-color: var(--pagination-hover-bg); border-color: #adb5bd; }
 .pagination-container span.current-page { background-color: var(--pagination-active-bg); border-color: var(--pagination-active-border); color: white; font-weight: 600; cursor: default; }
 .pagination-container button:disabled { color: var(--pagination-disabled-color); background-color: var(--pagination-disabled-bg); border-color: var(--pagination-disabled-border); cursor: not-allowed; opacity: 0.7; }
@@ -922,67 +1140,61 @@ body {
 /* --- Footer Styles --- */
 #page-footer {
     width: 100%;
-    margin-top: 40px; /* Space above footer */
-    padding: 25px 20px; /* Padding inside footer */
+    margin-top: 40px;
+    padding: 25px 20px;
     border-top: 1px solid var(--border-color);
-    background-color: var(--light-bg); /* Subtle background */
+    background-color: var(--light-bg);
     text-align: center;
-    display: flex; /* Default state is flex */
-    flex-direction: column; /* Stack text and buttons vertically initially */
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 15px; /* Gap between text and button row */
-    flex-shrink: 0; /* Prevent footer from shrinking */
+    gap: 15px;
+    flex-shrink: 0;
     transition: display var(--transition-speed) var(--transition-timing);
 }
-/* Hide footer in shared view */
 #cinemaghar-container.shared-view-active #page-footer {
-    display: none; /* Hide when shared view is active */
+    display: none;
 }
-
 #page-footer .footer-text {
     font-size: 13px;
     color: var(--text-muted);
-    margin-bottom: 0; /* Remove extra margin */
+    margin-bottom: 0;
 }
-
 #page-footer .footer-buttons {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 15px; /* Space between buttons */
-    flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+    gap: 15px;
+    flex-wrap: wrap;
 }
-
-/* Style for footer buttons */
 #cinemaghar-container #page-footer .button {
     display: inline-flex;
     align-items: center;
     font-size: 13px;
-    padding: 8px 15px; /* Slightly larger padding than original top-right */
+    padding: 8px 15px;
     border-radius: var(--border-radius-sm);
-    box-shadow: var(--shadow-sm); /* Subtle shadow for depth */
-    background-color: var(--primary-color); /* BLUE */
-    color: white !important; /* WHITE TEXT */
-    border: 1px solid var(--primary-color); /* BLUE BORDER */
+    box-shadow: var(--shadow-sm);
+    background-color: var(--primary-color);
+    color: white !important;
+    border: 1px solid var(--primary-color);
     text-decoration: none;
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 #cinemaghar-container #page-footer .button:hover {
-    background-color: var(--primary-hover); /* Darker blue on hover */
+    background-color: var(--primary-hover);
     border-color: var(--primary-hover);
     color: white !important;
-    box-shadow: var(--shadow-md); /* Slightly stronger shadow on hover */
+    box-shadow: var(--shadow-md);
     filter: none;
     opacity: 1;
-    transform: translateY(-1px); /* Slight lift on hover */
+    transform: translateY(-1px);
 }
-/* Icon styling for footer buttons */
 #cinemaghar-container #page-footer .button svg {
     height: 1em;
     width: 1em;
-    margin-right: 6px; /* Slightly more space for icon */
+    margin-right: 6px;
     vertical-align: text-bottom;
-    fill: white; /* WHITE ICON */
+    fill: white;
     opacity: 1;
 }
 
@@ -992,69 +1204,63 @@ body {
   #cinemaghar-container {
       max-width: 100%;
       margin: 0;
-      padding: 10px 0 0 0; /* NO bottom padding */
+      padding: 10px 0 0 0;
       border-radius: 0;
       box-shadow: none;
       flex-grow: 1;
   }
 
-  /* Search Focus Area on mobile */
   #search-focus-area {
-      padding: 70px 15px 20px 15px; /* Adjust top padding */
+      padding: 70px 15px 20px 15px;
   }
   #cinemaghar-container.results-active #search-focus-area {
-      padding: 15px 15px 10px 15px; /* Adjusted padding */
+      padding: 15px 15px 10px 15px;
       border-bottom: 1px solid var(--border-color);
-      min-height: 67px; /* Ensure minimum height to prevent jitter */
+      min-height: 67px;
   }
 
-  /* Title Mobile */
   #search-focus-area .simple-title {
-      font-size: 42px; /* Smaller title */
+      font-size: 42px;
       margin-bottom: 0px;
   }
-  /* Signature Mobile */
   #search-focus-area .signature {
       font-size: 11px;
-      margin: -2px auto 20px auto; /* Adjust margin */
-      max-width: 95%; /* Allow wider on mobile */
+      margin: -2px auto 20px auto;
+      max-width: 95%;
   }
 
-  /* Search Input Wrapper Mobile */
   .search-input-wrapper {
-      margin-bottom: 20px;
+      margin-bottom: 15px; /* Adjusted for actions */
       max-width: 95%;
-      gap: 0; /* No gap */
+      gap: 0;
   }
   #cinemaghar-container #mainSearchInput {
-      padding: 10px 15px 10px 40px; /* Adjust padding */
+      padding: 10px 15px 10px 40px;
       font-size: 14px;
-      height: 42px; /* Slightly shorter */
+      height: 42px;
       border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
   }
-   /* Search Button Mobile */
    #cinemaghar-container .search-input-wrapper #searchSubmitButton {
-       height: 42px; /* Match mobile input height */
-       padding: 0 18px; /* Adjust padding */
+       height: 42px;
+       padding: 0 18px;
        font-size: 13px;
        border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
    }
-  .search-input-wrapper::before { left: 12px; width: 16px; height: 16px; opacity: 0.6; } /* Adjust icon */
+  .search-input-wrapper::before { left: 12px; width: 16px; height: 16px; opacity: 0.6; }
 
-  /* Search Suggestions Mobile */
   #searchInputSuggestions {
       width: 100%;
       max-width: 100%;
-      top: calc(100% + 1px); /* Smaller gap */
+      top: calc(100% + 1px);
       border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
   }
-  #searchInputSuggestions div { padding: 9px 15px 9px 40px; font-size: 14px; } /* Adjust padding */
+  #searchInputSuggestions div { padding: 9px 15px 9px 40px; font-size: 14px; }
 
-  .search-actions { gap: 10px; margin-bottom: 25px; margin-top: 15px; }
+  .search-actions { gap: 10px; margin-bottom: 25px; margin-top: 10px; } /* Adjusted margin */
   #cinemaghar-container .search-actions .button { padding: 9px 16px; font-size: 13px; }
 
   #updates-preview-section {
-      max-width: 100%; /* Allow full width on mobile */
+      max-width: 100%;
       padding: 15px;
       margin-top: 5px;
       border-left: none;
@@ -1065,18 +1271,18 @@ body {
   #updates-preview-list { padding-top: 10px;}
   .update-item {
       font-size: 13px;
-      padding: 10px 5px; /* Adjust padding */
-      gap: 5px; /* Reduce gap */
+      padding: 10px 5px;
+      gap: 5px;
   }
   .update-item .preview-col-id { width: 12%; font-size: 12px; }
-  .update-item .preview-col-filename { width: 53%; font-weight: 500; /* Ensure consistent weight */ }
+  .update-item .preview-col-filename { width: 53%; font-weight: 500; }
   .update-item .preview-col-filename .quality-logo { height: 1em; }
   .update-item .preview-col-date { width: 18%; font-size: 11px; }
   .update-item .preview-col-view { width: 17%; }
   .update-item .preview-col-view .button.view-button { font-size: 11px; padding: 5px 8px; min-width: 40px; }
 
   /* Preview Action Row on mobile */
-  #cinemaghar-container .preview-action-row { padding: 15px 10px; }
+  #cinemaghar-container .preview-action-row { padding: 15px 10px; position: relative; } /* Added position relative */
   #cinemaghar-container .preview-action-row .action-info { font-size: 13px; margin-bottom: 15px; }
   #cinemaghar-container .preview-action-row .action-info .info-item { margin-bottom: 6px; line-height: 1.5; }
   #cinemaghar-container .preview-action-row .action-info strong { min-width: 65px; margin-right: 5px; }
@@ -1084,15 +1290,38 @@ body {
   #cinemaghar-container .preview-action-row .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
   #cinemaghar-container .preview-action-row .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; }
   #cinemaghar-container .preview-action-row .action-buttons-container .view-button { width: 100%; } /* Make table view button full width too */
+   /* Custom URL section mobile */
+  #cinemaghar-container .custom-url-section { margin-top: 15px; padding-top: 15px; }
+  #cinemaghar-container .custom-url-container { padding: 10px; gap: 8px; margin-top: 10px; }
+  #cinemaghar-container .custom-url-input { padding: 8px 10px; font-size: 13px; }
+  #cinemaghar-container .play-custom-url-button,
+  #cinemaghar-container #playerCustomUrlSection button { /* Global player button mobile */
+      padding: 9px 15px; font-size: 13px; width: 100%;
+  }
+  #cinemaghar-container #playerCustomUrlSection label { font-size: 13px; } /* Global player label mobile */
+  #cinemaghar-container #playerCustomUrlSection input { font-size: 13px; padding: 8px 10px; } /* Global player input mobile */
+  #cinemaghar-container #playerCustomUrlSection .player-custom-url-feedback { font-size: 12px; } /* Global player feedback mobile */
+
+  #cinemaghar-container .custom-url-toggle-button { width: 100%; } /* Make toggle full width */
+  #cinemaghar-container .hubcloud-bypass-button, /* Make Hubcloud bypass full width */
+  #cinemaghar-container .gdflix-bypass-button { /* Make GDFLIX bypass full width */
+     width: 100%;
+  }
+  #cinemaghar-container .bypass-feedback {
+      display: block;
+      width: 100%;
+      text-align: center;
+      margin-left: 0;
+      margin-top: 5px;
+      vertical-align: initial;
+  }
 
 
   #showMoreUpdatesButton { font-size: 13px; padding: 8px 18px; }
 
 
-  /* Results Area on mobile */
   #results-area { margin: 0; padding: 15px; border-radius: 0;}
 
-  /* Shared Item View on mobile */
   #shared-item-view {
       padding: 15px;
       margin-top: 10px;
@@ -1125,19 +1354,17 @@ body {
    #shared-item-content .action-buttons-container .button {
       font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; box-sizing: border-box;
    }
-   /* Shared item copy feedback spacing */
-   #shared-item-content .action-buttons-container .copy-feedback {
+   #shared-item-content .action-buttons-container .copy-feedback,
+   #shared-item-content .action-buttons-container .bypass-feedback {
       margin-left: 0;
       margin-top: 5px;
       text-align: center;
       width: 100%;
-      display: block; /* Ensure it takes space below button */
+      display: block;
       vertical-align: initial;
    }
 
-
-  /* MODIFICATION: Back Button Mobile Style */
-  #cinemaghar-container .back-button { /* General style for mobile back buttons */
+  #cinemaghar-container .back-button {
       padding: 7px 12px;
       font-size: 13px;
   }
@@ -1153,29 +1380,28 @@ body {
   #cinemaghar-container #mainQualityFilterSelect { height: 40px; min-width: unset; flex-grow: 1; }
 
   .tab-navigation { margin-bottom: 20px; }
-  .tab-navigation .tab-button { padding: 10px 15px; font-size: 15px; } /* Slightly larger tab text */
+  .tab-navigation .tab-button { padding: 10px 15px; font-size: 15px; }
 
   #cinemaghar-container .table-container {
       border: none;
       box-shadow: none;
       border-radius: 0;
-      margin-left: -15px; /* Extend edge-to-edge within results area */
+      margin-left: -15px;
       margin-right: -15px;
       overflow-x: visible;
    }
    #cinemaghar-container table {
         min-width: unset;
         border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-sm); /* Match box theme */
+        border-radius: var(--border-radius-sm);
         box-shadow: var(--shadow-sm);
         display: block;
-        overflow-x: auto; /* Enable horizontal scroll for table */
+        overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
    }
-   /* Force table layout for rows/header */
    #cinemaghar-container thead, #cinemaghar-container tbody, #cinemaghar-container tr { display: table; width: 100%; table-layout: fixed; }
-   #cinemaghar-container thead { position: sticky; top: 0; z-index: 3; background: var(--table-header-bg); } /* Ensure sticky header background */
+   #cinemaghar-container thead { position: sticky; top: 0; z-index: 3; background: var(--table-header-bg); }
    #cinemaghar-container th, #cinemaghar-container td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid var(--border-color); display: table-cell; white-space: normal; vertical-align: middle; }
 
   /* Hide columns on mobile */
@@ -1197,7 +1423,7 @@ body {
   #cinemaghar-container td.col-filename { word-break: break-word; white-space: normal; cursor: pointer; }
   #cinemaghar-container td.col-filename .quality-logo { height: 0.9em; margin-left: 3px; vertical-align: baseline; }
   #cinemaghar-container td.col-quality { min-width: unset; }
-  #cinemaghar-container .movie-data-row .view-button { font-size: 12px; padding: 6px 8px !important; min-width: 45px; width: auto; /* Don't force full width */ }
+  #cinemaghar-container .movie-data-row .view-button { font-size: 12px; padding: 6px 8px !important; min-width: 45px; width: auto; }
 
    #cinemaghar-container .action-row td { padding: 15px 10px; display: block; width: auto; white-space: normal; }
    #cinemaghar-container .action-info { font-size: 13px; margin-bottom: 15px; }
@@ -1205,17 +1431,34 @@ body {
    #cinemaghar-container .action-info strong { display: inline-block; min-width: 65px; font-weight: 600; margin-right: 5px; }
    #cinemaghar-container .action-info .quality-logo { height: 0.9em; vertical-align: baseline; }
    #cinemaghar-container .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
-   #cinemaghar-container .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; }
-   /* Explicitly style action row view button for mobile (make it full width like others) */
+   /* Action buttons container on mobile - ensure all buttons are full width */
+   #cinemaghar-container .action-buttons-container .button:not(.view-button):not(.copy-feedback + .button):not(.bypass-feedback + .button),
+   #cinemaghar-container .action-buttons-container .button.copy-feedback + .button,
+   #cinemaghar-container .action-buttons-container .button.bypass-feedback + .button,
+   #cinemaghar-container .action-buttons-container .youtube-button,
+   #cinemaghar-container .action-buttons-container .imdb-button,
+   #cinemaghar-container .action-buttons-container .share-button,
+   #cinemaghar-container .action-buttons-container .vlc-button,
+   #cinemaghar-container .action-buttons-container .custom-url-toggle-button, /* Make custom url toggle full width */
+   #cinemaghar-container .action-buttons-container .hubcloud-bypass-button, /* Make hubcloud bypass full width */
+   #cinemaghar-container .action-buttons-container .gdflix-bypass-button /* Make gdflix bypass full width */
+    {
+       font-size: 13px;
+       padding: 10px 15px;
+       width: 100%;
+       max-width: none;
+       margin: 0;
+       box-sizing: border-box;
+   }
    #cinemaghar-container .action-row .action-buttons-container .view-button {
        width: 100%;
        padding: 10px 15px !important;
        font-size: 13px !important;
        margin: 0;
        box-sizing: border-box;
-       min-width: unset; /* Override specific min-width */
+       min-width: unset;
     }
-   #cinemaghar-container .preview-action-row .action-buttons-container .button { /* Apply full width to preview buttons too */
+   #cinemaghar-container .preview-action-row .action-buttons-container .button {
        font-size: 13px;
        padding: 10px 15px;
        width: 100%;
@@ -1224,25 +1467,27 @@ body {
    }
    #cinemaghar-container .preview-action-row .action-buttons-container .view-button {
        width: 100%;
-       padding: 10px 15px !important; /* Override smaller padding */
-       font-size: 13px !important; /* Override smaller font */
-       min-width: unset; /* Override specific min-width */
+       padding: 10px 15px !important;
+       font-size: 13px !important;
+       min-width: unset;
    }
-   /* Action row copy feedback spacing */
-    #cinemaghar-container .action-row .action-buttons-container .copy-feedback,
-    #cinemaghar-container .preview-action-row .action-buttons-container .copy-feedback {
+   #cinemaghar-container .action-row .action-buttons-container .copy-feedback,
+   #cinemaghar-container .preview-action-row .action-buttons-container .copy-feedback,
+   #cinemaghar-container .action-row .action-buttons-container .bypass-feedback,
+   #cinemaghar-container .preview-action-row .action-buttons-container .bypass-feedback {
         margin-left: 0;
         margin-top: 5px;
         text-align: center;
         width: 100%;
-        display: block; /* Ensure it takes space below button */
+        display: block;
         vertical-align: initial;
     }
 
 
   /* Player adjustments */
-  #cinemaghar-container #html5VideoPlayer { max-height: 280px; border-radius: var(--border-radius-sm);}
+  #cinemaghar-container .video-container:not(.global-custom-url-mode) #html5VideoPlayer { max-height: 280px; border-radius: var(--border-radius-sm);} /* Only constrain height if not global */
   #cinemaghar-container .video-container { padding: 45px 10px 15px 10px; max-width: 100%; margin-left: 0; margin-right: 0; border-radius: var(--border-radius-sm); }
+  #cinemaghar-container .video-container.global-custom-url-mode { width: 95%; max-width: 95%; padding: 25px 15px; }
   #cinemaghar-container .video-container.is-fullscreen #html5VideoPlayer { max-height: none; }
   #cinemaghar-container .close-btn { top: 12px; right: 12px; padding: 5px 9px; font-size: 12px; }
   #cinemaghar-container #videoTitle { font-size: 16px; }
@@ -1264,21 +1509,22 @@ body {
 
     /* Footer Mobile Adjustments */
     #page-footer {
-        margin-top: 30px; /* Less margin */
-        padding: 20px 15px; /* Less padding */
+        margin-top: 30px;
+        padding: 20px 15px;
         gap: 12px;
     }
     #page-footer .footer-text {
-        font-size: 12px; /* Smaller text */
+        font-size: 12px;
     }
     #page-footer .footer-buttons {
-        gap: 12px; /* Less gap */
+        gap: 12px;
     }
     #cinemaghar-container #page-footer .button {
-        font-size: 12px; /* Smaller button text */
-        padding: 7px 12px; /* Smaller padding */
+        font-size: 12px;
+        padding: 7px 12px;
     }
     #cinemaghar-container #page-footer .button svg {
         margin-right: 5px;
     }
-} /* End of Mobile Media Query */
+}
+/* --- END OF style.css --- */
