@@ -1,4 +1,4 @@
-// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION) ---
+// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE) ---
 (function() {
     'use strict';
 
@@ -183,6 +183,7 @@
         processed.searchText = normalizeTextForSearch(`${processed.id || ''} ${processed.displayFilename}`);
         processed.isSeries = !!movie.is_series;
         processed.extractedTitle = null; processed.extractedYear = null; processed.extractedSeason = null;
+        processed.tmdbDetails = null; // Initialize tmdbDetails for storage later
 
         // --- Title/Year/Season Extraction Logic (Improved) ---
         const filename = processed.displayFilename;
@@ -247,12 +248,11 @@
         // --- End Extraction ---
 
         // Log extraction results for debugging
-        if (filename && !processed.extractedTitle) {
-            console.warn(`Extraction failed for: "${filename}". Got Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}`);
-        } else if (filename) {
-             console.log(`Extraction result for "${filename}": Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}, IsSeries: ${processed.isSeries}`);
-        }
-
+        // if (filename && !processed.extractedTitle) {
+        //     console.warn(`Extraction failed for: "${filename}". Got Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}`);
+        // } else if (filename) {
+        //      console.log(`Extraction result for "${filename}": Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}, IsSeries: ${processed.isSeries}`);
+        // }
 
         return processed;
     }
@@ -317,8 +317,7 @@
 
         // --- TMDb Details Section ---
         let tmdbSectionHTML = '';
-        // Assuming you might pass tmdbFetchAttempted or handle it similarly
-        const tmdbFetchAttempted = !!tmdbDetails; // Simple check if details exist
+        // tmdbDetails might be null if fetch failed or wasn't attempted
         if (tmdbDetails && tmdbDetails.id) {
             const posterHTML = tmdbDetails.posterPath
                 ? `<img src="${sanitize(tmdbDetails.posterPath)}" alt="Poster for ${sanitize(tmdbDetails.title)}" class="tmdb-poster" loading="lazy">`
@@ -377,9 +376,12 @@
                     </div>
                 </div>
             `;
-        } else if (movie.extractedTitle && tmdbFetchAttempted) { // Check if fetch was attempted but no details resulted
+        } else if (movie.extractedTitle && !tmdbDetails) { // Check if we tried to fetch (had title) but details are null
+             // Check if tmdbDetails is explicitly null (meaning fetch failed or returned no results)
+             // A simple check (!tmdbDetails) is sufficient here since null/undefined are falsy.
              tmdbSectionHTML = `<div class="tmdb-fetch-failed">Could not fetch additional details from TMDb.</div>`;
         }
+        // If no extracted title, this section remains empty (tmdbSectionHTML = '')
 
 
         // --- Button Logic ---
@@ -396,9 +398,6 @@
                 urlDependentButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play in VLC or MX Player</button>`;
             }
         }
-        // This container is mainly for styling/layout if needed, but buttons are added individually below
-        // urlDependentButtonsHTML = `<div class="url-actions-container" id="url-actions-container-${escapedId}">${urlDependentButtonsHTML}</div>`;
-         // Let's add the URL buttons directly to the main button container later
 
         // 2. Bypass Buttons
         const movieRefAttr = `data-movie-ref="detail"`; // Identify context as item detail view
@@ -434,17 +433,16 @@
         otherLinkButtonsHTML += externalInfoButtonHTML; // Use combined IMDb/TMDb button
         otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
 
-        // --- FIX START: Always show original links if they exist ---
-        if (movie.telegram_link) { // Simplified check, preprocess handles null/empty
+        // Always show original links if they exist
+        if (movie.telegram_link) {
              otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
         }
-        if (movie.gdflix_link) { // Simplified check
+        if (movie.gdflix_link && !bypassButtonsHTML.includes('bypass-gdflix')) { // Show original link only if bypass button isn't already there (though bypass usually means link exists)
             otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`;
         }
-        if (movie.hubcloud_link) { // Simplified check
+        if (movie.hubcloud_link && !bypassButtonsHTML.includes('bypass-hubcloud')) { // Show original link only if bypass button isn't already there
             otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`;
         }
-        // --- FIX END ---
 
         if (movie.filepress_link) otherLinkButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
         if (movie.gdtot_link) otherLinkButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
@@ -701,8 +699,6 @@
     showMoreUpdatesButton.disabled = true;
     showMoreUpdatesButton.textContent = "Loading...";
     // Calculate next page based on items *currently* loaded vs the 'load more' count
-    // Example: If shownCount is 10 and load_more is 10, currentPage = 1, nextPage = 2.
-    // If shownCount is 20 and load_more is 10, currentPage = 2, nextPage = 3.
     const currentPage = Math.floor(updatesPreviewShownCount / config.UPDATES_PREVIEW_LOAD_MORE_COUNT);
     const nextPage = currentPage + 1; // Always fetch the next logical page
     console.log(`Attempting to load page ${nextPage} for updates preview (currently showing ${updatesPreviewShownCount}).`);
@@ -718,14 +714,14 @@
 
         if (data && data.items && data.items.length > 0) {
             const newItems = data.items.map(preprocessMovieData);
-            const startIndex = updatesPreviewShownCount; // Index in weeklyUpdatesData where new items *will* start
+            const startIndex = weeklyUpdatesData.length; // Index in weeklyUpdatesData where new items *will* start (since we append below)
 
-            // *** FIX: Add the newly fetched items to the main data array FIRST ***
+            // Add the newly fetched items to the main data array FIRST
             weeklyUpdatesData.push(...newItems);
 
             // Now append the items using the updated weeklyUpdatesData
             // appendUpdatesToPreview will slice from weeklyUpdatesData[startIndex] onwards
-            appendUpdatesToPreview(startIndex, startIndex + newItems.length); // Pass correct indices relative to the FULL array
+            appendUpdatesToPreview(startIndex, weeklyUpdatesData.length); // Pass correct indices relative to the FULL array
 
             updatesPreviewShownCount += newItems.length; // Increment shown count *after* successful append
             console.log(`Loaded ${newItems.length} more updates. Total now showing: ${updatesPreviewShownCount}. Current API page fetched: ${data.page}, Total API pages: ${data.totalPages}`); // Log shown count
@@ -753,13 +749,9 @@
         showMoreUpdatesButton.disabled = false;
     }
 }
-    function appendUpdatesToPreview(startIndex, endIndex) { // startIndex/endIndex are relative to the data source (weeklyUpdatesData if using it, or just used for indexing)
+    function appendUpdatesToPreview(startIndex, endIndex) { // startIndex/endIndex are relative to the data source (weeklyUpdatesData)
         if (!updatesPreviewList) return;
         const fragment = document.createDocumentFragment();
-        // Use the data source that holds the items to append (could be weeklyUpdatesData or directly from fetch)
-        // Here, assuming we fetched new items and are just rendering them
-        // We need the actual items. Let's assume the caller passes the items.
-        // --- REVISED ---: Let's stick to using weeklyUpdatesData as the single source
         const itemsToAppend = weeklyUpdatesData.slice(startIndex, endIndex);
 
         itemsToAppend.forEach((movie, indexInSlice) => {
@@ -885,15 +877,20 @@
     // --- Share Logic ---
     async function handleShareClick(buttonElement) { const itemId = buttonElement.dataset.id; const itemTitle = buttonElement.dataset.title || "Cinema Ghar Item"; const itemFilename = buttonElement.dataset.filename || ""; if (!itemId) { console.error("Share failed: Item ID missing."); alert("Cannot share this item (missing ID)."); return; } const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${encodeURIComponent(itemId)}`; const shareText = `Check out: ${itemTitle}\n${itemFilename ? `(${itemFilename})\n` : ''}`; const feedbackSpan = buttonElement.nextElementSibling; if (!feedbackSpan || !feedbackSpan.classList.contains('copy-feedback')) { console.warn("Share fallback feedback span not found next to button:", buttonElement); } if (navigator.share) { try { await navigator.share({ title: itemTitle, text: shareText, url: shareUrl, }); console.log('Successful share'); } catch (error) { console.error('Error sharing:', error); if (error.name !== 'AbortError') { if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Share failed!', true); } else { alert(`Share failed: ${error.message}`); } } } } else { console.log('Web Share API not supported, falling back to copy.'); await copyToClipboard(shareUrl, feedbackSpan); } }
 
-    // --- Item Detail Display Logic (Handles both shareId and viewId + TMDb) ---
-     async function displayItemDetail(itemId, isFromShareLink) {
+
+    // ==================================================================
+    // START OF CORRECTED BLOCK FOR ITEM DETAIL / TMDB / BYPASS
+    // ==================================================================
+
+    // --- Item Detail Display Logic (Handles both shareId and viewId + TMDb Persistence) ---
+    async function displayItemDetail(itemId, isFromShareLink) {
          if (!itemId || !itemDetailView || !itemDetailContent) return;
 
          isShareMode = isFromShareLink; // Set the mode flag
          itemDetailContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading item details...</span></div>`;
          setViewMode('itemDetail'); // Set the main view mode
          currentItemDetailData = null; // Clear previous data
-         let tmdbDetails = null; // Variable to hold TMDb data
+         // TMDb details will be stored on currentItemDetailData
 
          // Show the correct back button
          if (backToHomeButtonShared) backToHomeButtonShared.style.display = isShareMode ? 'inline-flex' : 'none';
@@ -906,7 +903,8 @@
 
              if (internalData && internalData.items && internalData.items.length > 0) {
                  const itemRaw = internalData.items[0];
-                 currentItemDetailData = preprocessMovieData(itemRaw); // Store the fetched internal data
+                 currentItemDetailData = preprocessMovieData(itemRaw); // Store the fetched internal data (includes tmdbDetails = null initialization)
+
                  console.log(`Displaying item detail for: ${currentItemDetailData.displayFilename} (isShare: ${isShareMode})`);
 
                  // Set title early based on internal data
@@ -932,15 +930,20 @@
                          const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
                          clearTimeout(tmdbTimeoutId);
                          if (tmdbResponse.ok) {
-                             tmdbDetails = await tmdbResponse.json();
-                             console.log("TMDb details fetched successfully:", tmdbDetails);
+                             const fetchedTmdbData = await tmdbResponse.json();
+                             // --- Store fetched data on the state object ---
+                             currentItemDetailData.tmdbDetails = fetchedTmdbData;
+                             console.log("TMDb details fetched and stored successfully:", currentItemDetailData.tmdbDetails);
                          } else {
                              const errorBody = await tmdbResponse.text(); // Read body even if not JSON
                              console.warn(`Failed to fetch TMDb details (${tmdbResponse.status}): ${errorBody}`);
-                             // Don't treat TMDb failure as a fatal error for the whole page
+                             // Ensure tmdbDetails remains null on the state object if fetch fails
+                             currentItemDetailData.tmdbDetails = null;
                          }
                      } catch (tmdbError) {
                          clearTimeout(tmdbTimeoutId);
+                         // Ensure tmdbDetails remains null on the state object on error/timeout
+                         currentItemDetailData.tmdbDetails = null;
                          if (tmdbError.name === 'AbortError') {
                             console.warn(`TMDb fetch timed out or aborted for: ${currentItemDetailData.extractedTitle}`);
                          } else {
@@ -950,12 +953,13 @@
                      }
                  } else {
                      console.warn("Cannot fetch TMDb details: No extracted title found.");
+                     // Ensure tmdbDetails is null if no attempt was made
+                     currentItemDetailData.tmdbDetails = null;
                  }
                  // --- END TMDb Fetch ---
 
-                 // 2. Render content using BOTH internal and TMDb data (tmdbDetails might be null)
-                 // Pass the tmdbFetchAttempted flag to createItemDetailContentHTML
-                 const contentHTML = createItemDetailContentHTML(currentItemDetailData, tmdbDetails, tmdbFetchAttempted);
+                 // 2. Render content using BOTH internal data and the TMDb data *stored on the state object*
+                 const contentHTML = createItemDetailContentHTML(currentItemDetailData, currentItemDetailData.tmdbDetails); // Use the stored details
                  itemDetailContent.innerHTML = contentHTML;
 
                  // Ensure player is hidden initially when showing details
@@ -970,6 +974,8 @@
              console.error("Failed to fetch or display item detail:", error);
              itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item: ${error.message}. Please try again.</div>`;
              document.title = "Error Loading Item - Cinema Ghar Index";
+             // Ensure currentItemDetailData is nullified on major error
+             currentItemDetailData = null;
          } finally {
              // Ensure view mode is correct and scroll to top
              setViewMode('itemDetail');
@@ -980,6 +986,48 @@
              }
          }
      }
+
+    // --- Bypass Update Function (Correctly uses stored TMDb details) ---
+    function updateItemDetailAfterBypass(encodedFinalUrl) {
+          if (!currentItemDetailData || !itemDetailContent) {
+              console.error("Cannot update item detail view: missing data or container.");
+              return;
+          }
+          // Update the data in memory
+          currentItemDetailData.url = encodedFinalUrl;
+          console.log(`Updated item detail data (ID: ${currentItemDetailData.id}) in memory with bypassed URL.`);
+
+          // Re-render the content area using the updated currentItemDetailData
+          // It will correctly access currentItemDetailData.tmdbDetails which was set in displayItemDetail
+          const contentHTML = createItemDetailContentHTML(currentItemDetailData, currentItemDetailData.tmdbDetails);
+          itemDetailContent.innerHTML = contentHTML;
+          console.log(`Successfully re-rendered item detail content for item ID: ${currentItemDetailData.id} after bypass.`);
+
+          // Focus the new play button if it exists
+          const playButton = itemDetailContent.querySelector('.play-button');
+          if(playButton) {
+              setTimeout(() => playButton.focus(), 50);
+          }
+
+           // If player was open, re-attach it inside the new content
+          if (videoContainer.parentElement && videoContainer.style.display !== 'none') {
+             console.log("Re-attaching player to updated item detail content.");
+              // --- Revised Player Placement Logic ---
+             const separator = itemDetailContent.querySelector('hr.detail-separator');
+             const targetElement = separator ? separator.nextElementSibling : itemDetailContent.firstChild;
+             if (targetElement && targetElement.nextSibling) {
+                  itemDetailContent.insertBefore(videoContainer, targetElement.nextSibling);
+              } else {
+                  itemDetailContent.appendChild(videoContainer);
+              }
+              // --- End Revised ---
+           }
+     }
+
+    // ==================================================================
+    // END OF CORRECTED BLOCK
+    // ==================================================================
+
 
     // --- Player Logic ---
     function streamVideo(title, url, filenameForAudioCheck, isFromCustom = false) {
@@ -1104,9 +1152,8 @@
          clearBypassFeedback();
          if (videoTitle) videoTitle.innerText = '';
 
-         // Move player back to main container only if it's not already there (and not global mode)
-         // --- Revised: We don't need to move it back to the main container. It stays detached until next streamVideo call.
-         if (!wasGlobalMode && parentContainer && parentContainer.contains(videoContainer)) {
+         // Detach player if it's currently attached somewhere
+         if (parentContainer && parentContainer.contains(videoContainer)) {
              parentContainer.removeChild(videoContainer);
              console.log("Detached video player from its container.");
          }
@@ -1114,13 +1161,13 @@
          // Restore focus
          let finalFocusTarget = elementToFocusAfter || lastFocusedElement;
           // Special focus handling if closed within item detail view
-         if (!wasGlobalMode && currentViewMode === 'itemDetail') {
-             const playButton = itemDetailContent?.querySelector('.play-button'); // Try to focus the play button of the item
+         if (!wasGlobalMode && currentViewMode === 'itemDetail' && itemDetailContent) { // Check itemDetailContent still exists
+             const playButton = itemDetailContent.querySelector('.play-button'); // Try to focus the play button of the item
              if (playButton) {
                  finalFocusTarget = playButton;
              } else {
                  // Fallback to a general element in the detail view if play button isn't there
-                 const firstButton = itemDetailContent?.querySelector('.button');
+                 const firstButton = itemDetailContent.querySelector('.button');
                  if (firstButton) finalFocusTarget = firstButton;
                  else finalFocusTarget = itemDetailContent; // Fallback to content area itself
              }
@@ -1219,7 +1266,9 @@
                         populateQualityFilter(localSuggestionData);
                          // If we are on homepage (determined by handleUrlChange), load updates preview
                          if (currentViewMode === 'homepage') {
-                             loadUpdatesPreview(); // This function now uses the first part of localSuggestionData if available
+                             // Use the already fetched data for the initial preview
+                             weeklyUpdatesData = localSuggestionData; // Use the full list for updates logic now
+                             displayInitialUpdates(); // Display using the fetched data
                          }
                     } else {
                         console.warn("Could not load initial data for suggestions/quality filter.");
@@ -1228,7 +1277,7 @@
                          }
                     }
                 }).catch(e => {
-                    console.error("Background suggestion/quality fetch failed:", e);
+                    console.error("Background suggestion/quality/updates fetch failed:", e);
                      if (currentViewMode === 'homepage' && updatesPreviewList) {
                         updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Error loading updates: ${e.message}.</div>`;
                      }
@@ -1480,41 +1529,8 @@
              else { console.error("GDFLIX Bypass failed:", error); setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); }
          }
      }
-    function updateItemDetailAfterBypass(encodedFinalUrl) { // Reusable function for item detail view
-          if (!currentItemDetailData || !itemDetailContent) {
-              console.error("Cannot update item detail view: missing data or container.");
-              return;
-          }
-          // Update the data in memory
-          currentItemDetailData.url = encodedFinalUrl;
-          console.log(`Updated item detail data (ID: ${currentItemDetailData.id}) in memory with bypassed URL.`);
+    // Note: updateItemDetailAfterBypass is inside the corrected block above
 
-          // Re-render the content area (TMDb details are already fetched, no need to re-fetch)
-          // Create HTML using the updated currentItemDetailData and the *existing* tmdbDetails (which are null if fetch failed)
-          const contentHTML = createItemDetailContentHTML(currentItemDetailData, currentItemDetailData.tmdbDetails); // Assuming tmdbDetails are stored on item data now, or retrieve from a module variable if stored differently
-          itemDetailContent.innerHTML = contentHTML;
-          console.log(`Successfully re-rendered item detail content for item ID: ${currentItemDetailData.id} after bypass.`);
-
-          // Focus the new play button if it exists
-          const playButton = itemDetailContent.querySelector('.play-button');
-          if(playButton) {
-              setTimeout(() => playButton.focus(), 50);
-          }
-
-           // If player was open, re-attach it inside the new content
-          if (videoContainer.parentElement && videoContainer.style.display !== 'none') {
-             console.log("Re-attaching player to updated item detail content.");
-              // --- Revised Player Placement Logic ---
-             const separator = itemDetailContent.querySelector('hr.detail-separator');
-             const targetElement = separator ? separator.nextElementSibling : itemDetailContent.firstChild;
-             if (targetElement && targetElement.nextSibling) {
-                  itemDetailContent.insertBefore(videoContainer, targetElement.nextSibling);
-              } else {
-                  itemDetailContent.appendChild(videoContainer);
-              }
-              // --- End Revised ---
-           }
-     }
     function setBypassButtonState(buttonElement, state, message = null) { // Handles both button types
          if (!buttonElement) return;
          const feedbackSpan = buttonElement.nextElementSibling; const iconSpan = buttonElement.querySelector('.button-icon'); const spinnerSpan = buttonElement.querySelector('.button-spinner'); const textSpan = buttonElement.querySelector('.button-text');
@@ -1606,15 +1622,17 @@
              // Close player if clicked outside its context (unless global custom URL mode is active and click is not on trigger)
              if (videoContainer && videoContainer.style.display !== 'none' && !isGlobalCustomUrlMode) {
                  const clickedInsidePlayer = videoContainer.contains(event.target);
+                 // Check if clicked inside the item detail view CONTENT area (where player is attached)
                  const clickedInsideDetailContent = itemDetailContent?.contains(event.target);
 
+                 // If clicked outside BOTH the player AND the detail content area, consider closing
                  if (!clickedInsidePlayer && !clickedInsideDetailContent) {
-                     // Check if the click was on the element that *triggered* the player (e.g., a play button)
+                     // Double-check it wasn't a click on a button that *might* have triggered the player (less reliable check)
                      let triggerElement = lastFocusedElement; // Check the last focused element before player opened
-                     let clickedOnTrigger = triggerElement && event.target.closest('.button') === triggerElement;
+                     let clickedOnPotentialTrigger = triggerElement && event.target.closest('.button') === triggerElement;
 
-                      if (!clickedOnTrigger) {
-                         console.log("Clicked outside player's detail view context. Closing player.");
+                      if (!clickedOnPotentialTrigger) {
+                         console.log("Clicked outside player and its detail view context. Closing player.");
                          closePlayer(event.target); // Pass click target for potential focus restoration
                      }
                  }
