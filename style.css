@@ -1,4 +1,4 @@
-/* --- START OF style.css (with HubCloud & GDFLIX Bypass updates) --- */
+/* --- START OF style.css (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION) --- */
 :root {
     --primary-color: #0d6efd; /* Bootstrap blue */
     --primary-hover: #0b5ed7;
@@ -12,7 +12,7 @@
     --header-bg: #ffffff; /* Used for results-active search bar background */
     --table-header-bg: #e9ecef; /* Light grey for table header */
     --table-row-hover: #f1f3f5; /* Slightly darker hover */
-    --table-row-active: #e6f0ff; /* Subtle blue highlight for active row */
+    /* --table-row-active: #e6f0ff; /* Subtle blue highlight for active row - REMOVED */
     --error-color: #dc3545; /* Bootstrap danger */
     --error-bg: #f8d7da; /* Background for error messages */
     --error-border: #f5c6cb;
@@ -139,7 +139,8 @@ body {
                 padding var(--transition-speed) var(--transition-timing);
 }
 
-#cinemaghar-container.results-active {
+#cinemaghar-container.results-active,
+#cinemaghar-container.item-detail-active { /* Updated class */
     padding-top: 0;
 }
 
@@ -166,7 +167,8 @@ body {
     background-color: var(--header-bg);
     border-bottom: 1px solid var(--border-color);
 }
-#cinemaghar-container.shared-view-active #search-focus-area {
+/* Hide search area when showing item detail */
+#cinemaghar-container.item-detail-active #search-focus-area {
     display: none;
 }
 
@@ -408,9 +410,10 @@ body {
 .update-item:hover {
      background-color: var(--table-row-hover);
 }
-.update-item.active-main-row {
+/* No active state needed now for preview items */
+/* .update-item.active-main-row {
     background-color: var(--table-row-active);
-}
+} */
 .update-item:last-of-type {
     border-bottom: none;
 }
@@ -442,6 +445,7 @@ body {
 }
 .update-item .preview-col-filename:hover {
     color: var(--primary-color);
+    text-decoration: underline; /* Indicate clickability */
 }
 .update-item .preview-col-filename .quality-logo {
     height: 1.1em;
@@ -475,18 +479,19 @@ body {
     color: white !important;
     border-radius: var(--border-radius-sm);
     border: none;
+    cursor: pointer; /* Ensure cursor indicates clickable */
 }
 .update-item .preview-col-view .button.view-button:hover {
     background-color: var(--button-secondary-hover);
 }
 
-/* Action Row for Preview Section */
-.preview-action-row {
+/* Action Row for Preview Section - REMOVED/OBSOLETE */
+/* .preview-action-row {
     display: none;
     padding: 20px 15px;
     background-color: #f0f2f5;
     border-bottom: 1px solid var(--border-color);
-}
+} */
 
 #showMoreUpdatesButton {
     display: block;
@@ -511,7 +516,7 @@ body {
 }
 
 #cinemaghar-container.results-active #updates-preview-section,
-#cinemaghar-container.shared-view-active #updates-preview-section {
+#cinemaghar-container.item-detail-active #updates-preview-section { /* Updated class */
     opacity: 0;
     transform: translateY(-10px);
     pointer-events: none;
@@ -544,12 +549,13 @@ body {
     opacity: 1;
     transform: translateY(0);
 }
-#cinemaghar-container.shared-view-active #results-area {
+/* Hide results when showing item detail */
+#cinemaghar-container.item-detail-active #results-area {
     display: none;
 }
 
-/* --- Shared Item View (Hidden by Default) --- */
-#shared-item-view {
+/* --- Item Detail View (Hidden by Default, used for View & Share) --- */
+#item-detail-view {
     display: none;
     padding: 25px;
     margin-top: 20px;
@@ -565,37 +571,40 @@ body {
     transition: opacity var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2),
                 transform var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2);
 }
-#cinemaghar-container.shared-view-active #shared-item-view {
+#cinemaghar-container.item-detail-active #item-detail-view { /* Updated class */
     display: block;
     opacity: 1;
     transform: translateY(0);
 }
-#shared-item-view .back-button {
+/* Hide default back buttons initially */
+#item-detail-view #backToHomeButtonShared,
+#item-detail-view #backToResultsButton {
+    display: none;
     margin-bottom: 25px;
 }
-#shared-item-content {
+#item-detail-content {
     padding: 20px 15px;
     background-color: #f0f2f5;
     border-radius: var(--border-radius-sm);
     /* Needed for positioning player inside */
     position: relative;
 }
-#shared-item-content .action-info,
-#shared-item-content .action-buttons-container {
+#item-detail-content .action-info,
+#item-detail-content .action-buttons-container {
     margin-bottom: 20px;
 }
-#shared-item-content .action-buttons-container {
+#item-detail-content .action-buttons-container {
     border-top: 1px solid var(--border-color);
     padding-top: 25px;
 }
-#shared-item-view .status-message,
-#shared-item-view .error-message {
+#item-detail-view .status-message,
+#item-detail-view .error-message {
     text-align: center;
     padding: 30px 15px;
     font-size: 16px;
     color: var(--text-muted);
 }
-#shared-item-view .error-message {
+#item-detail-view .error-message {
     color: var(--error-text);
     background-color: var(--error-bg);
     border: 1px solid var(--error-border);
@@ -604,7 +613,7 @@ body {
 }
 
 #cinemaghar-container .back-button {
-    display: none;
+    display: none; /* Generally hidden, shown by container class or JS */
     align-items: center;
     margin-bottom: 15px;
     padding: 8px 16px;
@@ -625,10 +634,11 @@ body {
     background-color: #e9ecef;
     box-shadow: var(--shadow-sm);
 }
-#cinemaghar-container.results-active #backToHomeButtonResults,
-#cinemaghar-container.shared-view-active #backToHomeButtonShared {
-    display: inline-flex;
+#cinemaghar-container.results-active #backToHomeButtonResults {
+    display: inline-flex; /* Show results back button */
 }
+/* JS will control which back button shows in #item-detail-view */
+
 
 /* --- Results Filter Area --- */
 .results-filter-area {
@@ -737,13 +747,14 @@ body {
 #cinemaghar-container th.col-updated, #cinemaghar-container td.col-updated { width: 12%; }
 #cinemaghar-container th.col-view, #cinemaghar-container td.col-view { width: 10%; }
 
-#cinemaghar-container tr:last-of-type td:not(.action-row td) { border-bottom: none; }
+#cinemaghar-container tr:last-of-type td { border-bottom: none; } /* Removed exclusion */
 #cinemaghar-container tbody tr.movie-data-row:hover {
     background-color: var(--table-row-hover);
 }
-#cinemaghar-container tbody tr.movie-data-row.active-main-row {
+/* Active row highlight removed */
+/* #cinemaghar-container tbody tr.movie-data-row.active-main-row {
     background-color: var(--table-row-active);
-}
+} */
 
 #cinemaghar-container td.col-filename { word-break: break-word; text-align: left; min-width: 150px; cursor: pointer; color: var(--primary-color); font-weight: 500; transition: color 0.2s ease; white-space: normal; position: relative; }
 #cinemaghar-container td.col-filename:hover { color: var(--primary-hover); text-decoration: underline; }
@@ -755,59 +766,46 @@ body {
 #cinemaghar-container td.error-message { color: var(--error-text); background-color: var(--error-bg); border: 1px solid var(--error-border); font-weight: 500; font-style: normal; }
 #cinemaghar-container td.loading-message { color: var(--text-muted); text-align: center; padding: 35px 15px; font-size: 15px; }
 #cinemaghar-container td.loading-message .spinner { margin: 0 auto 10px auto; }
+#cinemaghar-container td.col-view .view-button { cursor: pointer; } /* Ensure view button is clickable */
 
-/* Action Row (Table) */
-#cinemaghar-container tr.action-row { display: none; background-color: #f8f9fa; }
-#cinemaghar-container .action-row td { padding: 25px 20px; text-align: left; border-bottom: none; position: relative; } /* Added position relative */
-/* Common Action Info/Buttons styles used by table, preview, and shared view */
-#cinemaghar-container .action-info,
-#cinemaghar-container .preview-action-row .action-info,
-#cinemaghar-container #shared-item-content .action-info {
+/* Action Row (Table) - REMOVED/OBSOLETE */
+/* #cinemaghar-container tr.action-row { display: none; background-color: #f8f9fa; } */
+/* #cinemaghar-container .action-row td { padding: 25px 20px; text-align: left; border-bottom: none; position: relative; } */
+
+/* Common Action Info/Buttons styles used by item detail view */
+#cinemaghar-container #item-detail-content .action-info {
     margin-bottom: 20px; font-size: 14px; color: var(--text-muted); text-align: left; line-height: 1.7;
 }
-#cinemaghar-container .action-info .info-item,
-#cinemaghar-container .preview-action-row .action-info .info-item,
-#cinemaghar-container #shared-item-content .action-info .info-item {
+#cinemaghar-container #item-detail-content .action-info .info-item {
     display: block; margin-bottom: 8px;
 }
-#cinemaghar-container .action-info strong,
-#cinemaghar-container .preview-action-row .action-info strong,
-#cinemaghar-container #shared-item-content .action-info strong {
+#cinemaghar-container #item-detail-content .action-info strong {
     color: var(--text-color); font-weight: 600; margin-right: 8px; display: inline-block; min-width: 90px;
 }
-#cinemaghar-container .action-info .quality-logo,
-#cinemaghar-container .preview-action-row .action-info .quality-logo,
-#cinemaghar-container #shared-item-content .action-info .quality-logo {
+#cinemaghar-container #item-detail-content .action-info .quality-logo {
     height: 1.1em; width: auto; vertical-align: text-bottom; margin-left: 4px; display: inline-block;
 }
-#cinemaghar-container .action-buttons-container,
-#cinemaghar-container .preview-action-row .action-buttons-container,
-#cinemaghar-container #shared-item-content .action-buttons-container {
+#cinemaghar-container #item-detail-content .action-buttons-container {
     display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 12px; margin-bottom: 15px; border-top: 1px solid var(--border-color); padding-top: 25px;
 }
 /* Remove bottom margin from last element in shared content */
-#cinemaghar-container #shared-item-content > *:last-child {
+#cinemaghar-container #item-detail-content > *:last-child {
     margin-bottom: 0;
 }
 /* Ensure border-top doesn't apply if action-info is first in shared content */
-#cinemaghar-container #shared-item-content > .action-buttons-container:first-child {
+#cinemaghar-container #item-detail-content > .action-buttons-container:first-child {
     border-top: none;
     padding-top: 0;
 }
 /* Container for URL-dependent buttons (might be initially empty) */
-#cinemaghar-container .url-actions-container {
+#cinemaghar-container #item-detail-content .url-actions-container {
     display: contents; /* Act as if the container isn't there for flex layout */
 }
 
 
-/* --- Custom URL Input Section Styles (Inside Action Rows / Shared View) --- */
-#cinemaghar-container .custom-url-section {
-  display: none; /* Hidden by default, shown by JS */
-  margin-top: 20px; /* Space above the custom URL area */
-  padding-top: 20px; /* Space inside */
-  border-top: 1px dashed var(--border-color); /* Separator */
-}
-#cinemaghar-container .custom-url-container {
+/* --- Custom URL Input Section Styles (Inside Item Detail View / Player) --- */
+/* Removed styles targeting .custom-url-section directly in action rows */
+#cinemaghar-container #item-detail-content .custom-url-container { /* Style if used within item detail view */
     display: flex;
     flex-direction: column; /* Stack label, input, button */
     gap: 10px;
@@ -817,13 +815,13 @@ body {
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--border-color);
 }
-#cinemaghar-container .custom-url-container label {
+#cinemaghar-container #item-detail-content .custom-url-container label {
     font-size: 13px;
     font-weight: 500;
     color: var(--text-muted);
     margin-bottom: -5px; /* Pull input closer */
 }
-#cinemaghar-container .custom-url-input {
+#cinemaghar-container #item-detail-content .custom-url-input {
     width: 100%;
     padding: 10px 12px;
     font-size: 14px;
@@ -831,17 +829,17 @@ body {
     border-radius: var(--border-radius-sm);
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
 }
-#cinemaghar-container .custom-url-input:focus {
+#cinemaghar-container #item-detail-content .custom-url-input:focus {
     border-color: var(--primary-color);
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 0 0 2px rgba(13, 110, 253, 0.25);
     outline: none;
 }
-#cinemaghar-container .play-custom-url-button {
+#cinemaghar-container #item-detail-content .play-custom-url-button {
     align-self: flex-start; /* Align button to the left */
     padding: 8px 16px;
     font-size: 13px;
 }
- #cinemaghar-container .custom-url-feedback {
+ #cinemaghar-container #item-detail-content .custom-url-feedback {
     font-size: 12px;
     color: var(--error-color);
     margin-top: 5px;
@@ -849,7 +847,7 @@ body {
 }
 
 /* --- Buttons General Styling --- */
-/* Excludes search, footer, view buttons, back button */
+/* Excludes search, footer, table/preview view buttons, back button */
 #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) {
     display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; margin: 2px 0; color: white !important; border: none; border-radius: var(--border-radius-sm); text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; white-space: nowrap; line-height: 1.4; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm);
 }
@@ -898,7 +896,7 @@ body {
  }
 
 /* Specific Button Colors */
-#cinemaghar-container .movie-data-row .view-button { background-color: var(--button-secondary-bg); padding: 6px 12px !important; font-size: 12px !important; min-width: 55px; border-radius: var(--border-radius-sm) !important; border: none; color: white !important; }
+#cinemaghar-container .movie-data-row .view-button { background-color: var(--button-secondary-bg); padding: 6px 12px !important; font-size: 12px !important; min-width: 55px; border-radius: var(--border-radius-sm) !important; border: none; color: white !important; cursor: pointer; }
 #cinemaghar-container .movie-data-row .view-button:hover { background-color: var(--button-secondary-hover); }
 #cinemaghar-container .play-button { background-color: var(--success-color); }
 #cinemaghar-container .intent-button { background-color: #17a2b8; }
@@ -917,22 +915,24 @@ body {
 #cinemaghar-container .imdb-button { background-color: var(--button-imdb-bg); }
 #cinemaghar-container .imdb-button:hover { background-color: var(--button-imdb-hover); }
 #cinemaghar-container .imdb-button svg { fill: white; }
-/* Custom URL Buttons */
-#cinemaghar-container .custom-url-toggle-button {
-  background-color: var(--button-custom-url-toggle-bg); /* Use specific color for toggle */
+/* Custom URL Buttons (within item detail view / player) */
+#cinemaghar-container #item-detail-content .custom-url-toggle-button,
+#cinemaghar-container #videoContainer .custom-url-toggle-button /* If shown within player */ {
+  background-color: var(--button-custom-url-toggle-bg);
   display: none; /* Hidden by default, shown by JS on error */
 }
-#cinemaghar-container .custom-url-toggle-button:hover {
+#cinemaghar-container #item-detail-content .custom-url-toggle-button:hover,
+#cinemaghar-container #videoContainer .custom-url-toggle-button:hover {
     background-color: var(--button-custom-url-toggle-hover);
 }
-#cinemaghar-container .play-custom-url-button,
-#cinemaghar-container #playerCustomUrlSection button /* Global Player button */ {
+#cinemaghar-container #item-detail-content .play-custom-url-button, /* Button within detail view */
+#cinemaghar-container #playerCustomUrlSection button /* Button inside player */ {
     background-color: var(--button-custom-url-bg);
     color: var(--button-custom-url-text) !important; /* Ensure text is dark */
     font-weight: 600;
 }
-#cinemaghar-container .play-custom-url-button:hover,
-#cinemaghar-container #playerCustomUrlSection button:hover /* Global Player button hover */ {
+#cinemaghar-container #item-detail-content .play-custom-url-button:hover,
+#cinemaghar-container #playerCustomUrlSection button:hover {
     background-color: var(--button-custom-url-hover);
     filter: brightness(1.05); /* Slight brighten instead of darken */
 }
@@ -1152,7 +1152,7 @@ body {
     flex-shrink: 0;
     transition: display var(--transition-speed) var(--transition-timing);
 }
-#cinemaghar-container.shared-view-active #page-footer {
+#cinemaghar-container.item-detail-active #page-footer { /* Updated class */
     display: none;
 }
 #page-footer .footer-text {
@@ -1281,81 +1281,49 @@ body {
   .update-item .preview-col-view { width: 17%; }
   .update-item .preview-col-view .button.view-button { font-size: 11px; padding: 5px 8px; min-width: 40px; }
 
-  /* Preview Action Row on mobile */
-  #cinemaghar-container .preview-action-row { padding: 15px 10px; position: relative; } /* Added position relative */
-  #cinemaghar-container .preview-action-row .action-info { font-size: 13px; margin-bottom: 15px; }
-  #cinemaghar-container .preview-action-row .action-info .info-item { margin-bottom: 6px; line-height: 1.5; }
-  #cinemaghar-container .preview-action-row .action-info strong { min-width: 65px; margin-right: 5px; }
-  #cinemaghar-container .preview-action-row .action-info .quality-logo { height: 0.9em; }
-  #cinemaghar-container .preview-action-row .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
-  #cinemaghar-container .preview-action-row .action-buttons-container .button:not(.view-button) { font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; }
-  #cinemaghar-container .preview-action-row .action-buttons-container .view-button { width: 100%; } /* Make table view button full width too */
-   /* Custom URL section mobile */
-  #cinemaghar-container .custom-url-section { margin-top: 15px; padding-top: 15px; }
-  #cinemaghar-container .custom-url-container { padding: 10px; gap: 8px; margin-top: 10px; }
-  #cinemaghar-container .custom-url-input { padding: 8px 10px; font-size: 13px; }
-  #cinemaghar-container .play-custom-url-button,
-  #cinemaghar-container #playerCustomUrlSection button { /* Global player button mobile */
-      padding: 9px 15px; font-size: 13px; width: 100%;
-  }
-  #cinemaghar-container #playerCustomUrlSection label { font-size: 13px; } /* Global player label mobile */
-  #cinemaghar-container #playerCustomUrlSection input { font-size: 13px; padding: 8px 10px; } /* Global player input mobile */
-  #cinemaghar-container #playerCustomUrlSection .player-custom-url-feedback { font-size: 12px; } /* Global player feedback mobile */
-
-  #cinemaghar-container .custom-url-toggle-button { width: 100%; } /* Make toggle full width */
-  #cinemaghar-container .hubcloud-bypass-button, /* Make Hubcloud bypass full width */
-  #cinemaghar-container .gdflix-bypass-button { /* Make GDFLIX bypass full width */
-     width: 100%;
-  }
-  #cinemaghar-container .bypass-feedback {
-      display: block;
-      width: 100%;
-      text-align: center;
-      margin-left: 0;
-      margin-top: 5px;
-      vertical-align: initial;
-  }
-
+  /* Preview Action Row REMOVED/OBSOLETE */
+  /* #cinemaghar-container .preview-action-row { padding: 15px 10px; position: relative; } */
+  /* Removed preview action row specific content styling */
 
   #showMoreUpdatesButton { font-size: 13px; padding: 8px 18px; }
 
 
   #results-area { margin: 0; padding: 15px; border-radius: 0;}
 
-  #shared-item-view {
+  #item-detail-view {
       padding: 15px;
       margin-top: 10px;
       max-width: 95%;
       border-radius: var(--border-radius-sm);
   }
-  #shared-item-view .back-button {
+  #item-detail-view .back-button {
       margin-bottom: 20px;
       padding: 7px 12px;
       font-size: 13px;
   }
-  #shared-item-content {
+  #item-detail-content {
       padding: 15px 10px;
   }
-  #shared-item-content .action-info {
+  #item-detail-content .action-info {
       font-size: 13px; margin-bottom: 15px;
   }
-   #shared-item-content .action-info .info-item {
+   #item-detail-content .action-info .info-item {
       margin-bottom: 6px; line-height: 1.5;
   }
-   #shared-item-content .action-info strong {
+   #item-detail-content .action-info strong {
       min-width: 65px; margin-right: 5px;
   }
-   #shared-item-content .action-info .quality-logo {
+   #item-detail-content .action-info .quality-logo {
       height: 0.9em;
   }
-   #shared-item-content .action-buttons-container {
+   #item-detail-content .action-buttons-container {
       flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px;
   }
-   #shared-item-content .action-buttons-container .button {
+   #item-detail-content .action-buttons-container .button {
       font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; box-sizing: border-box;
    }
-   #shared-item-content .action-buttons-container .copy-feedback,
-   #shared-item-content .action-buttons-container .bypass-feedback {
+   #item-detail-content .action-buttons-container .copy-feedback,
+   #item-detail-content .action-buttons-container .bypass-feedback {
       margin-left: 0;
       margin-top: 5px;
       text-align: center;
@@ -1363,6 +1331,27 @@ body {
       display: block;
       vertical-align: initial;
    }
+
+  /* Custom URL section mobile (within item detail view) */
+  #item-detail-content .custom-url-container { padding: 10px; gap: 8px; margin-top: 10px; }
+  #item-detail-content .custom-url-input { padding: 8px 10px; font-size: 13px; }
+  #item-detail-content .play-custom-url-button {
+      padding: 9px 15px; font-size: 13px; width: 100%;
+  }
+  #item-detail-content .custom-url-toggle-button { width: 100%; } /* Make toggle full width */
+  #item-detail-content .hubcloud-bypass-button, /* Make Hubcloud bypass full width */
+  #item-detail-content .gdflix-bypass-button { /* Make GDFLIX bypass full width */
+     width: 100%;
+  }
+  #item-detail-content .bypass-feedback {
+      display: block;
+      width: 100%;
+      text-align: center;
+      margin-left: 0;
+      margin-top: 5px;
+      vertical-align: initial;
+  }
+
 
   #cinemaghar-container .back-button {
       padding: 7px 12px;
@@ -1407,8 +1396,8 @@ body {
   /* Hide columns on mobile */
   #cinemaghar-container thead tr th.col-size,
   #cinemaghar-container thead tr th.col-updated,
-  #cinemaghar-container tbody tr:not(.action-row) td.col-size,
-  #cinemaghar-container tbody tr:not(.action-row) td.col-updated { display: none; }
+  #cinemaghar-container tbody tr td.col-size,
+  #cinemaghar-container tbody tr td.col-updated { display: none; }
 
    /* Adjust visible column widths */
    #cinemaghar-container th.col-id, #cinemaghar-container td.col-id { width: 15%; text-align: center; }
@@ -1425,63 +1414,9 @@ body {
   #cinemaghar-container td.col-quality { min-width: unset; }
   #cinemaghar-container .movie-data-row .view-button { font-size: 12px; padding: 6px 8px !important; min-width: 45px; width: auto; }
 
-   #cinemaghar-container .action-row td { padding: 15px 10px; display: block; width: auto; white-space: normal; }
-   #cinemaghar-container .action-info { font-size: 13px; margin-bottom: 15px; }
-   #cinemaghar-container .action-info .info-item { display: block; margin-bottom: 6px; line-height: 1.5; }
-   #cinemaghar-container .action-info strong { display: inline-block; min-width: 65px; font-weight: 600; margin-right: 5px; }
-   #cinemaghar-container .action-info .quality-logo { height: 0.9em; vertical-align: baseline; }
-   #cinemaghar-container .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
-   /* Action buttons container on mobile - ensure all buttons are full width */
-   #cinemaghar-container .action-buttons-container .button:not(.view-button):not(.copy-feedback + .button):not(.bypass-feedback + .button),
-   #cinemaghar-container .action-buttons-container .button.copy-feedback + .button,
-   #cinemaghar-container .action-buttons-container .button.bypass-feedback + .button,
-   #cinemaghar-container .action-buttons-container .youtube-button,
-   #cinemaghar-container .action-buttons-container .imdb-button,
-   #cinemaghar-container .action-buttons-container .share-button,
-   #cinemaghar-container .action-buttons-container .vlc-button,
-   #cinemaghar-container .action-buttons-container .custom-url-toggle-button, /* Make custom url toggle full width */
-   #cinemaghar-container .action-buttons-container .hubcloud-bypass-button, /* Make hubcloud bypass full width */
-   #cinemaghar-container .action-buttons-container .gdflix-bypass-button /* Make gdflix bypass full width */
-    {
-       font-size: 13px;
-       padding: 10px 15px;
-       width: 100%;
-       max-width: none;
-       margin: 0;
-       box-sizing: border-box;
-   }
-   #cinemaghar-container .action-row .action-buttons-container .view-button {
-       width: 100%;
-       padding: 10px 15px !important;
-       font-size: 13px !important;
-       margin: 0;
-       box-sizing: border-box;
-       min-width: unset;
-    }
-   #cinemaghar-container .preview-action-row .action-buttons-container .button {
-       font-size: 13px;
-       padding: 10px 15px;
-       width: 100%;
-       margin: 0;
-       box-sizing: border-box;
-   }
-   #cinemaghar-container .preview-action-row .action-buttons-container .view-button {
-       width: 100%;
-       padding: 10px 15px !important;
-       font-size: 13px !important;
-       min-width: unset;
-   }
-   #cinemaghar-container .action-row .action-buttons-container .copy-feedback,
-   #cinemaghar-container .preview-action-row .action-buttons-container .copy-feedback,
-   #cinemaghar-container .action-row .action-buttons-container .bypass-feedback,
-   #cinemaghar-container .preview-action-row .action-buttons-container .bypass-feedback {
-        margin-left: 0;
-        margin-top: 5px;
-        text-align: center;
-        width: 100%;
-        display: block;
-        vertical-align: initial;
-    }
+   /* Action Row REMOVED/OBSOLETE */
+   /* #cinemaghar-container .action-row td { padding: 15px 10px; display: block; width: auto; white-space: normal; } */
+   /* Removed mobile action row specific content styling */
 
 
   /* Player adjustments */
