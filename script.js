@@ -470,7 +470,6 @@
             <hr class="detail-separator"> ${ /* Add a separator */ }
             ${internalInfoHTML}
             ${buttonsHTML}
-            ${ /* The video player container will be appended here by JS if needed */ }
         `;
     }
 
