@@ -148,19 +148,24 @@
       </div> <!-- End .tab-content -->
   </main> <!-- End #results-area -->
 
-  <!-- Shared Item View Area (Hidden initially) -->
-  <main id="shared-item-view">
+  <!-- Item Detail View Area (Replaces Shared Item View for both Share and View clicks) -->
+  <main id="item-detail-view">
+      <!-- Back button: JS determines which one to show -->
       <button id="backToHomeButtonShared" class="button back-button" onclick="resetToHomepage()">
           ← Back to Home
       </button>
-      <div id="shared-item-content">
+      <button id="backToResultsButton" class="button back-button" onclick="goBackToResults()">
+          ← Back to Results
+      </button>
+
+      <div id="item-detail-content">
           <!-- JS populates this -->
           <div class="loading-inline-spinner" role="status" aria-live="polite">
               <div class="spinner"></div>
-              <span>Loading shared item...</span>
+              <span>Loading item details...</span>
           </div>
       </div>
-  </main> <!-- End #shared-item-view -->
+  </main> <!-- End #item-detail-view -->
 
 
   <!-- Video Player Container - Initially hidden, moved dynamically by JS -->
