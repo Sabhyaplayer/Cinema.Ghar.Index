@@ -1,4 +1,4 @@
-// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE + REFRESH FIX) ---
+// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE) ---
 (function() {
     'use strict';
 
@@ -247,10 +247,18 @@
         }
         // --- End Extraction ---
 
+        // Log extraction results for debugging
+        // if (filename && !processed.extractedTitle) {
+        //     console.warn(`Extraction failed for: "${filename}". Got Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}`);
+        // } else if (filename) {
+        //      console.log(`Extraction result for "${filename}": Title: ${processed.extractedTitle}, Year: ${processed.extractedYear}, Season: ${processed.extractedSeason}, IsSeries: ${processed.isSeries}`);
+        // }
+
         return processed;
     }
 
     // --- HTML Generation (Includes TMDb, HubCloud and GDFLIX Bypass Buttons) ---
+    // This function now generates the content for the item detail view
     function createItemDetailContentHTML(movie, tmdbDetails) { // Added tmdbDetails parameter
         // --- Existing variable setup ---
         const displayFilename = movie.displayFilename;
@@ -891,7 +899,7 @@
          try {
              // 1. Fetch internal item data first
              const params = { id: itemId };
-             const internalData = await fetchApiData(params); // <--- This now throws a cleaner error if fetch fails
+             const internalData = await fetchApiData(params);
 
              if (internalData && internalData.items && internalData.items.length > 0) {
                  const itemRaw = internalData.items[0];
@@ -958,17 +966,12 @@
                  if (videoContainer) videoContainer.style.display = 'none';
 
              } else {
-                 // Handle cases where fetchApiData returned null (aborted) or empty items array
-                 const message = internalData === null
-                    ? `Loading aborted. Please try again.`
-                    : `Item with ID ${sanitize(itemId)} was not found. It might have been removed or the link is incorrect.`;
-                 console.error(`Item detail failed: ${message}`);
-                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: ${message}</div>`;
+                 console.error(`Item not found via API for ID: ${itemId}`);
+                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Item with ID ${sanitize(itemId)} was not found. It might have been removed or the link is incorrect.</div>`;
                  document.title = "Item Not Found - Cinema Ghar Index";
              }
-         } catch (error) { // Catch errors from fetchApiData or TMDb fetch/processing
+         } catch (error) {
              console.error("Failed to fetch or display item detail:", error);
-             // Display the error message thrown by fetchApiData or other issues
              itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item: ${error.message}. Please try again.</div>`;
              document.title = "Error Loading Item - Cinema Ghar Index";
              // Ensure currentItemDetailData is nullified on major error
@@ -1217,114 +1220,27 @@
     function loadStateFromLocalStorage() { try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; console.log("Loaded state:", { sortColumn: currentState.sortColumn, sortDirection: currentState.sortDirection, qualityFilter: currentState.qualityFilter }); } else { currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; console.log("No saved state found, using defaults."); } } catch (e) { console.error("Failed to load or parse state from localStorage:", e); localStorage.removeItem(config.LOCAL_STORAGE_KEY); currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; } currentState.searchTerm = ''; currentState.currentPage = 1; currentState.typeFilter = ''; activeResultsTab = 'allFiles'; currentItemDetailData = null; isShareMode = false; lastFocusedElement = null; }
 
     // --- Initial Data Loading and Setup ---
-
-    // ===========================================================
-    // START: fetchApiData - REVISED FOR ROBUST ERROR HANDLING
-    // ===========================================================
-    async function fetchApiData(params = {}) {
-        if (searchAbortController) {
-            searchAbortController.abort();
-        }
-        searchAbortController = new AbortController();
-        const signal = searchAbortController.signal;
-        const query = new URLSearchParams();
-
-        // Default params for search/list views
-        if (!params.id) { // Only add pagination/sorting/filtering if NOT fetching by specific ID
-            query.set('page', params.page || currentState.currentPage);
-            query.set('limit', params.limit || currentState.limit);
-            query.set('sort', params.sort || currentState.sortColumn);
-            query.set('sortDir', params.sortDir || currentState.sortDirection);
-            const searchTerm = params.search !== undefined ? params.search : currentState.searchTerm;
-            if (searchTerm) query.set('search', searchTerm);
-            const qualityFilter = params.quality !== undefined ? params.quality : currentState.qualityFilter;
-            if (qualityFilter) query.set('quality', qualityFilter);
-            const typeFilter = params.type !== undefined ? params.type : currentState.typeFilter;
-            if (typeFilter) query.set('type', typeFilter);
-        } else { // If fetching by ID, only include the ID
-            query.set('id', params.id);
-        }
-
-        const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`;
-        console.log(`Fetching API: ${url}`);
-        let response; // Declare response outside try
-
-        try {
-            response = await fetch(url, { signal }); // Assign inside try
-
-            // Check response AFTER fetch succeeded and response object exists
-            if (!response) {
-                // This case should theoretically be caught below if fetch truly fails,
-                // but added as an extra safeguard.
-                throw new Error("API Request Failed: No response received.");
-            }
-
-            if (!response.ok) {
-                let errorBody = null;
-                let statusText = response.statusText;
-                let statusCode = response.status;
-                try {
-                    // Try to read error details from the response body
-                    errorBody = await response.json();
-                } catch (_) {
-                    // Ignore if response body is not JSON or empty
+    async function fetchApiData(params = {}) { if (searchAbortController) { searchAbortController.abort(); } searchAbortController = new AbortController(); const signal = searchAbortController.signal; const query = new URLSearchParams(); // Default params for search/list views
+         if (!params.id) { // Only add pagination/sorting/filtering if NOT fetching by specific ID
+             query.set('page', params.page || currentState.currentPage);
+             query.set('limit', params.limit || currentState.limit);
+             query.set('sort', params.sort || currentState.sortColumn);
+             query.set('sortDir', params.sortDir || currentState.sortDirection);
+             const searchTerm = params.search !== undefined ? params.search : currentState.searchTerm;
+             if (searchTerm) query.set('search', searchTerm);
+             const qualityFilter = params.quality !== undefined ? params.quality : currentState.qualityFilter;
+             if (qualityFilter) query.set('quality', qualityFilter);
+             const typeFilter = params.type !== undefined ? params.type : currentState.typeFilter;
+             if (typeFilter) query.set('type', typeFilter);
+         } else { // If fetching by ID, only include the ID
+             query.set('id', params.id);
+         } const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`; console.log(`Fetching API: ${url}`); try { const response = await fetch(url, { signal }); if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); } const data = await response.json(); console.log(`API data received:`, data); // Update total pages in dataset if applicable
+             if (!params.id && tabMappings[activeResultsTab]) {
+                const activePagination = tabMappings[activeResultsTab]?.pagination;
+                if (activePagination && data.totalPages !== undefined) {
+                    activePagination.dataset.totalPages = data.totalPages;
                 }
-                const errorDetails = errorBody?.error || errorBody?.details || `Status: ${statusCode} ${statusText}`;
-                // Throw a structured error for non-ok responses
-                throw new Error(`API Request Failed: ${errorDetails}`);
-            }
-
-            // If response is ok, parse JSON
-            const data = await response.json();
-            console.log(`API data received:`, data);
-
-            // Update total pages in dataset if applicable (only for list views)
-            if (!params.id && tabMappings[activeResultsTab]) {
-               const activePagination = tabMappings[activeResultsTab]?.pagination;
-               if (activePagination && data.totalPages !== undefined) {
-                   activePagination.dataset.totalPages = data.totalPages;
-               }
-            }
-            return data; // Success
-
-        } catch (error) {
-            // Handle AbortError separately
-            if (error.name === 'AbortError') {
-                console.log('API fetch aborted.');
-                return null; // Indicate abortion, handled by caller
-            }
-
-            // Log the original error for debugging purposes
-            console.error(`Error during fetch or processing for ${url}:`, error);
-
-            // Create a user-friendlier error message for other errors (Network, CORS, etc.)
-            let displayErrorMessage = `Failed to fetch data. Check network connection or try again later.`;
-
-            // Optionally append original message if it's potentially informative and NOT the confusing 'ok' error
-            if (error instanceof Error && error.message && !error.message.includes("undefined") && !error.message.includes("reading 'ok'")) {
-                displayErrorMessage += ` (${error.message})`;
-            } else if (!(error instanceof Error)) {
-                 // Handle non-Error throws if necessary
-                 displayErrorMessage += ` (Unknown error type)`;
-            } else {
-                // Keep it generic for the typical "undefined (reading 'ok')" or similar fetch failures
-                displayErrorMessage += ` (Could not reach server or invalid response)`;
-            }
-
-            // Re-throw a new error with the cleaner message for the UI layer
-            throw new Error(displayErrorMessage);
-
-        } finally {
-            // Clean up abort controller reference
-            if (signal === searchAbortController?.signal) {
-                searchAbortController = null;
-            }
-        }
-    }
-    // ===========================================================
-    // END: fetchApiData - REVISED
-    // ===========================================================
-
+             } return data; } catch (error) { if (error.name === 'AbortError') { console.log('API fetch aborted.'); return null; } console.error(`Error fetching data from ${url}:`, error); throw error; } finally { if (signal === searchAbortController?.signal) { searchAbortController = null; } } }
     async function fetchAndRenderResults() { if (currentViewMode !== 'search') return; try { const apiResponse = await fetchApiData(); if (apiResponse === null) return; // Aborted
          renderActiveResultsView(apiResponse); saveStateToLocalStorage(); } catch (error) { console.error("Failed to fetch/render search results:", error); const { tableBody } = tabMappings[activeResultsTab]; if (tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error loading results: ${error.message}. Please try again.</td></tr>`; } Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; }); } }
     function populateQualityFilter(items = []) { if (!qualityFilterSelect) return; const currentSelectedValue = qualityFilterSelect.value; items.forEach(item => { if (item.displayQuality && item.displayQuality !== 'N/A') { uniqueQualities.add(item.displayQuality); } }); const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); }); while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); } sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } }); qualityFilterSelect.value = [...qualityFilterSelect.options].some(opt => opt.value === currentSelectedValue) ? currentSelectedValue : ""; updateFilterIndicator(); }
@@ -1354,10 +1270,7 @@
                              weeklyUpdatesData = localSuggestionData; // Use the full list for updates logic now
                              displayInitialUpdates(); // Display using the fetched data
                          }
-                    } else if (suggestionData === null) {
-                         console.warn("Initial data fetch aborted.");
-                    }
-                     else {
+                    } else {
                         console.warn("Could not load initial data for suggestions/quality filter.");
                          if (currentViewMode === 'homepage' && updatesPreviewList) {
                              updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">Could not load recent updates.</div>';
@@ -1379,10 +1292,9 @@
 
         } catch (error) {
             console.error('FATAL: Failed during app initialization:', error);
-            // Use the displayLoadError for fatal init errors, using the error message from the catch
             displayLoadError(`Error initializing app: ${error.message}. Try refreshing.`);
         } finally {
-            // Only hide loader if not showing item detail (detail view hides it itself in its finally block)
+            // Only hide loader if not showing item detail (detail view hides it itself)
             if (currentViewMode !== 'itemDetail' && pageLoader) {
                 pageLoader.style.display = 'none';
             }
