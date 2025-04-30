@@ -339,7 +339,7 @@
                         </div>
                         ${genresHTML}
                         ${overviewHTML}
-                         ${actorsHTML} ${ /* Optional: Added actors */}
+                        ${actorsHTML}
                     </div>
                 </div>
             `;
