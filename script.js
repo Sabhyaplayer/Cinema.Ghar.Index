@@ -623,31 +623,50 @@
     function showLoadingStateInTables(message = 'Loading...') { const loadingHTML = `<tr><td colspan="6" class="loading-message" role="status" aria-live="polite"><div class="spinner"></div>${sanitize(message)}</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) { mapping.tableBody.innerHTML = loadingHTML; } if (mapping?.pagination) { mapping.pagination.style.display = 'none'; } }); }
 
     // --- Updates Preview Logic ---
-    async function loadUpdatesPreview() { if (currentViewMode !== 'homepage' || !updatesPreviewSection || !updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; showMoreUpdatesButton.style.display = 'none'; updatesPreviewShownCount = 0; weeklyUpdatesData = []; try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_INITIAL_COUNT + config.UPDATES_PREVIEW_LOAD_MORE_COUNT, page: 1 }; // Fetch a bit more initially
-         const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { weeklyUpdatesData = data.items.map(preprocessMovieData); displayInitialUpdates(); console.log(`Loaded initial ${weeklyUpdatesData.length} updates. Total pages from API: ${data.totalPages}`); } else { updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; } } catch (error) { console.error("Failed to load updates preview:", error); updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Could not load updates. ${error.message}</div>`; showMoreUpdatesButton.style.display = 'none'; } }
-    function displayInitialUpdates() { if (!updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = ''; updatesPreviewShownCount = 0; if (weeklyUpdatesData.length === 0) { updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; return; } const initialCount = Math.min(weeklyUpdatesData.length, config.UPDATES_PREVIEW_INITIAL_COUNT); appendUpdatesToPreview(0, initialCount); updatesPreviewShownCount = initialCount; const potentiallyMore = weeklyUpdatesData.length > initialCount; // Check if more *fetched* data exists
-         if (potentiallyMore) { showMoreUpdatesButton.style.display = 'block'; showMoreUpdatesButton.disabled = false; showMoreUpdatesButton.textContent = "Show More"; } else { showMoreUpdatesButton.style.display = 'none'; } }
-    window.appendMoreUpdates = async function() { if (!updatesPreviewList || !showMoreUpdatesButton) return;
-        const currentlyDisplayed = updatesPreviewShownCount;
-        const nextBatchEnd = Math.min(currentlyDisplayed + config.UPDATES_PREVIEW_LOAD_MORE_COUNT, weeklyUpdatesData.length);
+    async function loadUpdatesPreview() {
+        // Check if we are in homepage mode and elements exist
+        if (currentViewMode !== 'homepage' || !updatesPreviewSection || !updatesPreviewList || !showMoreUpdatesButton) {
+            console.log("Skipping updates preview load (not homepage or elements missing).");
+            // Ensure section is hidden if we shouldn't load
+            if (updatesPreviewSection) updatesPreviewSection.style.display = 'none';
+            return;
+        }
 
-        if (nextBatchEnd > currentlyDisplayed) { // More data already fetched
-            showMoreUpdatesButton.disabled = true; showMoreUpdatesButton.textContent = "Loading...";
-            await new Promise(resolve => setTimeout(resolve, 150)); // Simulate loading
-            appendUpdatesToPreview(currentlyDisplayed, nextBatchEnd);
-            updatesPreviewShownCount = nextBatchEnd;
-            if (updatesPreviewShownCount < weeklyUpdatesData.length) {
-                 showMoreUpdatesButton.disabled = false; showMoreUpdatesButton.textContent = "Show More";
+        // Show loading state
+        updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
+        showMoreUpdatesButton.style.display = 'none';
+        // Ensure section is visible while loading (unless it shouldn't load at all)
+        updatesPreviewSection.style.display = 'block'; // <<< Make section visible earlier
+
+        updatesPreviewShownCount = 0;
+        weeklyUpdatesData = [];
+
+        try {
+            const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_INITIAL_COUNT, page: 1 };
+            const data = await fetchApiData(params);
+
+            if (data && data.items && data.items.length > 0) {
+                weeklyUpdatesData = data.items.map(preprocessMovieData);
+                displayInitialUpdates(); // This populates #updates-preview-list
+                console.log(`Loaded initial ${weeklyUpdatesData.length} updates. Total pages from API: ${data.totalPages}`);
+
+                // <<< ADDED/MODIFIED: Ensure the section remains visible after loading data >>>
+                // (Moved visibility setting higher up, confirming it here is redundant but safe)
+                // if (updatesPreviewSection) updatesPreviewSection.style.display = 'block';
+
             } else {
-                 // We've shown all fetched, check if API might have more
-                 const currentApiPageEstimate = Math.ceil(weeklyUpdatesData.length / (config.UPDATES_PREVIEW_INITIAL_COUNT + config.UPDATES_PREVIEW_LOAD_MORE_COUNT)); // Rough estimate
-                 // Ideally, the initial fetch response would tell us totalItems or totalPages
-                 // Without that, assume there might be more and try fetching again
-                 console.log("Displayed all fetched updates, attempting to load more from API.");
-                 await loadMoreUpdatesFromApi();
+                // No updates found
+                updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>';
+                showMoreUpdatesButton.style.display = 'none';
+                // Keep the section visible to show the "No updates" message
+                if (updatesPreviewSection) updatesPreviewSection.style.display = 'block';
             }
-        } else { // No more fetched data, try API
-             await loadMoreUpdatesFromApi();
+        } catch (error) {
+            console.error("Failed to load updates preview:", error);
+            updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Could not load updates. ${error.message}</div>`;
+            showMoreUpdatesButton.style.display = 'none';
+            // Keep the section visible to show the error message
+            if (updatesPreviewSection) updatesPreviewSection.style.display = 'block';
         }
     }
     async function loadMoreUpdatesFromApi() {
