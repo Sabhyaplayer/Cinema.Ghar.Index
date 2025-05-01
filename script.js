@@ -1,4 +1,4 @@
-// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE + ORIGINAL LINK VISIBILITY FIX) ---
+// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE + ORIGINAL LINK VISIBILITY FIX + FETCH API FIX) ---
 (function() {
     'use strict';
 
@@ -426,7 +426,7 @@
         otherLinkButtonsHTML += externalInfoButtonHTML; // Use combined IMDb/TMDb button
         otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
 
-        // --- START OF CORRECTION ---
+        // --- START OF CORRECTION (Original Links Visibility) ---
         // Always show original links if they exist, regardless of bypass button presence
         if (movie.telegram_link) {
              otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
@@ -894,7 +894,16 @@
          try {
              // 1. Fetch internal item data first
              const params = { id: itemId };
-             const internalData = await fetchApiData(params);
+             const internalData = await fetchApiData(params); // Uses the corrected fetchApiData
+
+             if (!internalData) { // Check if fetchApiData returned null (e.g., aborted) or threw before returning
+                 console.error(`Failed to get internal data for ID: ${itemId}. Fetch might have been aborted or failed.`);
+                 // Display a specific error if internalData is null/undefined after fetch
+                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Could not retrieve data for item ID ${sanitize(itemId)}. The request may have been interrupted or failed. Please try again.</div>`;
+                 document.title = "Error Loading Item - Cinema Ghar Index";
+                 return; // Stop further execution for this item
+             }
+
 
              if (internalData && internalData.items && internalData.items.length > 0) {
                  const itemRaw = internalData.items[0];
@@ -966,14 +975,16 @@
                  document.title = "Item Not Found - Cinema Ghar Index";
              }
          } catch (error) {
+             // This catch block now primarily handles errors thrown from fetchApiData (like the API error or the new defensive check error)
              console.error("Failed to fetch or display item detail:", error);
+             // Display the error message that fetchApiData threw
              itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item: ${error.message}. Please try again.</div>`;
              document.title = "Error Loading Item - Cinema Ghar Index";
              // Ensure currentItemDetailData is nullified on major error
              currentItemDetailData = null;
          } finally {
              // Ensure view mode is correct and scroll to top
-             setViewMode('itemDetail');
+             setViewMode('itemDetail'); // Ensure correct view mode even after error
              window.scrollTo({ top: 0, behavior: 'smooth' });
              // Hide page loader if it's still visible
              if (pageLoader && pageLoader.style.display !== 'none') {
@@ -1215,27 +1226,109 @@
     function loadStateFromLocalStorage() { try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; console.log("Loaded state:", { sortColumn: currentState.sortColumn, sortDirection: currentState.sortDirection, qualityFilter: currentState.qualityFilter }); } else { currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; console.log("No saved state found, using defaults."); } } catch (e) { console.error("Failed to load or parse state from localStorage:", e); localStorage.removeItem(config.LOCAL_STORAGE_KEY); currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; } currentState.searchTerm = ''; currentState.currentPage = 1; currentState.typeFilter = ''; activeResultsTab = 'allFiles'; currentItemDetailData = null; isShareMode = false; lastFocusedElement = null; }
 
     // --- Initial Data Loading and Setup ---
-    async function fetchApiData(params = {}) { if (searchAbortController) { searchAbortController.abort(); } searchAbortController = new AbortController(); const signal = searchAbortController.signal; const query = new URLSearchParams(); // Default params for search/list views
-         if (!params.id) { // Only add pagination/sorting/filtering if NOT fetching by specific ID
-             query.set('page', params.page || currentState.currentPage);
-             query.set('limit', params.limit || currentState.limit);
-             query.set('sort', params.sort || currentState.sortColumn);
-             query.set('sortDir', params.sortDir || currentState.sortDirection);
-             const searchTerm = params.search !== undefined ? params.search : currentState.searchTerm;
-             if (searchTerm) query.set('search', searchTerm);
-             const qualityFilter = params.quality !== undefined ? params.quality : currentState.qualityFilter;
-             if (qualityFilter) query.set('quality', qualityFilter);
-             const typeFilter = params.type !== undefined ? params.type : currentState.typeFilter;
-             if (typeFilter) query.set('type', typeFilter);
-         } else { // If fetching by ID, only include the ID
-             query.set('id', params.id);
-         } const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`; console.log(`Fetching API: ${url}`); try { const response = await fetch(url, { signal }); if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); } const data = await response.json(); console.log(`API data received:`, data); // Update total pages in dataset if applicable
-             if (!params.id && tabMappings[activeResultsTab]) {
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // START OF CORRECTED fetchApiData FUNCTION
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    async function fetchApiData(params = {}) {
+        if (searchAbortController) {
+            searchAbortController.abort();
+        }
+        searchAbortController = new AbortController();
+        const signal = searchAbortController.signal;
+        const query = new URLSearchParams();
+
+        // Default params for search/list views
+        if (!params.id) { // Only add pagination/sorting/filtering if NOT fetching by specific ID
+            query.set('page', params.page || currentState.currentPage);
+            query.set('limit', params.limit || currentState.limit);
+            query.set('sort', params.sort || currentState.sortColumn);
+            query.set('sortDir', params.sortDir || currentState.sortDirection);
+            const searchTerm = params.search !== undefined ? params.search : currentState.searchTerm;
+            if (searchTerm) query.set('search', searchTerm);
+            const qualityFilter = params.quality !== undefined ? params.quality : currentState.qualityFilter;
+            if (qualityFilter) query.set('quality', qualityFilter);
+            const typeFilter = params.type !== undefined ? params.type : currentState.typeFilter;
+            if (typeFilter) query.set('type', typeFilter);
+        } else { // If fetching by ID, only include the ID
+            query.set('id', params.id);
+        }
+
+        const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`;
+        console.log(`Fetching API: ${url}`);
+
+        try {
+            const response = await fetch(url, { signal });
+
+            // --- Defensive Check ---
+            // Check if fetch somehow returned a non-response object
+            if (!response) {
+                 console.error(`!!! FETCH API call to ${url} returned a non-response value:`, response);
+                 // Throw a specific error for this unexpected case
+                 throw new Error(`API Error: Fetch for ${url} did not return a valid response object.`);
+            }
+            // --- End Defensive Check ---
+
+            if (!response.ok) {
+                let errorBody = null;
+                let errorDetails = `Status: ${response.status}`; // Default error detail
+
+                try {
+                    // Try to parse JSON first, as that's the expected error format
+                    errorBody = await response.json();
+                    errorDetails = errorBody?.error || errorBody?.details || errorDetails; // Use details from JSON if available
+                    console.warn(`API Error Response (JSON) from ${url}:`, errorBody);
+                } catch (jsonError) {
+                    // If JSON parsing fails, try reading the response as text
+                    console.warn(`Failed to parse error response as JSON from ${url} (Status: ${response.status}). Trying text...`);
+                    try {
+                        const errorText = await response.text();
+                        errorDetails = errorText || errorDetails; // Use text if available and not empty
+                        console.warn(`API Error Response (Text) from ${url}:`, errorText);
+                    } catch (textError) {
+                        console.error(`Failed to read error response as text from ${url}:`, textError);
+                        // Stick with the original status code as the detail
+                    }
+                }
+                 // Throw the error with the best details we could gather
+                 throw new Error(`API Error: ${errorDetails}`);
+            }
+
+            // If response.ok is true
+            const data = await response.json();
+            console.log(`API data received successfully for ${url}:`, data);
+
+            // Update total pages in dataset if applicable (only for list views)
+            if (!params.id && tabMappings[activeResultsTab]) {
                 const activePagination = tabMappings[activeResultsTab]?.pagination;
                 if (activePagination && data.totalPages !== undefined) {
                     activePagination.dataset.totalPages = data.totalPages;
                 }
-             } return data; } catch (error) { if (error.name === 'AbortError') { console.log('API fetch aborted.'); return null; } console.error(`Error fetching data from ${url}:`, error); throw error; } finally { if (signal === searchAbortController?.signal) { searchAbortController = null; } } }
+            }
+            return data; // Return the successfully fetched data
+
+        } catch (error) {
+            // Log detailed error information BEFORE re-throwing or returning null
+            console.error(`!!! ERROR CAUGHT IN fetchApiData for URL: ${url} !!!`);
+            console.error("fetchApiData - Error Type:", error?.name);
+            console.error("fetchApiData - Error Message:", error?.message);
+            // console.error("fetchApiData - Error Stack:", error?.stack); // Optional: Stack trace can be noisy
+
+            if (error.name === 'AbortError') {
+                console.log('API fetch aborted.');
+                return null; // Return null for aborted requests
+            }
+            // Re-throw any other errors to be caught by the calling function (e.g., displayItemDetail)
+            throw error;
+        } finally {
+            if (signal === searchAbortController?.signal) {
+                searchAbortController = null;
+            }
+        }
+    }
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // END OF CORRECTED fetchApiData FUNCTION
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
     async function fetchAndRenderResults() { if (currentViewMode !== 'search') return; try { const apiResponse = await fetchApiData(); if (apiResponse === null) return; // Aborted
          renderActiveResultsView(apiResponse); saveStateToLocalStorage(); } catch (error) { console.error("Failed to fetch/render search results:", error); const { tableBody } = tabMappings[activeResultsTab]; if (tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error loading results: ${error.message}. Please try again.</td></tr>`; } Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; }); } }
     function populateQualityFilter(items = []) { if (!qualityFilterSelect) return; const currentSelectedValue = qualityFilterSelect.value; items.forEach(item => { if (item.displayQuality && item.displayQuality !== 'N/A') { uniqueQualities.add(item.displayQuality); } }); const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); }); while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); } sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } }); qualityFilterSelect.value = [...qualityFilterSelect.options].some(opt => opt.value === currentSelectedValue) ? currentSelectedValue : ""; updateFilterIndicator(); }
