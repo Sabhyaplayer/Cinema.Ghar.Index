@@ -1,4 +1,4 @@
-// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE + ORIGINAL LINK VISIBILITY FIX) ---
+// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE + ORIGINAL LINK VISIBILITY FIX + ID FETCH FIX v2) ---
 (function() {
     'use strict';
 
@@ -90,6 +90,7 @@
     let bypassFeedbackTimeout; // Timeout for bypass feedback messages
     let suggestionDebounceTimeout;
     let searchAbortController = null;
+    let itemDetailAbortController = null; // AbortController for item detail fetches
     let isInitialLoad = true; // Flag to differentiate initial load from navigation
     let currentViewMode = 'homepage'; // 'homepage', 'search', 'itemDetail'
     let isShareMode = false; // Flag to know if itemDetail view is from shareId or viewId
@@ -370,8 +371,6 @@
                 </div>
             `;
         } else if (movie.extractedTitle && !tmdbDetails) { // Check if we tried to fetch (had title) but details are null
-             // Check if tmdbDetails is explicitly null (meaning fetch failed or returned no results)
-             // A simple check (!tmdbDetails) is sufficient here since null/undefined are falsy.
              tmdbSectionHTML = `<div class="tmdb-fetch-failed">Could not fetch additional details from TMDb.</div>`;
         }
         // If no extracted title, this section remains empty (tmdbSectionHTML = '')
@@ -426,19 +425,16 @@
         otherLinkButtonsHTML += externalInfoButtonHTML; // Use combined IMDb/TMDb button
         otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
 
-        // --- START OF CORRECTION ---
-        // Always show original links if they exist, regardless of bypass button presence
+        // Always show original links if they exist
         if (movie.telegram_link) {
              otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
         }
-        if (movie.gdflix_link) { // REMOVED: && !bypassButtonsHTML.includes('bypass-gdflix')
+        if (movie.gdflix_link) {
             otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`;
         }
-        if (movie.hubcloud_link) { // REMOVED: && !bypassButtonsHTML.includes('bypass-hubcloud')
+        if (movie.hubcloud_link) {
             otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(movie.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`;
         }
-        // --- END OF CORRECTION ---
-
         if (movie.filepress_link) otherLinkButtonsHTML += `<a class="button filepress-button" href="${sanitize(movie.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
         if (movie.gdtot_link) otherLinkButtonsHTML += `<a class="button gdtot-button" href="${sanitize(movie.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
         // Share Button
@@ -540,8 +536,8 @@
             activeResultsTab = 'allFiles';
             currentState.currentPage = 1;
             currentState.typeFilter = '';
-            currentItemDetailData = null; // Clear item detail data
-            isShareMode = false;
+            // currentItemDetailData = null; // Moved clearing to handleUrlChange/goBack
+            // isShareMode = false; // Moved clearing to handleUrlChange/goBack
             // Load updates if needed
             if (weeklyUpdatesData.length > 0) {
                 displayInitialUpdates();
@@ -553,16 +549,24 @@
             }
             document.title = "Cinema Ghar Index";
         } else if (showSearch) {
-             currentItemDetailData = null; // Clear item detail data
-             isShareMode = false;
+             // currentItemDetailData = null; // Moved clearing to handleUrlChange/goBack
+             // isShareMode = false; // Moved clearing to handleUrlChange/goBack
             document.title = "Cinema Ghar Index"; // Or update with search term later
         } else if (showItemDetail) {
             // Title is set when item data loads
             // Back button visibility is handled in displayItemDetail
+            // Ensure other views are hidden if called directly
+            if (searchFocusArea) searchFocusArea.style.display = 'none';
+            if (resultsArea) resultsArea.style.display = 'none';
+            if (updatesPreviewSection) updatesPreviewSection.style.display = 'none';
+            if (pageFooter) pageFooter.style.display = 'none';
         }
 
-        saveStateToLocalStorage(); // Save relevant state
-        isInitialLoad = false; // Any view change after init means it's not the initial load
+        // Don't save state during initial load's setViewMode calls
+        if (!isInitialLoad) {
+             saveStateToLocalStorage(); // Save relevant state
+        }
+        // isInitialLoad = false; // Moved to end of initializeApp
     }
 
     window.resetToHomepage = function(event) {
@@ -570,12 +574,21 @@
         // Clean the URL, removing query parameters like ?viewId= or ?shareId=
         if (window.history.pushState) {
             const cleanUrl = window.location.origin + window.location.pathname;
-            window.history.pushState({ path: cleanUrl }, '', cleanUrl);
+            // Only push state if URL actually changes
+            if (window.location.search !== '') {
+                window.history.pushState({ path: cleanUrl }, '', cleanUrl);
+            }
         } else {
             window.location.hash = ''; // Fallback
         }
-        isShareMode = false;
+        // Clear state related to item detail view
         currentItemDetailData = null;
+        isShareMode = false;
+        if (itemDetailAbortController) { // Abort pending detail fetch if any
+            itemDetailAbortController.abort();
+            itemDetailAbortController = null;
+        }
+
         lastFocusedElement = event?.target;
         setViewMode('homepage');
         if (searchInput) {
@@ -586,8 +599,13 @@
     // New function to go back from item detail view
     window.goBackToResults = function() {
         console.log("Navigating back from item detail view...");
-        currentItemDetailData = null; // Clear data before going back
+        // Clear state *before* navigating back
+        currentItemDetailData = null;
         isShareMode = false;
+         if (itemDetailAbortController) {
+            itemDetailAbortController.abort();
+            itemDetailAbortController = null;
+        }
         // Use browser history to go back. The popstate listener will handle the view update.
         history.back();
     }
@@ -601,6 +619,13 @@
 
     // Handle URL changes (initial load and popstate)
     function handleUrlChange(isPopState = false) {
+        // Abort any pending item detail fetch if URL changes
+        if (itemDetailAbortController) {
+            itemDetailAbortController.abort();
+            itemDetailAbortController = null;
+            console.log("Aborted pending item detail fetch due to URL change.");
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const shareId = urlParams.get('shareId');
         const viewId = urlParams.get('viewId');
@@ -608,37 +633,57 @@
         console.log(`Handling URL Change: shareId=${shareId}, viewId=${viewId}, isPopState=${isPopState}, isInitialLoad=${isInitialLoad}`);
 
         if (shareId) {
-            console.log("Displaying shared item:", shareId);
+            console.log("URL contains shareId:", shareId);
             // Check if already showing this item to prevent redundant loads on history nav
-            if (currentViewMode !== 'itemDetail' || currentItemDetailData?.id !== shareId) {
+            if (currentViewMode !== 'itemDetail' || !currentItemDetailData || currentItemDetailData.id !== shareId) {
+                 console.log("Triggering displayItemDetail for shareId:", shareId);
                  displayItemDetail(shareId, true); // true for isShare
+            } else {
+                console.log("Already displaying shared item:", shareId);
+                 // Ensure view mode is correctly set even if data is already loaded (e.g., navigating back)
+                 setViewMode('itemDetail');
+                 // Re-apply back button visibility just in case
+                 if (backToHomeButtonShared) backToHomeButtonShared.style.display = 'inline-flex';
+                 if (backToResultsButton) backToResultsButton.style.display = 'none';
             }
         } else if (viewId) {
-            console.log("Displaying viewed item:", viewId);
+            console.log("URL contains viewId:", viewId);
              // Check if already showing this item
-            if (currentViewMode !== 'itemDetail' || currentItemDetailData?.id !== viewId) {
+            if (currentViewMode !== 'itemDetail' || !currentItemDetailData || currentItemDetailData.id !== viewId) {
+                 console.log("Triggering displayItemDetail for viewId:", viewId);
                 displayItemDetail(viewId, false); // false for isShare
+            } else {
+                 console.log("Already displaying viewed item:", viewId);
+                 // Ensure view mode is correctly set
+                 setViewMode('itemDetail');
+                 // Re-apply back button visibility
+                 if (backToHomeButtonShared) backToHomeButtonShared.style.display = 'none';
+                 if (backToResultsButton) backToResultsButton.style.display = 'inline-flex';
             }
         } else {
             // No shareId or viewId in URL
-            // If we are navigating *back* to a state without these params, or on initial load
-            if (currentViewMode !== 'homepage' && currentViewMode !== 'search') {
-                console.log("Navigating back to homepage or search results view (from detail view potentially).");
-                // Check if there was a search term saved previously to decide between search/homepage
-                // For simplicity now, just go to homepage if not already there or in search view.
-                // A more complex state management could restore the last search view here.
+            console.log("No shareId or viewId found in URL.");
+            // Clear item detail state only if we were previously in item detail mode
+            if (currentViewMode === 'itemDetail') {
+                currentItemDetailData = null;
+                isShareMode = false;
+            }
+
+            // Decide view: If coming FROM detail via popstate/back, go to homepage (simplification).
+            // If initial load without ID, go to homepage.
+            // If already on homepage/search, stay there.
+            if (currentViewMode === 'itemDetail' || (isInitialLoad && currentViewMode !== 'search')) {
+                 console.log("Setting view to homepage (from detail or initial load).");
                  setViewMode('homepage');
-                 // If currentState still holds search term, perhaps trigger a search?
-                 // if(currentState.searchTerm) { handleSearchSubmit() } else { setViewMode('homepage'); }
             } else {
-                 // Already on homepage or search view, do nothing extra,
-                 // or if initial load, ensure homepage is set correctly.
-                 if (isInitialLoad) {
-                     setViewMode('homepage');
+                 console.log(`Staying in current view mode: ${currentViewMode}`);
+                 // If initial load lands here (e.g. ?search=...), ensure the view is correct
+                 if (isInitialLoad && currentViewMode === 'search') {
+                    setViewMode('search'); // Re-assert search view
                  }
             }
         }
-        isInitialLoad = false; // Mark initial load as done after first handling
+        // isInitialLoad = false; // Moved to end of initializeApp
     }
 
 
@@ -649,8 +694,17 @@
     window.handleSearchSubmit = function() { if (suggestionsContainer) { suggestionsContainer.style.display = 'none'; } const searchTerm = searchInput.value.trim(); console.log("Handling search submit for:", searchTerm); if (searchInput) { searchInput.blur(); } if (searchTerm.length === 0 && currentViewMode !== 'homepage') { resetToHomepage(); return; } if (searchTerm.length === 0 && currentViewMode === 'homepage') { return; } // If already home and search is cleared, do nothing
         // Clean URL if navigating to search from item detail
         if (currentViewMode === 'itemDetail') {
+             // Abort pending detail fetch if any
+            if (itemDetailAbortController) {
+                itemDetailAbortController.abort();
+                itemDetailAbortController = null;
+            }
+            currentItemDetailData = null; // Clear data
+            isShareMode = false;
             const cleanUrl = window.location.origin + window.location.pathname;
-             history.pushState({ path: cleanUrl }, '', cleanUrl);
+            if (window.location.search !== '') {
+                 history.pushState({ path: cleanUrl }, '', cleanUrl);
+            }
         }
         setViewMode('search');
         activeResultsTab = 'allFiles';
@@ -679,7 +733,7 @@
     function showLoadingStateInTables(message = 'Loading...') { const loadingHTML = `<tr><td colspan="6" class="loading-message" role="status" aria-live="polite"><div class="spinner"></div>${sanitize(message)}</td></tr>`; Object.values(tabMappings).forEach(mapping => { if (mapping?.tableBody) { mapping.tableBody.innerHTML = loadingHTML; } if (mapping?.pagination) { mapping.pagination.style.display = 'none'; } }); }
 
     // --- Updates Preview Logic ---
-    async function loadUpdatesPreview() { if (currentViewMode !== 'homepage' || !updatesPreviewSection || !updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; showMoreUpdatesButton.style.display = 'none'; updatesPreviewShownCount = 0; weeklyUpdatesData = []; try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_INITIAL_COUNT, page: 1 }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { weeklyUpdatesData = data.items.map(preprocessMovieData); displayInitialUpdates(); console.log(`Loaded initial ${weeklyUpdatesData.length} updates. Total pages from API: ${data.totalPages}`); } else { updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; } } catch (error) { console.error("Failed to load updates preview:", error); updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Could not load updates. ${error.message}</div>`; showMoreUpdatesButton.style.display = 'none'; } }
+    async function loadUpdatesPreview() { if (currentViewMode !== 'homepage' || !updatesPreviewSection || !updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; showMoreUpdatesButton.style.display = 'none'; updatesPreviewShownCount = 0; weeklyUpdatesData = []; try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_INITIAL_COUNT, page: 1 }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { weeklyUpdatesData = data.items.map(preprocessMovieData); displayInitialUpdates(); console.log(`Loaded initial ${weeklyUpdatesData.length} updates. Total pages from API: ${data.totalPages}`); } else { updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; } } catch (error) { if (error.name !== 'AbortError') { console.error("Failed to load updates preview:", error); updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Could not load updates. ${error.message}</div>`; } showMoreUpdatesButton.style.display = 'none'; } }
     function displayInitialUpdates() { if (!updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = ''; updatesPreviewShownCount = 0;
          if (weeklyUpdatesData.length === 0) { updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; return; } const initialCount = Math.min(weeklyUpdatesData.length, config.UPDATES_PREVIEW_INITIAL_COUNT); appendUpdatesToPreview(0, initialCount); updatesPreviewShownCount = initialCount; const potentiallyMore = weeklyUpdatesData.length >= config.UPDATES_PREVIEW_INITIAL_COUNT; // Check if the *first* batch filled the initial count
          if (potentiallyMore) { // If first fetch returned max items, assume there might be more
@@ -690,60 +744,53 @@
              showMoreUpdatesButton.style.display = 'none';
          } }
     window.appendMoreUpdates = async function() {
-    if (!updatesPreviewList || !showMoreUpdatesButton) return;
-    showMoreUpdatesButton.disabled = true;
-    showMoreUpdatesButton.textContent = "Loading...";
-    // Calculate next page based on items *currently* loaded vs the 'load more' count
-    const currentPage = Math.floor(updatesPreviewShownCount / config.UPDATES_PREVIEW_LOAD_MORE_COUNT);
-    const nextPage = currentPage + 1; // Always fetch the next logical page
-    console.log(`Attempting to load page ${nextPage} for updates preview (currently showing ${updatesPreviewShownCount}).`);
+        if (!updatesPreviewList || !showMoreUpdatesButton) return;
+        showMoreUpdatesButton.disabled = true;
+        showMoreUpdatesButton.textContent = "Loading...";
+        const currentPage = Math.floor(updatesPreviewShownCount / config.UPDATES_PREVIEW_LOAD_MORE_COUNT);
+        const nextPage = currentPage + 1;
+        console.log(`Attempting to load page ${nextPage} for updates preview (currently showing ${updatesPreviewShownCount}).`);
+        try {
+            const params = {
+                sort: 'lastUpdated',
+                sortDir: 'desc',
+                limit: config.UPDATES_PREVIEW_LOAD_MORE_COUNT,
+                page: nextPage
+            };
+            const data = await fetchApiData(params);
 
-    try {
-        const params = {
-            sort: 'lastUpdated',
-            sortDir: 'desc',
-            limit: config.UPDATES_PREVIEW_LOAD_MORE_COUNT,
-            page: nextPage
-        };
-        const data = await fetchApiData(params);
+            if (data && data.items && data.items.length > 0) {
+                const newItems = data.items.map(preprocessMovieData);
+                const startIndex = weeklyUpdatesData.length;
+                weeklyUpdatesData.push(...newItems);
+                appendUpdatesToPreview(startIndex, weeklyUpdatesData.length);
+                updatesPreviewShownCount += newItems.length;
+                console.log(`Loaded ${newItems.length} more updates. Total now showing: ${updatesPreviewShownCount}. Current API page fetched: ${data.page}, Total API pages: ${data.totalPages}`);
 
-        if (data && data.items && data.items.length > 0) {
-            const newItems = data.items.map(preprocessMovieData);
-            const startIndex = weeklyUpdatesData.length; // Index in weeklyUpdatesData where new items *will* start (since we append below)
-
-            // Add the newly fetched items to the main data array FIRST
-            weeklyUpdatesData.push(...newItems);
-
-            // Now append the items using the updated weeklyUpdatesData
-            // appendUpdatesToPreview will slice from weeklyUpdatesData[startIndex] onwards
-            appendUpdatesToPreview(startIndex, weeklyUpdatesData.length); // Pass correct indices relative to the FULL array
-
-            updatesPreviewShownCount += newItems.length; // Increment shown count *after* successful append
-            console.log(`Loaded ${newItems.length} more updates. Total now showing: ${updatesPreviewShownCount}. Current API page fetched: ${data.page}, Total API pages: ${data.totalPages}`); // Log shown count
-
-            // Check if we should stop loading more
-            if (data.page >= data.totalPages || newItems.length < config.UPDATES_PREVIEW_LOAD_MORE_COUNT) {
-                // Stop loading if we reached the last page OR the API returned fewer items than requested
-                showMoreUpdatesButton.textContent = "All Updates Shown";
-                showMoreUpdatesButton.disabled = true; // Keep disabled
-                // Optionally hide after a delay: setTimeout(() => { showMoreUpdatesButton.style.display = 'none'; }, 2000);
+                if (data.page >= data.totalPages || newItems.length < config.UPDATES_PREVIEW_LOAD_MORE_COUNT) {
+                    showMoreUpdatesButton.textContent = "All Updates Shown";
+                    showMoreUpdatesButton.disabled = true;
+                } else {
+                    showMoreUpdatesButton.disabled = false;
+                    showMoreUpdatesButton.textContent = "Show More";
+                }
             } else {
-                showMoreUpdatesButton.disabled = false;
-                showMoreUpdatesButton.textContent = "Show More";
+                console.log("No more updates found from API.");
+                showMoreUpdatesButton.textContent = "No More Updates";
+                showMoreUpdatesButton.disabled = true;
             }
-        } else {
-            // API returned no items for this page
-            console.log("No more updates found from API.");
-            showMoreUpdatesButton.textContent = "No More Updates";
-            showMoreUpdatesButton.disabled = true;
+        } catch (error) {
+             if (error.name !== 'AbortError') {
+                console.error("Failed to load more updates:", error);
+                showMoreUpdatesButton.textContent = "Error Loading";
+                showMoreUpdatesButton.disabled = false; // Allow retry
+             } else {
+                 // If aborted, revert button state without error message
+                 showMoreUpdatesButton.disabled = false;
+                 showMoreUpdatesButton.textContent = "Show More";
+             }
         }
-    } catch (error) {
-        console.error("Failed to load more updates:", error);
-        showMoreUpdatesButton.textContent = "Error Loading";
-        // Re-enable button to allow retry after error
-        showMoreUpdatesButton.disabled = false;
     }
-}
     function appendUpdatesToPreview(startIndex, endIndex) { // startIndex/endIndex are relative to the data source (weeklyUpdatesData)
         if (!updatesPreviewList) return;
         const fragment = document.createDocumentFragment();
@@ -848,24 +895,35 @@
         console.log(`Navigating to view item: ${itemId}`);
         lastFocusedElement = document.activeElement; // Store focus before navigation
 
+        // Abort any pending detail fetch *before* starting the new one
+        if (itemDetailAbortController) {
+            itemDetailAbortController.abort();
+             itemDetailAbortController = null;
+            console.log("Aborted previous item detail fetch before navigating.");
+        }
+
         const newUrl = `${window.location.origin}${window.location.pathname}?viewId=${encodeURIComponent(itemId)}`;
 
-        // Use pushState to change URL without full reload
-        try {
-            // Check if already on the same view to prevent pushing identical state
-             const currentParams = new URLSearchParams(window.location.search);
-             if(currentParams.get('viewId') !== itemId) {
+        // Check if already on the same view URL to prevent pushing identical state
+        const currentParams = new URLSearchParams(window.location.search);
+        const isSameView = currentParams.get('viewId') === String(itemId) && !currentParams.has('shareId'); // Ensure shareId isn't present
+
+        if (!isSameView) {
+             try {
                 history.pushState({ viewId: itemId }, '', newUrl);
-             } else {
-                 console.log("Already on the correct viewId URL, not pushing state.");
-             }
-            // Now display the content for this item ID (will fetch data)
-            displayItemDetail(itemId, false); // false = not a share link
-        } catch (e) {
-            console.error("History pushState failed:", e);
-            // Fallback: might need a full page load if pushState fails badly
-             // window.location.href = newUrl; // Uncomment for full reload fallback (use cautiously)
+                console.log("Pushed history state for viewId:", itemId);
+            } catch (e) {
+                console.error("History pushState failed:", e);
+                // Fallback: might need a full page load if pushState fails badly
+                // window.location.href = newUrl; // Use cautiously
+            }
+        } else {
+            console.log("Already on the correct viewId URL, not pushing state.");
         }
+
+        // Now display the content for this item ID (will fetch data)
+        // This ensures displayItemDetail runs even if the URL didn't need pushing (e.g., clicking same item again)
+        displayItemDetail(itemId, false); // false = not a share link
     }
 
 
@@ -874,111 +932,158 @@
 
 
     // ==================================================================
-    // START OF CORRECTED BLOCK FOR ITEM DETAIL / TMDB / BYPASS (FROM PREVIOUS FIX)
+    // START OF CORRECTED BLOCK FOR ITEM DETAIL / TMDB / BYPASS
     // ==================================================================
 
-    // --- Item Detail Display Logic (Handles both shareId and viewId + TMDb Persistence) ---
+    // --- Item Detail Display Logic (Handles both shareId and viewId + TMDb Persistence + AbortController) ---
     async function displayItemDetail(itemId, isFromShareLink) {
-         if (!itemId || !itemDetailView || !itemDetailContent) return;
+         if (!itemId || !itemDetailView || !itemDetailContent) {
+              console.error("displayItemDetail aborted: Missing itemId, view, or content element.");
+              return;
+         }
+
+         // Abort any previous fetch still in progress
+         if (itemDetailAbortController) {
+            itemDetailAbortController.abort();
+            itemDetailAbortController = null;
+             console.log("Aborted previous item detail fetch.");
+         }
+         // Create a new controller for this fetch
+         itemDetailAbortController = new AbortController();
+         const signal = itemDetailAbortController.signal;
+
+         console.log(`Attempting to display item detail for ID: ${itemId}, isShare: ${isFromShareLink}`);
 
          isShareMode = isFromShareLink; // Set the mode flag
-         itemDetailContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading item details...</span></div>`;
-         setViewMode('itemDetail'); // Set the main view mode
-         currentItemDetailData = null; // Clear previous data
-         // TMDb details will be stored on currentItemDetailData
+         // Ensure the view is set to detail *before* showing loading state
+         setViewMode('itemDetail');
+         itemDetailContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading item details (ID: ${sanitize(itemId)})...</span></div>`;
+         currentItemDetailData = null; // Clear previous data definitively
 
-         // Show the correct back button
+         // Show the correct back button immediately
          if (backToHomeButtonShared) backToHomeButtonShared.style.display = isShareMode ? 'inline-flex' : 'none';
          if (backToResultsButton) backToResultsButton.style.display = isShareMode ? 'none' : 'inline-flex';
 
          try {
-             // 1. Fetch internal item data first
+             console.log(`Fetching internal data for ID: ${itemId}`);
+             // 1. Fetch internal item data first, passing the signal
              const params = { id: itemId };
-             const internalData = await fetchApiData(params);
+             const internalData = await fetchApiData(params, signal); // <<< Pass signal
+
+             // Check if the fetch was aborted after starting
+             if (signal.aborted) {
+                console.log(`Item detail fetch aborted for ID: ${itemId}`);
+                // Optional: Show an aborted message or leave the loading spinner?
+                // itemDetailContent.innerHTML = `<div class="status-message">Loading cancelled.</div>`;
+                return; // Stop processing if aborted
+             }
 
              if (internalData && internalData.items && internalData.items.length > 0) {
                  const itemRaw = internalData.items[0];
-                 currentItemDetailData = preprocessMovieData(itemRaw); // Store the fetched internal data (includes tmdbDetails = null initialization)
+                 currentItemDetailData = preprocessMovieData(itemRaw); // Store the fetched internal data
 
-                 console.log(`Displaying item detail for: ${currentItemDetailData.displayFilename} (isShare: ${isShareMode})`);
+                 console.log(`Successfully fetched internal data for: ${currentItemDetailData.displayFilename}`);
 
                  // Set title early based on internal data
                  document.title = `${currentItemDetailData.displayFilename || 'Item Detail'} - Cinema Ghar`;
 
-                 // --- START TMDb Fetch ---
-                 let tmdbFetchAttempted = false; // Flag to know if we tried fetching
+                 // --- START TMDb Fetch (No separate abort needed here unless it becomes very slow) ---
+                 let tmdbFetchAttempted = false;
                  if (currentItemDetailData.extractedTitle) {
-                     tmdbFetchAttempted = true; // Mark that we are attempting the fetch
-                     console.log(`Fetching TMDb details for: Title='${currentItemDetailData.extractedTitle}', Year='${currentItemDetailData.extractedYear || 'N/A'}', Type='${currentItemDetailData.isSeries ? 'tv' : 'movie'}'`);
-                     const tmdbQuery = new URLSearchParams();
-                     tmdbQuery.set('query', currentItemDetailData.extractedTitle);
-                     tmdbQuery.set('type', currentItemDetailData.isSeries ? 'tv' : 'movie');
-                     if (!currentItemDetailData.isSeries && currentItemDetailData.extractedYear) {
-                         tmdbQuery.set('year', currentItemDetailData.extractedYear);
-                     }
+                    tmdbFetchAttempted = true;
+                    console.log(`Fetching TMDb details for: Title='${currentItemDetailData.extractedTitle}', Year='${currentItemDetailData.extractedYear || 'N/A'}', Type='${currentItemDetailData.isSeries ? 'tv' : 'movie'}'`);
+                    const tmdbQuery = new URLSearchParams();
+                    tmdbQuery.set('query', currentItemDetailData.extractedTitle);
+                    tmdbQuery.set('type', currentItemDetailData.isSeries ? 'tv' : 'movie');
+                    if (!currentItemDetailData.isSeries && currentItemDetailData.extractedYear) {
+                        tmdbQuery.set('year', currentItemDetailData.extractedYear);
+                    }
 
-                     const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
-                     const tmdbController = new AbortController();
-                     const tmdbTimeoutId = setTimeout(() => tmdbController.abort(), config.TMDB_FETCH_TIMEOUT);
+                    const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
+                    const tmdbController = new AbortController(); // Keep TMDb's own controller/timeout
+                    const tmdbTimeoutId = setTimeout(() => tmdbController.abort(), config.TMDB_FETCH_TIMEOUT);
 
-                     try {
-                         const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
-                         clearTimeout(tmdbTimeoutId);
-                         if (tmdbResponse.ok) {
-                             const fetchedTmdbData = await tmdbResponse.json();
-                             // --- Store fetched data on the state object ---
-                             currentItemDetailData.tmdbDetails = fetchedTmdbData;
-                             console.log("TMDb details fetched and stored successfully:", currentItemDetailData.tmdbDetails);
-                         } else {
-                             const errorBody = await tmdbResponse.text(); // Read body even if not JSON
-                             console.warn(`Failed to fetch TMDb details (${tmdbResponse.status}): ${errorBody}`);
-                             // Ensure tmdbDetails remains null on the state object if fetch fails
-                             currentItemDetailData.tmdbDetails = null;
-                         }
-                     } catch (tmdbError) {
-                         clearTimeout(tmdbTimeoutId);
-                         // Ensure tmdbDetails remains null on the state object on error/timeout
-                         currentItemDetailData.tmdbDetails = null;
-                         if (tmdbError.name === 'AbortError') {
-                            console.warn(`TMDb fetch timed out or aborted for: ${currentItemDetailData.extractedTitle}`);
-                         } else {
-                            console.error("Error fetching TMDb details:", tmdbError);
-                         }
-                          // Don't treat TMDb failure as a fatal error
-                     }
-                 } else {
-                     console.warn("Cannot fetch TMDb details: No extracted title found.");
-                     // Ensure tmdbDetails is null if no attempt was made
-                     currentItemDetailData.tmdbDetails = null;
+                    try {
+                        const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
+                        clearTimeout(tmdbTimeoutId);
+                        if (tmdbResponse.ok) {
+                            const fetchedTmdbData = await tmdbResponse.json();
+                            currentItemDetailData.tmdbDetails = fetchedTmdbData;
+                            console.log("TMDb details fetched and stored successfully.");
+                        } else {
+                            const errorBody = await tmdbResponse.text();
+                            console.warn(`Failed to fetch TMDb details (${tmdbResponse.status}): ${errorBody}`);
+                            currentItemDetailData.tmdbDetails = null;
+                        }
+                    } catch (tmdbError) {
+                        clearTimeout(tmdbTimeoutId);
+                        currentItemDetailData.tmdbDetails = null;
+                        if (tmdbError.name === 'AbortError') {
+                           console.warn(`TMDb fetch timed out or aborted for: ${currentItemDetailData.extractedTitle}`);
+                        } else {
+                           console.error("Error fetching TMDb details:", tmdbError);
+                        }
+                    }
+                } else {
+                    console.warn("Cannot fetch TMDb details: No extracted title found.");
+                    currentItemDetailData.tmdbDetails = null;
+                }
+                // --- END TMDb Fetch ---
+
+                 // Check again if aborted *during* TMDb fetch (unlikely but possible)
+                 if (signal.aborted) {
+                     console.log(`Item detail fetch aborted (during TMDb) for ID: ${itemId}`);
+                     return;
                  }
-                 // --- END TMDb Fetch ---
 
-                 // 2. Render content using BOTH internal data and the TMDb data *stored on the state object*
-                 const contentHTML = createItemDetailContentHTML(currentItemDetailData, currentItemDetailData.tmdbDetails); // Use the stored details
+                 // 2. Render content using BOTH internal data and TMDb data
+                 console.log("Rendering item detail content...");
+                 const contentHTML = createItemDetailContentHTML(currentItemDetailData, currentItemDetailData.tmdbDetails);
                  itemDetailContent.innerHTML = contentHTML;
+                 console.log("Item detail content rendered.");
 
                  // Ensure player is hidden initially when showing details
                  if (videoContainer) videoContainer.style.display = 'none';
 
              } else {
-                 console.error(`Item not found via API for ID: ${itemId}`);
-                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Item with ID ${sanitize(itemId)} was not found. It might have been removed or the link is incorrect.</div>`;
-                 document.title = "Item Not Found - Cinema Ghar Index";
+                 // This case handles when the API returns success, but no items found (valid ID, but not in DB)
+                 console.error(`Item not found via API for ID: ${itemId}. API Response:`, internalData);
+                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Item with ID <strong>${sanitize(itemId)}</strong> was not found. It might have been removed or the link is incorrect.</div>`;
+                 document.title = "Item Not Found - Cinema Ghar";
+                 currentItemDetailData = null; // Ensure data is null
              }
          } catch (error) {
-             console.error("Failed to fetch or display item detail:", error);
-             itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item: ${error.message}. Please try again.</div>`;
-             document.title = "Error Loading Item - Cinema Ghar Index";
-             // Ensure currentItemDetailData is nullified on major error
-             currentItemDetailData = null;
+             // Handle errors from fetchApiData (network, API error 500, etc.) or TMDb fetch
+              if (signal.aborted || error.name === 'AbortError') {
+                 // If aborted due to navigation, error might be 'AbortError'. Don't show error message in this case.
+                 console.log(`Item detail fetch aborted for ID: ${itemId} (caught).`);
+                 // Optionally clear the content area or leave loading spinner
+                 // itemDetailContent.innerHTML = `<div class="status-message">Loading cancelled.</div>`;
+             } else {
+                 console.error(`Failed to fetch or display item detail for ID ${itemId}:`, error);
+                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item details for ID <strong>${sanitize(itemId)}</strong>: ${sanitize(error.message)}. Please try again later or go back.</div>`;
+                 document.title = "Error Loading Item - Cinema Ghar";
+                 currentItemDetailData = null; // Ensure data is null on error
+             }
          } finally {
-             // Ensure view mode is correct and scroll to top
-             setViewMode('itemDetail');
-             window.scrollTo({ top: 0, behavior: 'smooth' });
-             // Hide page loader if it's still visible
+             // Clean up the abort controller if it wasn't aborted
+             if (itemDetailAbortController && itemDetailAbortController.signal === signal && !signal.aborted) {
+                itemDetailAbortController = null;
+             }
+             // Ensure view mode is still 'itemDetail' unless an abort/error occurred mid-way
+             if (!signal.aborted && currentViewMode !== 'itemDetail') {
+                console.warn("View mode changed during item detail load, re-asserting itemDetail view.");
+                // setViewMode('itemDetail'); // Re-asserting might cause flicker if error occurred. Let error handling manage view?
+             }
+             // Scroll to top only if successfully rendered or error shown
+             if (itemDetailContent.innerHTML && !itemDetailContent.querySelector('.loading-inline-spinner')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+             }
+             // Hide page loader if it's still visible (especially on initial load)
              if (pageLoader && pageLoader.style.display !== 'none') {
                 pageLoader.style.display = 'none';
              }
+             console.log(`Finished displayItemDetail attempt for ID: ${itemId}`);
          }
      }
 
@@ -1007,7 +1112,6 @@
            // If player was open, re-attach it inside the new content
           if (videoContainer.parentElement && videoContainer.style.display !== 'none') {
              console.log("Re-attaching player to updated item detail content.");
-              // --- Revised Player Placement Logic ---
              const separator = itemDetailContent.querySelector('hr.detail-separator');
              const targetElement = separator ? separator.nextElementSibling : itemDetailContent.firstChild;
              if (targetElement && targetElement.nextSibling) {
@@ -1015,7 +1119,6 @@
               } else {
                   itemDetailContent.appendChild(videoContainer);
               }
-              // --- End Revised ---
            }
      }
 
@@ -1035,9 +1138,12 @@
         } else {
             console.warn("Cannot determine where to place the video player.");
             if (itemDetailContent) {
-                 currentActionContainer = itemDetailContent;
+                 currentActionContainer = itemDetailContent; // Fallback to detail content if available
+                 console.warn("Falling back to itemDetailContent for player placement.");
             } else {
                 console.error("Cannot stream video: No valid container found (itemDetailContent missing).");
+                // Maybe show an alert?
+                // alert("Error: Cannot display video player.");
                 return;
             }
         }
@@ -1055,18 +1161,16 @@
         // Move the player container if needed (only if not global custom mode)
         if (!isGlobalCustomUrlMode && currentActionContainer && videoContainer.parentElement !== currentActionContainer) {
             console.log("Moving video container to active container:", currentActionContainer);
-             // Find the end of the item detail content to append the player
-             const separator = currentActionContainer.querySelector('hr.detail-separator');
-             const targetElement = separator ? separator.nextElementSibling : currentActionContainer.firstChild; // Append after separator or at start
+            const separator = currentActionContainer.querySelector('hr.detail-separator');
+            const targetElement = separator ? separator.nextElementSibling : currentActionContainer.firstChild;
 
             if (videoContainer.parentElement) {
                  videoContainer.parentElement.removeChild(videoContainer);
             }
-            // Insert before the internal info/buttons section if possible, otherwise just append
             if (targetElement && targetElement.nextSibling) {
-                 currentActionContainer.insertBefore(videoContainer, targetElement.nextSibling); // Place after info/buttons usually
+                 currentActionContainer.insertBefore(videoContainer, targetElement.nextSibling);
              } else {
-                 currentActionContainer.appendChild(videoContainer); // Fallback append
+                 currentActionContainer.appendChild(videoContainer);
              }
 
             // Reset source if moving
@@ -1193,7 +1297,6 @@
     function clearCopyFeedback() { clearTimeout(copyFeedbackTimeout); document.querySelectorAll('.copy-feedback.show').forEach(span => { span.classList.remove('show', 'error'); span.style.display = 'none'; span.textContent = span.classList.contains('share-fallback') ? 'Link copied!' : 'Copied!'; }); }
     function clearBypassFeedback() { clearTimeout(bypassFeedbackTimeout); document.querySelectorAll('.bypass-feedback.show').forEach(span => { span.classList.remove('show', 'error', 'loading'); span.style.display = 'none'; span.textContent = ''; }); }
     function highlightVlcText() {
-        // Try finding VLC text in the current item detail view context
         const currentVlcText = itemDetailContent?.querySelector('#vlcBox code');
         if (currentVlcText && currentVlcText.closest('#vlcBox')?.style.display !== 'none') {
             try {
@@ -1215,7 +1318,31 @@
     function loadStateFromLocalStorage() { try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; console.log("Loaded state:", { sortColumn: currentState.sortColumn, sortDirection: currentState.sortDirection, qualityFilter: currentState.qualityFilter }); } else { currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; console.log("No saved state found, using defaults."); } } catch (e) { console.error("Failed to load or parse state from localStorage:", e); localStorage.removeItem(config.LOCAL_STORAGE_KEY); currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; } currentState.searchTerm = ''; currentState.currentPage = 1; currentState.typeFilter = ''; activeResultsTab = 'allFiles'; currentItemDetailData = null; isShareMode = false; lastFocusedElement = null; }
 
     // --- Initial Data Loading and Setup ---
-    async function fetchApiData(params = {}) { if (searchAbortController) { searchAbortController.abort(); } searchAbortController = new AbortController(); const signal = searchAbortController.signal; const query = new URLSearchParams(); // Default params for search/list views
+    async function fetchApiData(params = {}, signal = null) { // Added signal parameter
+         // Abort previous *search* controller only if this isn't an ID fetch
+         if (!params.id && searchAbortController) {
+             searchAbortController.abort();
+             console.log("Aborted previous search fetch.");
+         }
+         // Use the passed signal if provided (for item detail), otherwise manage the search controller
+         let currentSignal = signal;
+         if (!currentSignal && !params.id) { // Only create new search controller if no signal and not an ID fetch
+             searchAbortController = new AbortController();
+             currentSignal = searchAbortController.signal;
+             console.log("Using new searchAbortController signal.");
+         } else if (signal) {
+             console.log("Using passed signal (likely for item detail fetch).");
+         } else {
+             // If it's an ID fetch without a signal (shouldn't happen with current logic, but safety check)
+             console.log("ID fetch without external signal, creating temporary controller.");
+             const tempController = new AbortController();
+             currentSignal = tempController.signal;
+             // No need to store tempController globally
+         }
+
+
+         const query = new URLSearchParams();
+         // Default params for search/list views
          if (!params.id) { // Only add pagination/sorting/filtering if NOT fetching by specific ID
              query.set('page', params.page || currentState.currentPage);
              query.set('limit', params.limit || currentState.limit);
@@ -1229,124 +1356,215 @@
              if (typeFilter) query.set('type', typeFilter);
          } else { // If fetching by ID, only include the ID
              query.set('id', params.id);
-         } const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`; console.log(`Fetching API: ${url}`); try { const response = await fetch(url, { signal }); if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); } const data = await response.json(); console.log(`API data received:`, data); // Update total pages in dataset if applicable
+         }
+
+         const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`;
+         console.log(`Fetching API: ${url}`);
+         try {
+             // Pass the currentSignal to fetch
+             const response = await fetch(url, { signal: currentSignal });
+
+             if (!response.ok) {
+                 let errorBody = null;
+                 try { errorBody = await response.json(); } catch (_) {}
+                 const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`;
+                 throw new Error(`API Error: ${errorDetails}`);
+             }
+             const data = await response.json();
+             console.log(`API data received for ${url}:`, data); // Log URL too
+             // Update total pages in dataset if applicable
              if (!params.id && tabMappings[activeResultsTab]) {
                 const activePagination = tabMappings[activeResultsTab]?.pagination;
                 if (activePagination && data.totalPages !== undefined) {
                     activePagination.dataset.totalPages = data.totalPages;
                 }
-             } return data; } catch (error) { if (error.name === 'AbortError') { console.log('API fetch aborted.'); return null; } console.error(`Error fetching data from ${url}:`, error); throw error; } finally { if (signal === searchAbortController?.signal) { searchAbortController = null; } } }
+             }
+             return data;
+         } catch (error) {
+             if (error.name === 'AbortError') {
+                 console.log(`API fetch aborted: ${url}`);
+                 return null; // Return null is handled upstream
+             }
+             console.error(`Error fetching data from ${url}:`, error);
+             throw error; // Re-throw other errors
+         } finally {
+             // Clear search controller only if it was used for *this* request and it wasn't an external signal
+             if (currentSignal === searchAbortController?.signal && !signal) {
+                 searchAbortController = null;
+                 console.log("Cleared searchAbortController.");
+             }
+         }
+     }
     async function fetchAndRenderResults() { if (currentViewMode !== 'search') return; try { const apiResponse = await fetchApiData(); if (apiResponse === null) return; // Aborted
-         renderActiveResultsView(apiResponse); saveStateToLocalStorage(); } catch (error) { console.error("Failed to fetch/render search results:", error); const { tableBody } = tabMappings[activeResultsTab]; if (tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error loading results: ${error.message}. Please try again.</td></tr>`; } Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; }); } }
+         renderActiveResultsView(apiResponse); saveStateToLocalStorage(); } catch (error) { if (error.name !== 'AbortError') { console.error("Failed to fetch/render search results:", error); const { tableBody } = tabMappings[activeResultsTab]; if (tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error loading results: ${error.message}. Please try again.</td></tr>`; } Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; }); } } }
     function populateQualityFilter(items = []) { if (!qualityFilterSelect) return; const currentSelectedValue = qualityFilterSelect.value; items.forEach(item => { if (item.displayQuality && item.displayQuality !== 'N/A') { uniqueQualities.add(item.displayQuality); } }); const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); }); while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); } sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } }); qualityFilterSelect.value = [...qualityFilterSelect.options].some(opt => opt.value === currentSelectedValue) ? currentSelectedValue : ""; updateFilterIndicator(); }
     function displayLoadError(message) { const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (itemDetailContent) itemDetailContent.innerHTML = ''; if (itemDetailView) itemDetailView.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'item-detail-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
     async function initializeApp() {
+        console.log("Initializing app...");
         isInitialLoad = true; // Set flag before first URL handling
         if (pageLoader) pageLoader.style.display = 'flex';
 
         // Load state from localStorage FIRST
         loadStateFromLocalStorage();
 
-        // Setup initial view based on URL (after loading state)
-        handleUrlChange(); // This will determine if we show homepage or item detail based on URL
-
-        try {
-            // Fetch suggestion/quality data in the background regardless of initial view
-            console.log("Fetching initial data for suggestions/quality filter...");
-            fetchApiData({ limit: 5000, sort: 'lastUpdated', sortDir: 'desc' }) // Fetch a large batch initially
-                .then(suggestionData => {
-                    if (suggestionData && suggestionData.items) {
-                        localSuggestionData = suggestionData.items.map(preprocessMovieData);
-                        console.log(`Loaded ${localSuggestionData.length} items for suggestions.`);
-                        populateQualityFilter(localSuggestionData);
-                         // If we are on homepage (determined by handleUrlChange), load updates preview
-                         if (currentViewMode === 'homepage') {
-                             // Use the already fetched data for the initial preview
-                             weeklyUpdatesData = localSuggestionData; // Use the full list for updates logic now
-                             displayInitialUpdates(); // Display using the fetched data
-                         }
-                    } else {
-                        console.warn("Could not load initial data for suggestions/quality filter.");
-                         if (currentViewMode === 'homepage' && updatesPreviewList) {
-                             updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">Could not load recent updates.</div>';
-                         }
-                    }
-                }).catch(e => {
-                    console.error("Background suggestion/quality/updates fetch failed:", e);
-                     if (currentViewMode === 'homepage' && updatesPreviewList) {
-                        updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Error loading updates: ${e.message}.</div>`;
-                     }
-                });
-
-            // Apply loaded quality filter state to the dropdown
-            if (qualityFilterSelect) {
-                qualityFilterSelect.value = currentState.qualityFilter || '';
-                updateFilterIndicator();
-            }
-            // No need to explicitly set view mode to homepage here, handleUrlChange does it.
-
-        } catch (error) {
-            console.error('FATAL: Failed during app initialization:', error);
-            displayLoadError(`Error initializing app: ${error.message}. Try refreshing.`);
-        } finally {
-            // Only hide loader if not showing item detail (detail view hides it itself)
-            if (currentViewMode !== 'itemDetail' && pageLoader) {
-                pageLoader.style.display = 'none';
-            }
-             isInitialLoad = false; // Mark initial setup phase as done
+        // Apply loaded quality filter state to the dropdown early
+        if (qualityFilterSelect) {
+            qualityFilterSelect.value = currentState.qualityFilter || '';
+            updateFilterIndicator();
         }
+
+        // Setup initial view based on URL (after loading state)
+        // handleUrlChange will call displayItemDetail if needed, which now handles its own loading/errors
+        handleUrlChange(); // <<< This determines initial view mode
+
+        // Fetch suggestion/quality data in the background ONLY if not landing on item detail
+        if (currentViewMode !== 'itemDetail') {
+             try {
+                 console.log("Fetching background data for suggestions/quality/updates...");
+                 // No need to await this background fetch
+                 fetchApiData({ limit: 5000, sort: 'lastUpdated', sortDir: 'desc' })
+                     .then(suggestionData => {
+                         if (suggestionData === null) return; // Aborted
+                         if (suggestionData && suggestionData.items) {
+                             localSuggestionData = suggestionData.items.map(preprocessMovieData);
+                             console.log(`Loaded ${localSuggestionData.length} items for suggestions.`);
+                             populateQualityFilter(localSuggestionData); // Populate filter based on fetched data
+                             // If we are still on homepage, load updates preview
+                             if (currentViewMode === 'homepage') {
+                                 weeklyUpdatesData = localSuggestionData;
+                                 displayInitialUpdates();
+                             }
+                         } else {
+                             console.warn("Could not load background data for suggestions/quality filter.");
+                             if (currentViewMode === 'homepage' && updatesPreviewList && !updatesPreviewList.hasChildNodes()) {
+                                 updatesPreviewList.innerHTML = '<div class="status-message" style="text-align:center; padding: 15px 0;">Could not load recent updates.</div>';
+                             }
+                         }
+                     }).catch(e => {
+                         if (e.name !== 'AbortError') { // Don't log aborts as errors
+                             console.error("Background suggestion/quality/updates fetch failed:", e);
+                             if (currentViewMode === 'homepage' && updatesPreviewList && !updatesPreviewList.hasChildNodes()) {
+                                 updatesPreviewList.innerHTML = `<div class="error-message" style="text-align:center; padding: 15px 0;">Error loading updates: ${e.message}.</div>`;
+                             }
+                         }
+                     });
+
+             } catch (error) {
+                 // Catch synchronous errors during initiation of the fetch
+                 console.error('Error during background data fetch initiation:', error);
+                 // Potentially display a non-fatal error message
+             }
+        } else {
+            console.log("Skipping background data fetch on initial load (item detail view).");
+        }
+
+         // Hide loader ONLY if not showing item detail initially
+         // displayItemDetail will hide it after its own loading/error handling
+         if (currentViewMode !== 'itemDetail' && pageLoader && pageLoader.style.display !== 'none') {
+             pageLoader.style.display = 'none';
+             console.log("Hiding page loader (not in item detail view).");
+         } else if (currentViewMode === 'itemDetail') {
+             console.log("Keeping page loader (or allowing displayItemDetail to hide it).")
+         }
+
+         isInitialLoad = false; // Mark initial setup phase as done
+         console.log("initializeApp finished.");
     }
 
 
     // --- Event Handling Setup ---
     function handleActionClick(event) { // Handles clicks within Item Detail View or Player
          const target = event.target;
-         const button = target.closest('#item-detail-content .button, #playerCustomUrlSection button'); // Scope actions
+         // More specific selector for action buttons within item detail OR player custom URL section
+         const button = target.closest('#item-detail-content .button:not(.close-btn):not(.vlc-button):not(.intent-button):not(.download-button):not(.share-button):not(.youtube-button):not(.tmdb-link-button):not(.imdb-button):not(.telegram-button):not(.gdflix-button):not(.hubcloud-button):not(.filepress-button):not(.gdtot-button), #playerCustomUrlSection .button'); // Target specific action buttons
 
-         if (button) {
-            const action = button.dataset.action;
-            const url = button.dataset.url; // Already encoded if needed
-            let title = button.dataset.title || currentItemDetailData?.displayFilename; // Get title
-            const filename = button.dataset.filename || currentItemDetailData?.displayFilename;
-            const id = button.dataset.id || currentItemDetailData?.id;
-            lastFocusedElement = button;
+         // Handle specific data-action buttons separately if needed (like copy/share which need button context)
+         const copyButton = target.closest('#item-detail-content .vlc-button[data-action="copy-vlc"]');
+         const intentButton = target.closest('#item-detail-content .intent-button[data-action="open-intent"]');
+         const shareButton = target.closest('#item-detail-content .share-button[data-action="share"]');
+         const customUrlToggle = target.closest('#item-detail-content .custom-url-toggle-button[data-action="toggle-custom-url"]');
+         const bypassHubCloudButton = target.closest('#item-detail-content .hubcloud-bypass-button[data-action="bypass-hubcloud"]');
+         const bypassGdflixButton = target.closest('#item-detail-content .gdflix-bypass-button[data-action="bypass-gdflix"]');
+         const playButton = target.closest('#item-detail-content .play-button[data-action="play"]');
 
-            if (button.tagName === 'A' && button.href && button.target === '_blank') {
-                return; // Browser handles external links
-            }
-            event.preventDefault(); // Prevent default for button actions
 
-            console.log(`Action clicked: ${action}`);
+         let actionHandled = false;
 
-            if (action === 'play' && url) {
+         if (playButton) {
+             const url = playButton.dataset.url;
+             const title = playButton.dataset.title || currentItemDetailData?.displayFilename;
+             const filename = playButton.dataset.filename || currentItemDetailData?.displayFilename;
+             if (url) {
+                event.preventDefault(); lastFocusedElement = playButton;
+                console.log("Action clicked: play");
                 isGlobalCustomUrlMode = false;
                 streamVideo(title, url, filename);
-            } else if (action === 'copy-vlc' && url) {
-                copyVLCLink(button, url);
-            } else if (action === 'open-intent' && url) {
+                actionHandled = true;
+             }
+         } else if (copyButton) {
+             const url = copyButton.dataset.url;
+             if (url) {
+                event.preventDefault(); lastFocusedElement = copyButton;
+                console.log("Action clicked: copy-vlc");
+                copyVLCLink(copyButton, url);
+                actionHandled = true;
+             }
+         } else if (intentButton) {
+              const url = intentButton.dataset.url;
+              if (url) {
+                event.preventDefault(); lastFocusedElement = intentButton;
+                console.log("Action clicked: open-intent");
                 openWithIntent(url);
-            } else if (action === 'share' && id) {
-                handleShareClick(button);
-            } else if (action === 'toggle-custom-url') {
-                toggleCustomUrlInput(button); // Toggle input within item detail/player
-            } else if (action === 'bypass-hubcloud') {
-                triggerHubCloudBypass(button);
-            } else if (action === 'bypass-gdflix') { // Handle GDFLIX Bypass
-                triggerGDFLIXBypass(button);
-            } else if (target.matches('#playerPlayCustomUrlButton')) { // Check if it's the player's custom URL play button
-                 if (isGlobalCustomUrlMode) {
-                     handleGlobalPlayCustomUrl(event);
-                 } else {
-                     playFromCustomUrlInput(event.target);
-                 }
-            }
+                actionHandled = true;
+              }
+         } else if (shareButton) {
+             const id = shareButton.dataset.id;
+             if (id) {
+                event.preventDefault(); lastFocusedElement = shareButton;
+                console.log("Action clicked: share");
+                handleShareClick(shareButton);
+                actionHandled = true;
+             }
+         } else if (customUrlToggle) {
+             event.preventDefault(); lastFocusedElement = customUrlToggle;
+             console.log("Action clicked: toggle-custom-url");
+             toggleCustomUrlInput(customUrlToggle);
+             actionHandled = true;
+         } else if (bypassHubCloudButton) {
+             event.preventDefault(); lastFocusedElement = bypassHubCloudButton;
+             console.log("Action clicked: bypass-hubcloud");
+             triggerHubCloudBypass(bypassHubCloudButton);
+             actionHandled = true;
+         } else if (bypassGdflixButton) {
+             event.preventDefault(); lastFocusedElement = bypassGdflixButton;
+             console.log("Action clicked: bypass-gdflix");
+             triggerGDFLIXBypass(bypassGdflixButton);
+             actionHandled = true;
+         } else if (button && button.matches('#playerPlayCustomUrlButton')) { // Custom URL Play button
+             event.preventDefault(); lastFocusedElement = button;
+             console.log("Action clicked: play-custom-url (player section)");
+             if (isGlobalCustomUrlMode) {
+                 handleGlobalPlayCustomUrl(event);
+             } else {
+                 playFromCustomUrlInput(event.target);
+             }
+             actionHandled = true;
+         }
+
+         // Let browser handle normal links (target=_blank) within the content area
+         if (!actionHandled && target.tagName === 'A' && target.href && target.target === '_blank' && target.closest('#item-detail-content')) {
+            console.log("Allowing browser to handle external link click.");
+            // return; // No need to return, just don't preventDefault
+         } else if (!actionHandled && button) {
+             // Catch other potential button clicks here if needed, otherwise log
+             console.warn("Unhandled button click within action handler:", button);
          }
     }
     function handleGlobalCustomUrlClick(event) {
          event.preventDefault(); lastFocusedElement = event.target;
          if (!videoContainer || !playerCustomUrlSection || !playerCustomUrlInput) return;
          console.log("Global Play Custom URL clicked."); closePlayerIfNeeded(); // Close any existing player
-         // Ensure other views are hidden if necessary (though should be via setViewMode)
+         // Ensure other views are hidden if necessary
          if(resultsArea) resultsArea.style.display = 'none';
          if(itemDetailView) itemDetailView.style.display = 'none';
          if(searchFocusArea) searchFocusArea.style.display = 'none'; // Hide search too
@@ -1370,8 +1588,8 @@
          streamVideo("Custom URL Video", customUrlEncoded, null, true);
     }
     function toggleCustomUrlInput(toggleButton, triggeredByError = false) {
-         const contextContainer = toggleButton.closest('#item-detail-content') || toggleButton.closest('#videoContainer'); // Find context (detail view or player itself)
-         if (!contextContainer || !videoContainer || !playerCustomUrlSection) {
+         const contextContainer = toggleButton.closest('#item-detail-content') || toggleButton.closest('#videoContainer'); // Find context
+         if (!contextContainer || !videoContainer || !playerCustomUrlSection || !videoElement || !customControlsContainer) {
              console.error("Cannot toggle custom URL input: context or player elements missing.");
              return;
          }
@@ -1379,20 +1597,18 @@
          // Ensure player is inside the item detail content if triggered from there
          if (contextContainer.id === 'item-detail-content' && videoContainer.parentElement !== contextContainer) {
              console.warn("Player not in item detail container, moving it for custom URL toggle.");
-            // --- Revised Player Placement Logic ---
-            const separator = contextContainer.querySelector('hr.detail-separator');
-            const targetElement = separator ? separator.nextElementSibling : contextContainer.firstChild;
+             const separator = contextContainer.querySelector('hr.detail-separator');
+             const targetElement = separator ? separator.nextElementSibling : contextContainer.firstChild;
 
              if(videoContainer.parentElement) videoContainer.parentElement.removeChild(videoContainer);
               if (targetElement && targetElement.nextSibling) {
-                 contextContainer.insertBefore(videoContainer, targetElement.nextSibling); // Place after info/buttons
+                 contextContainer.insertBefore(videoContainer, targetElement.nextSibling);
              } else {
-                 contextContainer.appendChild(videoContainer); // Fallback append
+                 contextContainer.appendChild(videoContainer);
              }
-             // --- End Revised ---
 
              // Reset player if moving
-             if (videoElement && videoElement.hasAttribute('src')) { videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); }
+             if (videoElement.hasAttribute('src')) { videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); }
              if (vlcBox) vlcBox.style.display = 'none';
              if (audioWarningDiv) audioWarningDiv.style.display = 'none';
              if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; }
@@ -1401,19 +1617,18 @@
 
          const isHidden = playerCustomUrlSection.style.display === 'none';
          playerCustomUrlSection.style.display = isHidden ? 'flex' : 'none';
+         // Only hide video/controls if showing the input section
          videoElement.style.display = isHidden ? 'none' : 'block';
          customControlsContainer.style.display = isHidden ? 'none' : 'flex';
          if(vlcBox) vlcBox.style.display = isHidden ? 'none' : 'block';
 
          // Handle audio warning visibility
          if(audioWarningDiv) {
-            // Hide normal warning when showing input, unless it's an error message
              if (isHidden && audioWarningDiv.style.display !== 'none' && !audioWarningDiv.innerHTML.includes('Playback Error:')) {
                  audioWarningDiv.style.display = 'none';
              }
-             // Show normal warning when hiding input if applicable (and not already showing error)
              else if (!isHidden && audioWarningDiv.style.display === 'none') {
-                 const movieData = currentItemDetailData; // Get data from state
+                 const movieData = currentItemDetailData;
                  if (movieData && movieData.displayFilename) {
                      const ddp51Regex = /\bDDP?([ ._-]?5\.1)?\b/i;
                      const advancedAudioRegex = /\b(DTS|ATMOS|TrueHD)\b/i;
@@ -1524,20 +1739,78 @@
              else { console.error("GDFLIX Bypass failed:", error); setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); }
          }
      }
-    // Note: updateItemDetailAfterBypass is inside the corrected block above
-
     function setBypassButtonState(buttonElement, state, message = null) { // Handles both button types
          if (!buttonElement) return;
          const feedbackSpan = buttonElement.nextElementSibling; const iconSpan = buttonElement.querySelector('.button-icon'); const spinnerSpan = buttonElement.querySelector('.button-spinner'); const textSpan = buttonElement.querySelector('.button-text');
          const isHubCloud = buttonElement.classList.contains('hubcloud-bypass-button'); const defaultText = isHubCloud ? 'Bypass HubCloud' : 'Bypass GDFLIX'; const defaultIconHTML = isHubCloud ? '☁️' : '🎬';
          buttonElement.classList.remove('loading', 'error', 'success'); buttonElement.disabled = false;
-         if (feedbackSpan) feedbackSpan.style.display = 'none'; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block';
-         clearTimeout(bypassFeedbackTimeout);
+         if (feedbackSpan) { feedbackSpan.style.display = 'none'; feedbackSpan.className = 'bypass-feedback'; } // Reset feedback span
+         if (spinnerSpan) spinnerSpan.style.display = 'none';
+         if (iconSpan) iconSpan.style.display = 'inline-block'; // Ensure icon is visible by default
+         clearTimeout(bypassFeedbackTimeout); // Clear any existing timeout for feedback
+
          switch (state) {
-             case 'loading': buttonElement.classList.add('loading'); buttonElement.disabled = true; if (textSpan) textSpan.textContent = 'Bypassing...'; if (spinnerSpan) spinnerSpan.style.display = 'inline-block'; if (iconSpan) iconSpan.style.display = 'none'; if (feedbackSpan) { feedbackSpan.textContent = 'Please wait...'; feedbackSpan.className = 'bypass-feedback loading show'; feedbackSpan.style.display = 'inline-block'; } break;
-             case 'success': buttonElement.classList.add('success'); buttonElement.disabled = true; /* Keep disabled after success */ if (textSpan) textSpan.textContent = 'Success!'; if (iconSpan) iconSpan.innerHTML = '✅'; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.textContent = message || 'Success! Play button updated.'; feedbackSpan.className = 'bypass-feedback success show'; feedbackSpan.style.display = 'inline-block'; } break; // Success message
-             case 'error': buttonElement.classList.add('error'); buttonElement.disabled = false; /* Allow retry on error */ if (textSpan) textSpan.textContent = defaultText; if (iconSpan) iconSpan.innerHTML = defaultIconHTML; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.textContent = message || 'Failed'; feedbackSpan.className = 'bypass-feedback error show'; feedbackSpan.style.display = 'inline-block'; bypassFeedbackTimeout = setTimeout(() => { feedbackSpan.classList.remove('show', 'error', 'loading'); feedbackSpan.style.display = 'none'; feedbackSpan.textContent = ''; }, 4000); } break;
-             case 'idle': default: buttonElement.disabled = false; if (textSpan) textSpan.textContent = defaultText; if (iconSpan) iconSpan.innerHTML = defaultIconHTML; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.classList.remove('show', 'error', 'loading'); feedbackSpan.style.display = 'none'; feedbackSpan.textContent = ''; } break;
+             case 'loading':
+                 buttonElement.classList.add('loading');
+                 buttonElement.disabled = true;
+                 if (textSpan) textSpan.textContent = 'Bypassing...';
+                 if (spinnerSpan) spinnerSpan.style.display = 'inline-block';
+                 if (iconSpan) iconSpan.style.display = 'none';
+                 if (feedbackSpan) {
+                     feedbackSpan.textContent = 'Please wait...';
+                     feedbackSpan.classList.add('loading', 'show');
+                     feedbackSpan.style.display = 'inline-block';
+                 }
+                 break;
+             case 'success':
+                 buttonElement.classList.add('success');
+                 buttonElement.disabled = true; // Keep disabled after success
+                 if (textSpan) textSpan.textContent = 'Success!';
+                 if (iconSpan) iconSpan.innerHTML = '✅';
+                 if (spinnerSpan) spinnerSpan.style.display = 'none';
+                 if (iconSpan) iconSpan.style.display = 'inline-block';
+                 if (feedbackSpan) {
+                     feedbackSpan.textContent = message || 'Success! Play button updated.';
+                     feedbackSpan.classList.add('success', 'show');
+                     feedbackSpan.style.display = 'inline-block';
+                     // Optional: Timeout to reset success state visually after a while?
+                     // bypassFeedbackTimeout = setTimeout(() => setBypassButtonState(buttonElement, 'idle'), 5000);
+                 }
+                 break;
+             case 'error':
+                 buttonElement.classList.add('error');
+                 buttonElement.disabled = false; // Allow retry on error
+                 if (textSpan) textSpan.textContent = defaultText; // Reset text
+                 if (iconSpan) iconSpan.innerHTML = defaultIconHTML; // Reset icon
+                 if (spinnerSpan) spinnerSpan.style.display = 'none';
+                 if (iconSpan) iconSpan.style.display = 'inline-block';
+                 if (feedbackSpan) {
+                     feedbackSpan.textContent = message || 'Failed';
+                     feedbackSpan.classList.add('error', 'show');
+                     feedbackSpan.style.display = 'inline-block';
+                     // Automatically hide error message after a delay
+                     bypassFeedbackTimeout = setTimeout(() => {
+                         if (feedbackSpan.classList.contains('show')) { // Check if still visible
+                              feedbackSpan.classList.remove('show', 'error', 'loading');
+                              feedbackSpan.style.display = 'none';
+                              feedbackSpan.textContent = '';
+                         }
+                     }, 4000);
+                 }
+                 break;
+             case 'idle':
+             default:
+                 buttonElement.disabled = false;
+                 if (textSpan) textSpan.textContent = defaultText;
+                 if (iconSpan) iconSpan.innerHTML = defaultIconHTML;
+                 if (spinnerSpan) spinnerSpan.style.display = 'none';
+                 if (iconSpan) iconSpan.style.display = 'inline-block';
+                 if (feedbackSpan) {
+                     feedbackSpan.classList.remove('show', 'error', 'loading');
+                     feedbackSpan.style.display = 'none';
+                     feedbackSpan.textContent = '';
+                 }
+                 break;
          }
      }
 
@@ -1559,15 +1832,16 @@
              return; // Stop further processing
          }
 
-         // 2. Check for action clicks within the Item Detail view or Player controls
-         const actionTrigger = target.closest('#item-detail-content .button, #videoContainer .button:not(.close-btn)'); // Include player controls except close
-         if (actionTrigger && !actionTrigger.closest('.custom-controls')) { // Exclude player's own media controls like seek/vol etc
+         // 2. Check for action clicks within the Item Detail view
+         // This now uses the more detailed checks from handleActionClick logic implicitly
+         if (target.closest('#item-detail-content')) {
              handleActionClick(event); // Handle play, copy, bypass, share etc.
-             return; // Stop further processing
+             // Don't return immediately, allow browser default for external links handled in handleActionClick
          }
 
           // 3. Handle Player Close Button separately
           if (target.matches('.close-btn') && target.closest('#videoContainer')) {
+              event.preventDefault(); // Ensure close button doesn't trigger other actions
               lastFocusedElement = target;
               closePlayer(lastFocusedElement);
               return;
@@ -1585,7 +1859,7 @@
     // --- Add Event Listeners ---
     document.addEventListener('DOMContentLoaded', async () => {
          // Initialize App handles initial URL and setup
-         await initializeApp();
+         await initializeApp(); // Now async, but we don't necessarily need await here
 
          // Search Input Listeners
          if (searchInput) {
@@ -1617,19 +1891,23 @@
              // Close player if clicked outside its context (unless global custom URL mode is active and click is not on trigger)
              if (videoContainer && videoContainer.style.display !== 'none' && !isGlobalCustomUrlMode) {
                  const clickedInsidePlayer = videoContainer.contains(event.target);
-                 // Check if clicked inside the item detail view CONTENT area (where player is attached)
                  const clickedInsideDetailContent = itemDetailContent?.contains(event.target);
 
-                 // If clicked outside BOTH the player AND the detail content area, consider closing
                  if (!clickedInsidePlayer && !clickedInsideDetailContent) {
-                     // Double-check it wasn't a click on a button that *might* have triggered the player (less reliable check)
-                     let triggerElement = lastFocusedElement; // Check the last focused element before player opened
-                     let clickedOnPotentialTrigger = triggerElement && event.target.closest('.button') === triggerElement;
+                      // Check if click was on an element that *opened* the player (less reliable)
+                      // A better check might be needed if closing occurs unintentionally
+                      let clickedOnPotentialTrigger = false;
+                      if (lastFocusedElement) {
+                           // Check if the click target is the same as the element that likely opened the player
+                           clickedOnPotentialTrigger = lastFocusedElement === event.target || lastFocusedElement.contains(event.target);
+                      }
 
                       if (!clickedOnPotentialTrigger) {
                          console.log("Clicked outside player and its detail view context. Closing player.");
                          closePlayer(event.target); // Pass click target for potential focus restoration
-                     }
+                      } else {
+                         console.log("Click detected on potential player trigger element, not closing player.");
+                      }
                  }
              } else if (videoContainer && videoContainer.style.display !== 'none' && isGlobalCustomUrlMode) {
                  // If in global custom URL mode, close only if click is outside player AND outside the global trigger button
@@ -1647,7 +1925,8 @@
              videoElement.addEventListener('volumechange', () => { if (volumeSlider && Math.abs(parseFloat(volumeSlider.value) - videoElement.volume) > 0.01) { volumeSlider.value = videoElement.volume; } updateMuteButton(); try { localStorage.setItem(config.PLAYER_VOLUME_KEY, String(videoElement.volume)); } catch (e) { console.warn("LocalStorage volume save failed", e); } });
              videoElement.addEventListener('ratechange', () => { if(playbackSpeedSelect && playbackSpeedSelect.value !== String(videoElement.playbackRate)) { playbackSpeedSelect.value = String(videoElement.playbackRate); } try { localStorage.setItem(config.PLAYER_SPEED_KEY, String(videoElement.playbackRate)); } catch (e) { console.warn("LocalStorage speed save failed", e); } });
              videoElement.addEventListener('loadedmetadata', populateAudioTrackSelector);
-             videoElement.removeEventListener('error', handleVideoError); videoElement.addEventListener('error', handleVideoError);
+             videoElement.removeEventListener('error', handleVideoError); // Remove previous if any
+             videoElement.addEventListener('error', handleVideoError);
          }
 
          // Fullscreen Change Listener
