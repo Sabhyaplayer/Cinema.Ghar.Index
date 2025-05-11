@@ -157,13 +157,25 @@
     function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
     async function copyToClipboard(text, feedbackSpan) { console.log("Attempting to copy:", text); let success = false; if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) { try { await navigator.clipboard.writeText(text); success = true; console.log("navigator.clipboard.writeText SUCCEEDED"); } catch (err) { console.error("Async clipboard write failed:", err); success = false; } } if (!success) { console.warn("Using fallback copy method (execCommand)."); const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.top = "-9999px"; textArea.style.left = "-9999px"; textArea.style.opacity = "0"; textArea.setAttribute("readonly", ""); document.body.appendChild(textArea); try { textArea.select(); textArea.setSelectionRange(0, textArea.value.length); success = document.execCommand('copy'); console.log("Fallback execCommand result:", success); } catch (err) { console.error('Fallback copy execCommand failed:', err); success = false; } finally { document.body.removeChild(textArea); } } if (success) { console.log("Copy successful!"); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copied!', false); } } else { console.error("Copy FAILED."); if (feedbackSpan) { showCopyFeedback(feedbackSpan, 'Copy Failed!', true); } else { alert("Copy failed. Please try again or copy manually. Check console for errors (F12)."); } } return success; }
 
-    // --- Data Preprocessing (Handles HubCloud and GDFLIX links, encodes URL spaces) ---
+    // --- Data Preprocessing (Handles HubCloud and GDFLIX links, encodes URL spaces and other chars) ---
+    function robustUrlEncode(url) {
+        if (!url || typeof url !== 'string') return url;
+        try {
+            // encodeURI is generally good for encoding spaces, brackets, etc.,
+            // and it doesn't double-encode existing valid %xx sequences.
+            return encodeURI(url);
+        } catch (e) {
+            console.warn(`encodeURI failed for URL: "${url}". Error: ${e.message}. Falling back to simple space encoding.`);
+            return url.replace(/ /g, '%20'); // Fallback
+        }
+    }
+
     function preprocessMovieData(movie) {
         const processed = { ...movie };
         processed.id = movie.original_id; // Use original_id as the unique identifier
         processed.url = (movie.url && typeof movie.url === 'string' && movie.url.toLowerCase() !== 'null' && movie.url.trim() !== '') ? movie.url : null;
         if (processed.url) {
-            processed.url = processed.url.replace(/ /g, '%20'); // Encode spaces
+            processed.url = robustUrlEncode(processed.url); // Encode spaces and other special characters
         }
         processed.hubcloud_link = (movie.hubcloud_link && typeof movie.hubcloud_link === 'string' && movie.hubcloud_link.toLowerCase() !== 'null' && movie.hubcloud_link.trim() !== '') ? movie.hubcloud_link : null;
         processed.gdflix_link = (movie.gdflix_link && typeof movie.gdflix_link === 'string' && movie.gdflix_link.toLowerCase() !== 'null' && movie.gdflix_link.trim() !== '') ? movie.gdflix_link : null;
@@ -225,7 +237,7 @@
         if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
         const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
         const escapedFilename = displayFilename.replace(/'/g, "\\'");
-        const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : ''; // Already space-encoded if needed
+        const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : ''; // URL is already robustly encoded
         const escapedId = movie.id ? String(movie.id).replace(/[^a-zA-Z0-9-_]/g, '') : '';
         const escapedHubcloudUrl = movie.hubcloud_link ? movie.hubcloud_link.replace(/'/g, "\\'") : '';
         const escapedGdflixUrl = movie.gdflix_link ? movie.gdflix_link.replace(/'/g, "\\'") : ''; // GDFLIX link
@@ -719,6 +731,7 @@
 
     // --- Player Logic ---
     function streamVideo(title, url, filenameForAudioCheck, isFromCustom = false) {
+        console.log(`streamVideo called. Title: "${title}", URL: "${url}", Filename for audio check: "${filenameForAudioCheck}", Is custom: ${isFromCustom}`); // Enhanced Log
         let currentActionContainer = null;
         // Determine the container where the player should be placed
         if (isGlobalCustomUrlMode) {
@@ -1005,7 +1018,8 @@
             }
             event.preventDefault(); // Prevent default for button actions
 
-            console.log(`Action clicked: ${action}`);
+            console.log(`Action clicked: ${action}, URL from dataset: "${url}"`);
+
 
             if (action === 'play' && url) {
                 isGlobalCustomUrlMode = false;
@@ -1051,11 +1065,19 @@
          event.preventDefault(); if (!playerCustomUrlInput || !playerCustomUrlFeedback) return;
          const customUrlRaw = playerCustomUrlInput.value.trim(); playerCustomUrlFeedback.textContent = '';
          if (!customUrlRaw) { playerCustomUrlFeedback.textContent = 'Please enter a URL.'; playerCustomUrlInput.focus(); return; }
-         let customUrlEncoded = customUrlRaw;
-         try { new URL(customUrlRaw); customUrlEncoded = customUrlRaw.replace(/ /g, '%20'); } catch (e) { playerCustomUrlFeedback.textContent = 'Invalid URL format.'; playerCustomUrlInput.focus(); return; }
-         console.log(`Attempting to play global custom URL: ${customUrlEncoded}`);
+         
+         let customUrlToPlay;
+         try {
+            customUrlToPlay = new URL(customUrlRaw).href;
+         } catch (e) {
+            playerCustomUrlFeedback.textContent = 'Invalid URL format. Ensure it is a full URL (e.g., https://...).';
+            playerCustomUrlInput.focus();
+            return;
+         }
+
+         console.log(`Attempting to play global custom URL (normalized): ${customUrlToPlay}`);
          if(playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if(videoElement) videoElement.style.display = 'block'; if(customControlsContainer) customControlsContainer.style.display = 'flex';
-         streamVideo("Custom URL Video", customUrlEncoded, null, true);
+         streamVideo("Custom URL Video", customUrlToPlay, null, true);
     }
     function toggleCustomUrlInput(toggleButton, triggeredByError = false) {
          const contextContainer = toggleButton.closest('#item-detail-content') || toggleButton.closest('#videoContainer'); // Find context (detail view or player itself)
@@ -1124,7 +1146,6 @@
           setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150);
     }
     function playFromCustomUrlInput(playButton) {
-         // This function is now only called from the player's internal button
          const container = playButton.closest('#playerCustomUrlSection');
          if (!container) return;
          const inputField = container.querySelector('#playerCustomUrlInput');
@@ -1136,18 +1157,23 @@
          feedbackSpan.textContent = '';
          if (!customUrlRaw) { feedbackSpan.textContent = 'Please enter a URL.'; inputField.focus(); return; }
 
-         let customUrlEncoded = customUrlRaw;
-         try { new URL(customUrlRaw); customUrlEncoded = customUrlRaw.replace(/ /g, '%20'); } catch (e) { feedbackSpan.textContent = 'Invalid URL format.'; inputField.focus(); return; }
-
-         console.log(`Attempting to play custom URL from item context: ${customUrlEncoded}`);
+         let customUrlToPlay;
+         try {
+            customUrlToPlay = new URL(customUrlRaw).href; // Normalize and encode using URL constructor
+         } catch (e) {
+            feedbackSpan.textContent = 'Invalid URL format. Ensure it is a full URL (e.g., https://...).';
+            inputField.focus();
+            return;
+         }
+        
+         console.log(`Attempting to play custom URL from item context (normalized): ${customUrlToPlay}`);
          isGlobalCustomUrlMode = false; // Ensure not in global mode
 
-         // Hide input, show player elements
          if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none';
          if (videoElement) videoElement.style.display = 'block';
          if (customControlsContainer) customControlsContainer.style.display = 'flex';
 
-         streamVideo(titleRef, customUrlEncoded, null, true); // Stream the custom URL
+         streamVideo(titleRef, customUrlToPlay, null, true);
     }
     // Removed getMovieDataFromActionContainer as action rows are gone
 
@@ -1167,7 +1193,10 @@
              if (!response.ok) { let errorDetails = `HTTP Error: ${response.status}`; try { errorDetails = (await response.json()).details || errorDetails; } catch (_) {} throw new Error(errorDetails); }
              const result = await response.json();
              if (result.success && result.finalUrl) {
-                 console.log(`HubCloud Bypass successful! Raw Final URL: ${result.finalUrl}`); const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20'); console.log(`Encoded Final URL: ${encodedFinalUrl}`);
+                 const rawFinalUrl = result.finalUrl;
+                 console.log(`HubCloud Bypass successful! Raw Final URL: ${rawFinalUrl}`);
+                 const encodedFinalUrl = robustUrlEncode(rawFinalUrl); // Use robust encoding
+                 console.log(`Encoded (robust) Final URL: ${encodedFinalUrl}`);
                  setBypassButtonState(buttonElement, 'success', 'Success!');
                  updateItemDetailAfterBypass(encodedFinalUrl); // Update the current item's view
              } else { throw new Error(result.details || result.error || 'Unknown HubCloud bypass failure'); }
@@ -1192,7 +1221,10 @@
              if (!response.ok) { let errorDetails = `HTTP Error: ${response.status}`; try { errorDetails = (await response.json()).error || errorDetails; } catch (_) {} throw new Error(errorDetails); }
              const result = await response.json();
              if (result.success && result.finalUrl) {
-                 console.log(`GDFLIX Bypass successful! Raw Final URL: ${result.finalUrl}`); const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20'); console.log(`Encoded Final URL: ${encodedFinalUrl}`);
+                 const rawFinalUrl = result.finalUrl;
+                 console.log(`GDFLIX Bypass successful! Raw Final URL: ${rawFinalUrl}`);
+                 const encodedFinalUrl = robustUrlEncode(rawFinalUrl); // Use robust encoding
+                 console.log(`Encoded (robust) Final URL: ${encodedFinalUrl}`);
                  setBypassButtonState(buttonElement, 'success', 'Success!');
                  updateItemDetailAfterBypass(encodedFinalUrl); // Update the current item's view
              } else { throw new Error(result.error || 'Unknown GDFLIX bypass failure'); }
