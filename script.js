@@ -1,4 +1,4 @@
-// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + FULL FILENAME ENCODING) ---
+// --- START OF script.js (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING) ---
 (function() {
     'use strict';
 
@@ -117,39 +117,6 @@
     const TimeAgo = { MINUTE: 60, HOUR: 3600, DAY: 86400, WEEK: 604800, MONTH: 2592000, YEAR: 31536000, format: (isoString) => { if (!isoString) return 'N/A'; try { const date = new Date(isoString); const seconds = Math.floor((new Date() - date) / 1000); if (isNaN(seconds) || seconds < 0) { console.warn(`TimeAgo: Invalid seconds calculation for ${isoString}. Parsed date: ${date}. Returning full date.`); return TimeAgo.formatFullDate(date); } if (seconds < 2) return "just now"; if (seconds < TimeAgo.MINUTE) return `${seconds} sec${seconds > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.HOUR) return `${Math.floor(seconds / TimeAgo.MINUTE)} min${Math.floor(seconds / TimeAgo.MINUTE) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY) return `${Math.floor(seconds / TimeAgo.HOUR)} hr${Math.floor(seconds / TimeAgo.HOUR) > 1 ? 's' : ''} ago`; if (seconds < TimeAgo.DAY * 2) return "Yesterday"; if (seconds < TimeAgo.WEEK) return `${Math.floor(seconds / TimeAgo.DAY)} days ago`; if (seconds < TimeAgo.MONTH) return `${Math.floor(seconds / TimeAgo.WEEK)} wk${Math.floor(seconds / TimeAgo.WEEK) > 1 ? 's' : ''} ago`; return TimeAgo.formatFullDate(date, true); } catch (e) { console.error("Date Format Error (TimeAgo):", isoString, e); return 'Invalid Date'; } }, formatFullDate: (date, short = false) => { if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid Date'; const optsDate = short ? { year: '2-digit', month: 'numeric', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' }; const optsTime = { hour: 'numeric', minute: '2-digit', hour12: true }; try { return `${date.toLocaleDateString(undefined, optsDate)}${short ? '' : ', ' + date.toLocaleTimeString(undefined, optsTime)}`; } catch (e) { console.error("toLocaleDateString/Time failed:", e); return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; } } };
     function extractSizeData(inputString) { if (!inputString) return { value: 0, unit: '', display: 'N/A', bytes: 0 }; const r = /(?<size>[\d.]+)\s?(?<unit>GB|MB)/i; const m = String(inputString).match(r); if (m?.groups?.size && m?.groups?.unit) { const value = parseFloat(m.groups.size); const unit = m.groups.unit.toUpperCase(); if (!isNaN(value)) { const bytes = unit === 'GB' ? value * 1024 * 1024 * 1024 : value * 1024 * 1024; return { value: value, unit: unit, display: `${value} ${unit}`, bytes: isNaN(bytes) ? 0 : bytes }; } } return { value: 0, unit: '', display: 'N/A', bytes: 0 }; }
     function getMimeTypeFromUrl(url) { if (!url) return 'video/*'; const m = url.match(/\.([a-zA-Z0-9]+)(?:[?#]|$)/); if (!m) return 'video/*'; const ext = m[1].toLowerCase(); const mimeMap = { 'mkv': 'video/x-matroska', 'mp4': 'video/mp4', 'mov': 'video/quicktime', 'avi': 'video/x-msvideo', 'webm': 'video/webm', 'wmv': 'video/x-ms-wmv', 'flv': 'video/x-flv', 'ts': 'video/mp2t', 'm4v': 'video/x-m4v', 'ogv': 'video/ogg' }; return mimeMap[ext] || 'video/*'; }
-
-    // New helper function to re-encode the filename part of a URL
-    function fullyEncodeFilenameInUrl(urlStr) {
-        if (!urlStr) return urlStr;
-        try {
-            const urlObj = new URL(urlStr); // Throws if urlStr is not a valid absolute URL
-            const pathParts = urlObj.pathname.split('/');
-            if (pathParts.length === 0) return urlStr; // Should not happen for valid HTTP URLs
-
-            const filenameWithPossibleEncoding = pathParts.pop();
-            if (filenameWithPossibleEncoding === "" && pathParts.length > 0 && urlStr.endsWith('/')) {
-                // It's a directory URL, push back the empty string and return
-                pathParts.push(filenameWithPossibleEncoding);
-                // No filename to encode, or it's not a file path
-                return urlStr;
-            }
-
-            // Decode the segment first in case it's already partially encoded (e.g. "file%20name.mkv")
-            const decodedFilename = decodeURIComponent(filenameWithPossibleEncoding);
-            // Then, fully encode it as a URI component
-            const reEncodedFilename = encodeURIComponent(decodedFilename);
-
-            pathParts.push(reEncodedFilename);
-            urlObj.pathname = pathParts.join('/');
-            return urlObj.toString();
-        } catch (e) {
-            console.warn(`Failed to fully encode filename in URL "${urlStr}". Error: ${e.message}. Falling back to simple space encoding.`);
-            // Fallback: if URL parsing or reconstruction fails, just do the space encoding
-            // This handles cases where urlStr might be a relative path or malformed for URL constructor
-            return urlStr.replace(/ /g, '%20');
-        }
-    }
-
     function handleVideoError(event) {
          console.error("HTML5 Video Error:", event, videoElement?.error);
          let msg = "An unknown error occurred while trying to play the video.";
@@ -196,7 +163,7 @@
         processed.id = movie.original_id; // Use original_id as the unique identifier
         processed.url = (movie.url && typeof movie.url === 'string' && movie.url.toLowerCase() !== 'null' && movie.url.trim() !== '') ? movie.url : null;
         if (processed.url) {
-            processed.url = processed.url.replace(/ /g, '%20'); // Encode spaces initially - bypass will re-encode filename more thoroughly
+            processed.url = processed.url.replace(/ /g, '%20'); // Encode spaces
         }
         processed.hubcloud_link = (movie.hubcloud_link && typeof movie.hubcloud_link === 'string' && movie.hubcloud_link.toLowerCase() !== 'null' && movie.hubcloud_link.trim() !== '') ? movie.hubcloud_link : null;
         processed.gdflix_link = (movie.gdflix_link && typeof movie.gdflix_link === 'string' && movie.gdflix_link.toLowerCase() !== 'null' && movie.gdflix_link.trim() !== '') ? movie.gdflix_link : null;
@@ -258,7 +225,7 @@
         if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
         const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
         const escapedFilename = displayFilename.replace(/'/g, "\\'");
-        const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : ''; // Already space-encoded if needed, bypass will fully encode
+        const escapedUrl = movie.url ? movie.url.replace(/'/g, "\\'") : ''; // Already space-encoded if needed
         const escapedId = movie.id ? String(movie.id).replace(/[^a-zA-Z0-9-_]/g, '') : '';
         const escapedHubcloudUrl = movie.hubcloud_link ? movie.hubcloud_link.replace(/'/g, "\\'") : '';
         const escapedGdflixUrl = movie.gdflix_link ? movie.gdflix_link.replace(/'/g, "\\'") : ''; // GDFLIX link
@@ -291,7 +258,7 @@
             const imdbSearchQuery = imdbQueryTerms.join(' ');
             const imdbSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(imdbSearchQuery)}&btnI=1`; // "I'm Feeling Lucky"
             const imdbIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`; // Placeholder icon, consider actual IMDb logo SVG
-            imdbSearchButtonHTML = `<a href="${imdbSearchUrl}" target="_blank" rel="noopener noreferrer" class="button imdb-button" style="background-color: var(--button-imdb-bg);">${imdbIconSVG} Find on IMDb</a>`;
+            imdbSearchButtonHTML = `<a href="${imdbSearchUrl}" target="_blank" rel="noopener noreferrer" class="button imdb-button" style="background-color: var(--button-imdb-bg);">${imdbIconSVG} View IMDb</a>`;
         }
 
         // --- Button Logic ---
@@ -347,7 +314,7 @@
         otherLinkButtonsHTML += youtubeTrailerButtonHTML;
         otherLinkButtonsHTML += imdbSearchButtonHTML;
         // Custom URL Toggle Button (now shown on error or if explicitly toggled)
-        otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Hide Custom URL Input</button>`; // Text changes on toggle
+        otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL</button>`;
         // Original Links
         if (movie.telegram_link && movie.telegram_link.toLowerCase() !== 'null') otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(movie.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`;
         if (movie.gdflix_link) otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(movie.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`;
@@ -1200,9 +1167,7 @@
              if (!response.ok) { let errorDetails = `HTTP Error: ${response.status}`; try { errorDetails = (await response.json()).details || errorDetails; } catch (_) {} throw new Error(errorDetails); }
              const result = await response.json();
              if (result.success && result.finalUrl) {
-                 console.log(`HubCloud Bypass successful! Raw Final URL: ${result.finalUrl}`);
-                 const encodedFinalUrl = fullyEncodeFilenameInUrl(result.finalUrl); // MODIFIED LINE
-                 console.log(`Fully Encoded Final URL (HubCloud): ${encodedFinalUrl}`);
+                 console.log(`HubCloud Bypass successful! Raw Final URL: ${result.finalUrl}`); const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20'); console.log(`Encoded Final URL: ${encodedFinalUrl}`);
                  setBypassButtonState(buttonElement, 'success', 'Success!');
                  updateItemDetailAfterBypass(encodedFinalUrl); // Update the current item's view
              } else { throw new Error(result.details || result.error || 'Unknown HubCloud bypass failure'); }
@@ -1227,9 +1192,7 @@
              if (!response.ok) { let errorDetails = `HTTP Error: ${response.status}`; try { errorDetails = (await response.json()).error || errorDetails; } catch (_) {} throw new Error(errorDetails); }
              const result = await response.json();
              if (result.success && result.finalUrl) {
-                 console.log(`GDFLIX Bypass successful! Raw Final URL: ${result.finalUrl}`);
-                 const encodedFinalUrl = fullyEncodeFilenameInUrl(result.finalUrl); // MODIFIED LINE
-                 console.log(`Fully Encoded Final URL (GDFLIX): ${encodedFinalUrl}`);
+                 console.log(`GDFLIX Bypass successful! Raw Final URL: ${result.finalUrl}`); const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20'); console.log(`Encoded Final URL: ${encodedFinalUrl}`);
                  setBypassButtonState(buttonElement, 'success', 'Success!');
                  updateItemDetailAfterBypass(encodedFinalUrl); // Update the current item's view
              } else { throw new Error(result.error || 'Unknown GDFLIX bypass failure'); }
