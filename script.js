@@ -1045,21 +1045,55 @@
             }
          }
     }
-    function handleGlobalCustomUrlClick(event) {
-         event.preventDefault(); lastFocusedElement = event.target;
-         if (!videoContainer || !playerCustomUrlSection || !playerCustomUrlInput) return;
-         console.log("Global Play Custom URL clicked."); closePlayerIfNeeded(); // Close any existing player
-         // Ensure other views are hidden if necessary (though should be via setViewMode)
+        function handleGlobalCustomUrlClick(event) {
+         event.preventDefault();
+         lastFocusedElement = event.target;
+         // Ensure main container and video player elements exist
+         // 'container' is the #cinemaghar-container, already defined globally
+         if (!videoContainer || !playerCustomUrlSection || !playerCustomUrlInput || !container) {
+             console.error("Global custom URL: Essential DOM elements missing (videoContainer, playerCustomUrlSection, playerCustomUrlInput, or main cinemaghar-container).");
+             return;
+         }
+
+         console.log("Global Play Custom URL clicked.");
+         closePlayerIfNeeded(); // Close any existing player. This might detach videoContainer from its previous parent.
+
+         // Ensure videoContainer is appended to the main #cinemaghar-container (the 'container' variable)
+         // if it's not already there or has become detached.
+         if (!videoContainer.parentElement || videoContainer.parentElement !== container) {
+             console.log("Appending videoContainer to main cinemaghar-container for global custom URL mode.");
+             container.appendChild(videoContainer);
+         }
+
+         // Hide other main view sections to focus on the custom URL player
          if(resultsArea) resultsArea.style.display = 'none';
          if(itemDetailView) itemDetailView.style.display = 'none';
-         if(searchFocusArea) searchFocusArea.style.display = 'none'; // Hide search too
+         if(searchFocusArea) searchFocusArea.style.display = 'none'; // Hide search area too
 
-         isGlobalCustomUrlMode = true; videoContainer.classList.add('global-custom-url-mode');
-         if (videoElement) videoElement.style.display = 'none'; if (customControlsContainer) customControlsContainer.style.display = 'none';
-         if (videoTitle) videoTitle.innerText = 'Play Custom URL'; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) audioWarningDiv.style.display = 'none';
-         playerCustomUrlSection.style.display = 'flex'; playerCustomUrlInput.value = '';
-         if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = ''; videoContainer.style.display = 'flex';
-         setTimeout(() => playerCustomUrlInput.focus(), 50);
+         isGlobalCustomUrlMode = true;
+         videoContainer.classList.add('global-custom-url-mode'); // Applies fixed positioning & display via CSS
+
+         // Configure internal player elements for custom URL input mode
+         if (videoElement) videoElement.style.display = 'none'; // Hide the actual video player <video> tag
+         if (customControlsContainer) customControlsContainer.style.display = 'none'; // Hide standard player controls
+         if (videoTitle) videoTitle.innerText = 'Play Custom URL';
+         if (vlcBox) vlcBox.style.display = 'none';
+         if (audioWarningDiv) audioWarningDiv.style.display = 'none';
+
+         playerCustomUrlSection.style.display = 'flex'; // CRITICAL: Show the custom URL input form
+         if(playerCustomUrlInput) playerCustomUrlInput.value = '';
+         if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = '';
+
+         // Ensure the videoContainer itself is visible.
+         // The class 'global-custom-url-mode' should also handle this via its CSS rule `display: flex;`
+         // but setting it explicitly here ensures it if the class somehow failed to apply display.
+         videoContainer.style.display = 'flex';
+         console.log("videoContainer display set to flex. Current Parent ID:", videoContainer.parentElement ? videoContainer.parentElement.id : "null");
+
+
+         if(playerCustomUrlInput) {
+             setTimeout(() => playerCustomUrlInput.focus(), 50);
+         }
     }
     function handleGlobalPlayCustomUrl(event) {
          event.preventDefault(); if (!playerCustomUrlInput || !playerCustomUrlFeedback) return;
