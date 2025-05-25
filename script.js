@@ -1561,21 +1561,67 @@
          }
     }
     function handleGlobalCustomUrlClick(event) {
-         event.preventDefault(); lastFocusedElement = event.target;
-         if (!videoContainer || !playerCustomUrlSection || !playerCustomUrlInput) return;
-         console.log("Global Play Custom URL clicked."); closePlayerIfNeeded(); // Close any existing player
-         // Ensure other views are hidden if necessary
+         event.preventDefault();
+         lastFocusedElement = event.target; // Store focus target
+
+         // Ensure all required elements exist
+         if (!container || !videoContainer || !playerCustomUrlSection || !playerCustomUrlInput) {
+             console.error("Global Play Custom URL: Missing one or more critical DOM elements (container, videoContainer, playerCustomUrlSection, playerCustomUrlInput).");
+             return;
+         }
+
+         console.log("Global Play Custom URL clicked.");
+         closePlayerIfNeeded(null); // Close any existing player instance. This might detach videoContainer.
+
+         // Ensure videoContainer is correctly parented for global mode.
+         // It should be a direct child of the main application container ('container').
+         if (videoContainer.parentElement !== container) {
+             if (videoContainer.parentElement) {
+                 // If it's somewhere else in the DOM, remove it first
+                 videoContainer.parentElement.removeChild(videoContainer);
+                 console.log("Removed videoContainer from its previous parent.");
+             }
+             // Append videoContainer to the main app container
+             container.appendChild(videoContainer);
+             console.log("Appended videoContainer to the main app container for global mode.");
+         } else {
+             // This case means videoContainer was already a child of 'container',
+             // but closePlayerIfNeeded might have detached it if 'container' was its parentContainer.
+             // Or, it was never detached. To be safe, ensure it's still there if it's supposed to be.
+             if (!container.contains(videoContainer)) {
+                 container.appendChild(videoContainer);
+                 console.log("Re-appended videoContainer to the main app container (was detached).");
+             } else {
+                 console.log("videoContainer is already correctly parented in the main app container.");
+             }
+         }
+
+         // Hide other page sections to make space for the global player
          if(resultsArea) resultsArea.style.display = 'none';
          if(itemDetailView) itemDetailView.style.display = 'none';
          if(searchFocusArea) searchFocusArea.style.display = 'none'; // Hide search too
          if(pageFooter) pageFooter.style.display = 'none'; // Hide footer too
 
-         isGlobalCustomUrlMode = true; videoContainer.classList.add('global-custom-url-mode');
-         if (videoElement) videoElement.style.display = 'none'; if (customControlsContainer) customControlsContainer.style.display = 'none';
-         if (videoTitle) videoTitle.innerText = 'Play Custom URL'; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) audioWarningDiv.style.display = 'none';
-         playerCustomUrlSection.style.display = 'flex'; playerCustomUrlInput.value = '';
-         if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = ''; videoContainer.style.display = 'flex';
-         setTimeout(() => playerCustomUrlInput.focus(), 50);
+         // Configure videoContainer and its children for custom URL input mode
+         isGlobalCustomUrlMode = true;
+         videoContainer.classList.add('global-custom-url-mode');
+
+         if (videoElement) videoElement.style.display = 'none';
+         if (customControlsContainer) customControlsContainer.style.display = 'none';
+         if (videoTitle) videoTitle.innerText = 'Play Custom URL';
+         if (vlcBox) vlcBox.style.display = 'none';
+         if (audioWarningDiv) audioWarningDiv.style.display = 'none';
+
+         playerCustomUrlSection.style.display = 'flex'; // Show the custom URL input section
+         if (playerCustomUrlInput) playerCustomUrlInput.value = ''; // Clear previous input
+         if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = ''; // Clear feedback
+
+         videoContainer.style.display = 'flex'; // Make the main player container visible
+
+         // Focus the input field
+         if (playerCustomUrlInput) {
+            setTimeout(() => playerCustomUrlInput.focus(), 50);
+         }
     }
     function handleGlobalPlayCustomUrl(event) {
          event.preventDefault(); if (!playerCustomUrlInput || !playerCustomUrlFeedback) return;
