@@ -1226,9 +1226,9 @@
          if (elementToFocusAfter instanceof Event) { elementToFocusAfter = elementToFocusAfter?.target; }
          if (!videoContainer || !videoElement) return;
 
-         const wasPlaying = videoContainer.style.display !== 'none';
-         const parentContainer = videoContainer.parentElement; // Container it was in (e.g., itemDetailContent)
-         const wasGlobalMode = isGlobalCustomUrlMode;
+         // const wasPlaying = videoContainer.style.display !== 'none'; // Keep if needed for other logic
+         const parentContainer = videoContainer.parentElement;
+         const wasGlobalMode = isGlobalCustomUrlMode; // Capture the mode *before* it's reset
 
          // Exit fullscreen if active
          try { const fsElement = document.fullscreenElement || document.webkitFullscreenElement; if (fsElement && (fsElement === videoElement || fsElement === videoContainer)) { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch(err) { console.error("Error exiting fullscreen:", err); }
@@ -1239,7 +1239,7 @@
          // Hide player and reset state
          videoContainer.style.display = 'none';
          videoContainer.classList.remove('global-custom-url-mode', 'is-fullscreen');
-         isGlobalCustomUrlMode = false;
+         isGlobalCustomUrlMode = false; // Reset the flag AFTER 'wasGlobalMode' is captured
 
          // Hide player elements
          if (vlcBox) vlcBox.style.display = 'none';
@@ -1257,18 +1257,25 @@
              console.log("Detached video player from its container.");
          }
 
-         // Restore focus
+         // If closing from global custom URL mode, reset to homepage view
+         if (wasGlobalMode) {
+             console.log("Closing from global custom URL mode. Resetting to homepage.");
+             resetToHomepage(); // This function handles setting the view and focusing search input
+             lastFocusedElement = null; // Clear as resetToHomepage handles its own focus
+             return; // Exit early, homepage reset handles visibility and focus.
+         }
+
+         // Restore focus (This part only runs if NOT closing from wasGlobalMode)
          let finalFocusTarget = elementToFocusAfter || lastFocusedElement;
           // Special focus handling if closed within item detail view
-         if (!wasGlobalMode && currentViewMode === 'itemDetail' && itemDetailContent) { // Check itemDetailContent still exists
-             const playButton = itemDetailContent.querySelector('.play-button'); // Try to focus the play button of the item
+         if (!wasGlobalMode && currentViewMode === 'itemDetail' && itemDetailContent) {
+             const playButton = itemDetailContent.querySelector('.play-button');
              if (playButton) {
                  finalFocusTarget = playButton;
              } else {
-                 // Fallback to a general element in the detail view if play button isn't there
                  const firstButton = itemDetailContent.querySelector('.button');
                  if (firstButton) finalFocusTarget = firstButton;
-                 else finalFocusTarget = itemDetailContent; // Fallback to content area itself
+                 else finalFocusTarget = itemDetailContent;
              }
          }
 
