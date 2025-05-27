@@ -1,4 +1,4 @@
-/* --- START OF style.css (MODIFIED FOR ITEM DETAIL VIEW NAVIGATION + TMDb Integration) --- */
+/* --- START OF style.css (MODIFIED FOR GRID VIEW + ITEM DETAIL VIEW NAVIGATION + TMDb Integration) --- */
 :root {
     --primary-color: #0d6efd; /* Bootstrap blue */
     --primary-hover: #0b5ed7;
@@ -10,8 +10,9 @@
     --text-muted: #6c757d;
     --border-color: #dee2e6; /* Light grey border */
     --header-bg: #ffffff; /* Used for results-active search bar background */
-    --table-header-bg: #e9ecef; /* Light grey for table header */
-    --table-row-hover: #f1f3f5; /* Slightly darker hover */
+    --table-header-bg: #e9ecef; /* Light grey for table header (may be less used now) */
+    --card-bg: var(--container-bg); /* Background for grid cards */
+    --card-hover-bg: #f1f3f5;
     --error-color: #dc3545; /* Bootstrap danger */
     --error-bg: #f8d7da; /* Background for error messages */
     --error-border: #f5c6cb;
@@ -34,28 +35,28 @@
     --suggestion-hover-bg: #e9ecef;
     --button-secondary-bg: var(--secondary-color);
     --button-secondary-hover: var(--secondary-hover);
-    --button-primary-bg: var(--primary-color); /* Added for Search button */
-    --button-primary-hover: var(--primary-hover); /* Added for Search button */
-    --button-share-bg: #6f42c1; /* Bootstrap purple for share */
+    --button-primary-bg: var(--primary-color);
+    --button-primary-hover: var(--primary-hover);
+    --button-share-bg: #6f42c1;
     --button-share-hover: #5a349b;
-    --button-youtube-bg: #FF0000; /* YouTube Red */
+    --button-youtube-bg: #FF0000;
     --button-youtube-hover: #cc0000;
-    --button-imdb-bg: var(--secondary-color); /* Using secondary color for IMDb button */
+    --button-imdb-bg: var(--secondary-color);
     --button-imdb-hover: var(--secondary-hover);
-    --button-tmdb-link-bg: #01b4e4; /* TMDb blue */
-    --button-tmdb-link-hover: #0d253f; /* TMDb dark blue */
-    --button-custom-url-bg: #ffc107; /* Bootstrap yellow */
+    --button-tmdb-link-bg: #01b4e4;
+    --button-tmdb-link-hover: #0d253f;
+    --button-custom-url-bg: #ffc107;
     --button-custom-url-hover: #e0a800;
-    --button-custom-url-text: #343a40; /* Dark text for yellow bg */
-    --button-custom-url-toggle-bg: var(--secondary-color); /* Use secondary color for toggle */
+    --button-custom-url-text: #343a40;
+    --button-custom-url-toggle-bg: var(--secondary-color);
     --button-custom-url-toggle-hover: var(--secondary-hover);
     --button-custom-url-global-bg: var(--secondary-color);
     --button-custom-url-global-hover: var(--secondary-hover);
-    --button-bypass-bg: var(--info-color); /* HubCloud Bypass Button Color */
+    --button-bypass-bg: var(--info-color);
     --button-bypass-hover: var(--info-hover);
     --button-bypass-text: white;
-    --button-gdflix-bypass-bg: #E50914; /* GDFLIX Bypass Button Color */
-    --button-gdflix-bypass-hover: #B81D24; /* GDFLIX Bypass Button Hover Color */
+    --button-gdflix-bypass-bg: #E50914;
+    --button-gdflix-bypass-hover: #B81D24;
     --button-gdflix-bypass-text: white;
 
     --border-radius-sm: 0.375rem; /* 6px */
@@ -65,10 +66,10 @@
     --shadow-md: 0 4px 10px rgba(0,0,0,0.08);
     --shadow-lg: 0 8px 25px rgba(0,0,0,0.1);
 
-    --preview-col-width-id: 10%;
-    --preview-col-width-filename: 55%;
-    --preview-col-width-date: 20%;
-    --preview-col-width-view: 15%;
+    /* Grid Card Dimensions (approx 2:3 aspect ratio for posters) */
+    --grid-card-min-width: 150px;
+    --grid-card-min-height: calc(var(--grid-card-min-width) * 1.5);
+    --grid-card-gap: 20px;
 
     --transition-speed: 0.3s;
     --transition-timing: ease;
@@ -141,7 +142,7 @@ body {
 }
 
 #cinemaghar-container.results-active,
-#cinemaghar-container.item-detail-active { /* Updated class */
+#cinemaghar-container.item-detail-active {
     padding-top: 0;
 }
 
@@ -168,7 +169,6 @@ body {
     background-color: var(--header-bg);
     border-bottom: 1px solid var(--border-color);
 }
-/* Hide search area when showing item detail */
 #cinemaghar-container.item-detail-active #search-focus-area {
     display: none;
 }
@@ -223,7 +223,7 @@ body {
     position: relative;
     width: 100%;
     max-width: 700px;
-    margin: 0 auto 25px auto; /* Reduced margin to make space for actions */
+    margin: 0 auto 25px auto;
     display: flex;
     align-items: center;
     gap: 0;
@@ -325,7 +325,7 @@ body {
     display: flex;
     gap: 15px;
     justify-content: center;
-    margin-top: 15px; /* Added margin */
+    margin-top: 15px;
     margin-bottom: 30px;
     transition: opacity var(--transition-speed) var(--transition-timing),
                 max-height var(--transition-speed) var(--transition-timing),
@@ -351,7 +351,6 @@ body {
     box-shadow: var(--shadow-sm);
     transform: translateY(-1px);
 }
-/* Specific style for the global custom URL button */
 #cinemaghar-container .search-actions #playCustomUrlGlobalButton {
     background-color: var(--button-custom-url-global-bg);
     color: white !important;
@@ -370,14 +369,14 @@ body {
     border: none;
 }
 
+/* --- Updates Preview Section (Homepage) --- */
 #updates-preview-section {
     width: 100%;
-    max-width: 850px;
+    max-width: 950px; /* Adjusted for wider grid */
     margin: 10px auto 0 auto;
     padding: 20px;
     background-color: transparent;
     border: none;
-    border-radius: 0;
     text-align: left;
     display: none;
     transition: opacity var(--transition-speed) var(--transition-timing),
@@ -392,95 +391,80 @@ body {
     color: var(--text-muted);
     text-align: center;
 }
-#updates-preview-list {
+#updates-preview-list { /* This will be the grid container */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-min-width), 1fr));
+    gap: var(--grid-card-gap);
     margin-bottom: 20px;
     border-top: 1px solid var(--border-color);
-    padding-top: 15px;
+    padding-top: 20px;
 }
-.update-item {
+.update-item { /* This is now a grid card for updates */
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
     display: flex;
-    align-items: center;
-    padding: 12px 8px;
-    border-bottom: 1px solid #eee;
-    font-size: 14px;
-    line-height: 1.4;
-    gap: 10px;
-    transition: background-color 0.2s ease;
-    position: relative;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    aspect-ratio: 2 / 3.2; /* Slightly more height for title below */
 }
 .update-item:hover {
-     background-color: var(--table-row-hover);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--shadow-md);
 }
-
-.update-item:last-of-type {
-    border-bottom: none;
-}
-.update-item > div {
+.update-item .poster-image-container { /* For poster and its placeholder/spinner */
+    width: 100%;
+    flex-grow: 1; /* Takes up most space */
+    background-color: var(--light-bg); /* Placeholder bg */
+    position: relative;
     display: flex;
     align-items: center;
-    white-space: nowrap;
-}
-.update-item .preview-col-id {
-    width: var(--preview-col-width-id);
     justify-content: center;
-    color: var(--text-muted);
-    font-size: 13px;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
-.update-item .preview-col-filename {
-    flex-grow: 1;
-    width: var(--preview-col-width-filename);
-    word-break: break-word;
-    white-space: normal;
-    cursor: pointer;
+.update-item .poster-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s ease;
+}
+.update-item .item-title-preview { /* Renamed to avoid conflict if global .item-title is different */
+    padding: 8px 10px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-color);
-    padding-right: 10px;
-    overflow: hidden;
-    min-width: 0;
-    transition: color 0.2s ease;
-}
-.update-item .preview-col-filename:hover {
-    color: var(--primary-color);
-    text-decoration: underline; /* Indicate clickability */
-}
-.update-item .preview-col-filename .quality-logo {
-    height: 1.1em;
-    width: auto;
-    vertical-align: text-bottom;
-    margin-left: 6px;
-    display: inline-block;
-    line-height: 1;
-    filter: grayscale(30%);
-    opacity: 0.8;
-}
-.update-item .preview-col-date {
-    width: var(--preview-col-width-date);
-    justify-content: center;
-    font-size: 12px;
-    color: var(--text-muted);
-    white-space: nowrap;
     text-align: center;
-    flex-shrink: 0;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(255,255,255,0.9); /* Slight bg for readability */
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0; /* Prevent shrinking */
 }
-.update-item .preview-col-view {
-    width: var(--preview-col-width-view);
-    justify-content: center;
-    flex-shrink: 0;
-}
-.update-item .preview-col-view .button.view-button {
-    padding: 6px 12px;
-    font-size: 12px;
-    min-width: 55px;
-    background-color: var(--button-secondary-bg);
-    color: white !important;
+/* Optional: Small date overlay for updates */
+.update-item .update-date-overlay {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: rgba(0,0,0,0.6);
+    color: white;
+    font-size: 10px;
+    padding: 2px 5px;
     border-radius: var(--border-radius-sm);
-    border: none;
-    cursor: pointer; /* Ensure cursor indicates clickable */
+    z-index: 1;
 }
-.update-item .preview-col-view .button.view-button:hover {
-    background-color: var(--button-secondary-hover);
+/* Remove old .preview-col-* styles as .update-item is now a card */
+.update-item .preview-col-id,
+.update-item .preview-col-filename,
+.update-item .preview-col-date,
+.update-item .preview-col-view {
+    display: none; /* No longer used in card format */
 }
 
 
@@ -507,7 +491,7 @@ body {
 }
 
 #cinemaghar-container.results-active #updates-preview-section,
-#cinemaghar-container.item-detail-active #updates-preview-section { /* Updated class */
+#cinemaghar-container.item-detail-active #updates-preview-section {
     opacity: 0;
     transform: translateY(-10px);
     pointer-events: none;
@@ -540,7 +524,6 @@ body {
     opacity: 1;
     transform: translateY(0);
 }
-/* Hide results when showing item detail */
 #cinemaghar-container.item-detail-active #results-area {
     display: none;
 }
@@ -562,12 +545,11 @@ body {
     transition: opacity var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2),
                 transform var(--transition-speed) var(--transition-timing) calc(var(--transition-speed) / 2);
 }
-#cinemaghar-container.item-detail-active #item-detail-view { /* Updated class */
+#cinemaghar-container.item-detail-active #item-detail-view {
     display: block;
     opacity: 1;
     transform: translateY(0);
 }
-/* Hide default back buttons initially */
 #item-detail-view #backToHomeButtonShared,
 #item-detail-view #backToResultsButton {
     display: none;
@@ -577,7 +559,6 @@ body {
     padding: 20px 15px;
     background-color: #f0f2f5;
     border-radius: var(--border-radius-sm);
-    /* Needed for positioning player inside */
     position: relative;
 }
 #item-detail-content .action-info,
@@ -604,7 +585,7 @@ body {
 }
 
 #cinemaghar-container .back-button {
-    display: none; /* Generally hidden, shown by container class or JS */
+    display: none;
     align-items: center;
     margin-bottom: 15px;
     padding: 8px 16px;
@@ -626,9 +607,8 @@ body {
     box-shadow: var(--shadow-sm);
 }
 #cinemaghar-container.results-active #backToHomeButtonResults {
-    display: inline-flex; /* Show results back button */
+    display: inline-flex;
 }
-/* JS will control which back button shows in #item-detail-view */
 
 
 /* --- Results Filter Area --- */
@@ -704,59 +684,162 @@ body {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .tab-content > div.active { display: block; }
 
-/* --- Tables --- */
-#cinemaghar-container .table-container {
-    overflow-x: auto;
-    background: var(--container-bg);
+/* --- Grid View Styles --- */
+.grid-view-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-min-width), 1fr));
+    gap: var(--grid-card-gap);
+    padding: 5px 0; /* Minimal padding, gap handles spacing */
+}
+
+.grid-item {
+    background-color: var(--card-bg);
     border-radius: var(--border-radius-sm);
-    box-shadow: none;
-    margin-bottom: 15px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden; /* Important for poster image rounding */
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
+    /* Aspect ratio for the card itself to maintain shape during loading */
+    aspect-ratio: 2 / 3.2; /* Slightly taller to accommodate title below poster */
     border: 1px solid var(--border-color);
 }
-#cinemaghar-container table { width: 100%; border-collapse: collapse; min-width: 650px; }
-#cinemaghar-container th, #cinemaghar-container td { padding: 14px 12px; border: none; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 14px; vertical-align: middle; font-weight: 400; }
-#cinemaghar-container th { background-color: var(--table-header-bg); font-weight: 600; color: var(--text-color); white-space: nowrap; position: sticky; top: 0; z-index: 2; cursor: pointer; user-select: none; }
-#cinemaghar-container th:not(.sortable) { cursor: default; }
-#cinemaghar-container th.col-id, #cinemaghar-container td.col-id,
-#cinemaghar-container th.col-size, #cinemaghar-container td.col-size,
-#cinemaghar-container th.col-quality, #cinemaghar-container td.col-quality,
-#cinemaghar-container th.col-updated, #cinemaghar-container td.col-updated,
-#cinemaghar-container th.col-view, #cinemaghar-container td.col-view { text-align: center; white-space: nowrap; }
 
-/* Sorting Indicators */
-#allFilesTable th.sortable:hover, #moviesTable th.sortable:hover, #seriesTable th.sortable:hover { background-color: #dde2e6; }
-#cinemaghar-container th .sort-indicator { display: inline-block; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; margin-left: 8px; vertical-align: middle; opacity: 0.5; transition: opacity 0.2s ease, border-color 0.2s; }
-#cinemaghar-container th.sort-asc .sort-indicator { border-bottom: 5px solid var(--primary-color); opacity: 1; }
-#cinemaghar-container th.sort-desc .sort-indicator { border-top: 5px solid var(--primary-color); opacity: 1; }
-#cinemaghar-container th:not(.sortable) .sort-indicator { display: none; }
-
-/* Column widths */
-#cinemaghar-container th.col-id, #cinemaghar-container td.col-id { width: 8%; }
-#cinemaghar-container th.col-filename, #cinemaghar-container td.col-filename { width: 45%; }
-#cinemaghar-container th.col-size, #cinemaghar-container td.col-size { width: 12%; }
-#cinemaghar-container th.col-quality, #cinemaghar-container td.col-quality { width: 13%; }
-#cinemaghar-container th.col-updated, #cinemaghar-container td.col-updated { width: 12%; }
-#cinemaghar-container th.col-view, #cinemaghar-container td.col-view { width: 10%; }
-
-#cinemaghar-container tr:last-of-type td { border-bottom: none; }
-#cinemaghar-container tbody tr.movie-data-row:hover {
-    background-color: var(--table-row-hover);
+.grid-item:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: var(--shadow-md);
+    z-index: 5; /* Bring to front on hover */
 }
 
-#cinemaghar-container td.col-filename { word-break: break-word; text-align: left; min-width: 150px; cursor: pointer; color: var(--primary-color); font-weight: 500; transition: color 0.2s ease; white-space: normal; position: relative; }
-#cinemaghar-container td.col-filename:hover { color: var(--primary-hover); text-decoration: underline; }
-#cinemaghar-container td.col-filename .quality-logo { height: 1.1em; width: auto; vertical-align: text-bottom; margin-left: 6px; display: inline-block; line-height: 1; filter: grayscale(30%); opacity: 0.8; transition: filter 0.2s ease, opacity 0.2s ease; }
-#cinemaghar-container td.col-filename:hover .quality-logo { filter: grayscale(0%); opacity: 1; }
-#cinemaghar-container td.col-quality { text-align: center; min-width: 80px; white-space: nowrap; font-weight: 500; }
-#cinemaghar-container td.col-updated { white-space: nowrap; min-width: 100px; color: var(--text-muted); font-size: 13px; text-align: center; }
-#cinemaghar-container td.status-message, #cinemaghar-container td.error-message { color: var(--text-muted); font-style: italic; text-align: center; padding: 25px; font-size: 15px; }
-#cinemaghar-container td.error-message { color: var(--error-text); background-color: var(--error-bg); border: 1px solid var(--error-border); font-weight: 500; font-style: normal; }
-#cinemaghar-container td.loading-message { color: var(--text-muted); text-align: center; padding: 35px 15px; font-size: 15px; }
-#cinemaghar-container td.loading-message .spinner { margin: 0 auto 10px auto; }
-#cinemaghar-container td.col-view .view-button { cursor: pointer; } /* Ensure view button is clickable */
+.grid-item .poster-image-container {
+    width: 100%;
+    flex-grow: 1; /* Poster area takes most space */
+    position: relative; /* For spinner or placeholder absolutely positioned */
+    background-color: var(--light-bg); /* Fallback/loading background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Clip image if not perfectly aspect ratio */
+}
+
+.grid-item .poster-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Scale image to cover, might crop */
+    display: block; /* Remove extra space below img */
+    opacity: 0; /* Hidden initially, faded in by JS */
+    transition: opacity 0.4s ease;
+}
+.grid-item .poster-image.loaded {
+    opacity: 1;
+}
+
+/* Placeholder for when poster is loading or missing */
+.grid-item .poster-image-container .poster-placeholder-icon {
+    font-size: 3em; /* Example size */
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+.grid-item .poster-image-container .spinner { /* Spinner inside card */
+    width: 30px;
+    height: 30px;
+    border-width: 3px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.grid-item .item-title {
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+    text-align: center;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: var(--container-bg); /* Or a slightly off-white */
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0; /* Prevent title area from shrinking */
+    min-height: 45px; /* Ensure consistent height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* Quality logos (4K, HDR) within grid item titles - OPTIONAL */
+.grid-item .item-title .quality-logo {
+    height: 0.9em;
+    width: auto;
+    vertical-align: middle;
+    margin-left: 5px;
+    display: inline-block;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+/* Status/Error messages within grid containers */
+.grid-view-container .status-message,
+.grid-view-container .error-message,
+#updates-preview-list .status-message, /* For updates preview */
+#updates-preview-list .error-message {
+    grid-column: 1 / -1; /* Span all columns */
+    text-align: center;
+    padding: 30px 15px;
+    font-size: 15px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+.grid-view-container .error-message,
+#updates-preview-list .error-message {
+    color: var(--error-text);
+    background-color: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-radius: var(--border-radius-sm);
+    font-weight: 500;
+    font-style: normal;
+}
+.grid-view-container .loading-message, /* If used directly in grid container */
+#updates-preview-list .loading-inline-spinner { /* For updates preview */
+    grid-column: 1 / -1;
+    /* text-align: center; */
+    /* padding: 35px 15px; */
+    /* font-size: 15px; */
+    /* color: var(--text-muted); */
+}
+/* .grid-view-container .loading-message .spinner { margin: 0 auto 10px auto; } */
 
 
-/* Common Action Info/Buttons styles used by item detail view */
+/* Commenting out old table styles */
+/*
+#cinemaghar-container .table-container { ... }
+#cinemaghar-container table { ... }
+#cinemaghar-container th, #cinemaghar-container td { ... }
+#cinemaghar-container th { ... }
+#cinemaghar-container th.col-id, ... { ... }
+#allFilesTable th.sortable:hover, ... { ... }
+#cinemaghar-container th .sort-indicator { ... }
+#cinemaghar-container th.sort-asc .sort-indicator { ... }
+#cinemaghar-container th.sort-desc .sort-indicator { ... }
+#cinemaghar-container th:not(.sortable) .sort-indicator { ... }
+#cinemaghar-container th.col-id, ... (column widths) ... { ... }
+#cinemaghar-container tr:last-of-type td { ... }
+#cinemaghar-container tbody tr.movie-data-row:hover { ... }
+#cinemaghar-container td.col-filename { ... }
+#cinemaghar-container td.col-filename:hover { ... }
+#cinemaghar-container td.col-filename .quality-logo { ... }
+#cinemaghar-container td.col-filename:hover .quality-logo { ... }
+#cinemaghar-container td.col-quality { ... }
+#cinemaghar-container td.col-updated { ... }
+#cinemaghar-container td.status-message, ... { ... } (Now handled by grid specific messages)
+#cinemaghar-container td.col-view .view-button { ... }
+*/
+
+/* --- Action Info/Buttons (Item Detail View - Retained) --- */
 #cinemaghar-container #item-detail-content .action-info {
     margin-bottom: 20px; font-size: 14px; color: var(--text-muted); text-align: left; line-height: 1.7;
 }
@@ -772,36 +855,30 @@ body {
 #cinemaghar-container #item-detail-content .action-buttons-container {
     display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 12px; margin-bottom: 15px; border-top: 1px solid var(--border-color); padding-top: 25px;
 }
-/* Remove bottom margin from last element in shared content */
 #cinemaghar-container #item-detail-content > *:last-child {
     margin-bottom: 0;
 }
-/* Ensure border-top doesn't apply if action-buttons-container is first (e.g. after TMDb) */
 #cinemaghar-container #item-detail-content > .action-buttons-container:first-of-type {
     border-top: none;
     padding-top: 0;
 }
-/* Style border correctly if action-info comes after separator/TMDb */
 #cinemaghar-container #item-detail-content > .action-info + .action-buttons-container {
      border-top: 1px solid var(--border-color);
      padding-top: 25px;
 }
-
-
-/* Container for URL-dependent buttons (might be initially empty) */
 #cinemaghar-container #item-detail-content .url-actions-container {
-    display: contents; /* Act as if the container isn't there for flex layout */
+    display: contents;
 }
 
 
-/* --- Custom URL Input Section Styles (Inside Item Detail View / Player) --- */
-#cinemaghar-container #item-detail-content .custom-url-container { /* Style if used within item detail view */
+/* --- Custom URL Input Section Styles (Retained) --- */
+#cinemaghar-container #item-detail-content .custom-url-container {
     display: flex;
-    flex-direction: column; /* Stack label, input, button */
+    flex-direction: column;
     gap: 10px;
-    margin-top: 15px; /* Space below the toggle button */
+    margin-top: 15px;
     padding: 15px;
-    background-color: #e9ecef; /* Slightly different background */
+    background-color: #e9ecef;
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--border-color);
 }
@@ -809,7 +886,7 @@ body {
     font-size: 13px;
     font-weight: 500;
     color: var(--text-muted);
-    margin-bottom: -5px; /* Pull input closer */
+    margin-bottom: -5px;
 }
 #cinemaghar-container #item-detail-content .custom-url-input {
     width: 100%;
@@ -825,7 +902,7 @@ body {
     outline: none;
 }
 #cinemaghar-container #item-detail-content .play-custom-url-button {
-    align-self: flex-start; /* Align button to the left */
+    align-self: flex-start;
     padding: 8px 16px;
     font-size: 13px;
 }
@@ -833,47 +910,42 @@ body {
     font-size: 12px;
     color: var(--error-color);
     margin-top: 5px;
-    min-height: 1em; /* Reserve space */
+    min-height: 1em;
 }
 
-/* --- Buttons General Styling --- */
-/* Excludes search, footer, table/preview view buttons, back button */
-#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) {
+/* --- Buttons General Styling (Retained & Adjusted) --- */
+/* Note: Removed table/preview view button exclusions as they might be part of cards now or different */
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.back-button) {
     display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; margin: 2px 0; color: white !important; border: none; border-radius: var(--border-radius-sm); text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; white-space: nowrap; line-height: 1.4; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm);
 }
-#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) span[aria-hidden="true"] {
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.back-button) span[aria-hidden="true"] {
     margin-right: 0.5em;
     font-size: 1.1em;
     line-height: 1;
 }
-#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) svg,
-#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button) .button-spinner /* Spinner inside button */ {
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.back-button) svg,
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.back-button) .button-spinner {
     width: 1.1em;
     height: 1.1em;
     margin-right: 0.5em;
     fill: currentColor;
 }
- /* Specific styling for spinner inside button */
 .button-spinner {
-    display: none; /* Hidden by default */
+    display: none;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     border-top-color: #fff;
     animation: spin 0.8s ease infinite;
-    margin-left: -0.5em; /* Adjust positioning if needed */
+    margin-left: -0.5em;
 }
-.button.loading .button-spinner {
-    display: inline-block;
-}
-.button.loading .button-icon { /* Hide original icon span when loading */
-    display: none !important;
-}
+.button.loading .button-spinner { display: inline-block; }
+.button.loading .button-icon { display: none !important; }
 
 
-#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):hover:not(:disabled) {
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.back-button):hover:not(:disabled) {
     opacity: 0.9; filter: brightness(1.1); box-shadow: 0 3px 7px rgba(0,0,0,0.12); transform: translateY(-1px);
 }
-#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.preview-col-view .button):not(.movie-data-row .view-button):not(.back-button):active:not(:disabled) {
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.back-button):active:not(:disabled) {
     filter: brightness(0.9); transform: translateY(0); box-shadow: var(--shadow-sm);
 }
  #cinemaghar-container .button:disabled {
@@ -884,16 +956,15 @@ body {
     filter: grayscale(30%);
  }
 
-/* Specific Button Colors */
-#cinemaghar-container .movie-data-row .view-button { background-color: var(--button-secondary-bg); padding: 6px 12px !important; font-size: 12px !important; min-width: 55px; border-radius: var(--border-radius-sm) !important; border: none; color: white !important; cursor: pointer; }
-#cinemaghar-container .movie-data-row .view-button:hover { background-color: var(--button-secondary-hover); }
+/* Specific Button Colors (Retained) */
+/* Removed .movie-data-row .view-button as it's part of table */
 #cinemaghar-container .play-button { background-color: var(--success-color); }
 #cinemaghar-container .intent-button { background-color: #17a2b8; }
 #cinemaghar-container .vlc-button { background-color: #fd7e14; }
 #cinemaghar-container .download-button { background-color: var(--primary-color); }
 #cinemaghar-container .telegram-button:not(#page-footer .button) { background-color: #0088cc; }
-#cinemaghar-container .gdflix-button { background-color: #E50914; } /* Style for the *link* button */
-#cinemaghar-container .hubcloud-button { background-color: #1E90FF; } /* Style for the *link* button */
+#cinemaghar-container .gdflix-button { background-color: #E50914; }
+#cinemaghar-container .hubcloud-button { background-color: #1E90FF; }
 #cinemaghar-container .filepress-button { background-color: #6c757d; }
 #cinemaghar-container .gdtot-button { background-color: #ffc107; color: #333 !important; }
 #cinemaghar-container .share-button { background-color: var(--button-share-bg); }
@@ -901,35 +972,34 @@ body {
 #cinemaghar-container .youtube-button { background-color: var(--button-youtube-bg); }
 #cinemaghar-container .youtube-button:hover { background-color: var(--button-youtube-hover); }
 #cinemaghar-container .youtube-button svg { fill: white; }
-#cinemaghar-container .imdb-button { background-color: var(--button-imdb-bg); } /* Used for Google search fallback */
+#cinemaghar-container .imdb-button { background-color: var(--button-imdb-bg); }
 #cinemaghar-container .imdb-button:hover { background-color: var(--button-imdb-hover); }
 #cinemaghar-container .imdb-button svg { fill: white; }
-#cinemaghar-container .tmdb-link-button { background-color: var(--button-tmdb-link-bg); } /* Direct TMDb link button */
+#cinemaghar-container .tmdb-link-button { background-color: var(--button-tmdb-link-bg); }
 #cinemaghar-container .tmdb-link-button:hover { background-color: var(--button-tmdb-link-hover); }
-#cinemaghar-container .tmdb-link-button svg { fill: white; } /* Assuming placeholder icon */
+#cinemaghar-container .tmdb-link-button svg { fill: white; }
 
-/* Custom URL Buttons (within item detail view / player) */
+/* Custom URL Buttons (Retained) */
 #cinemaghar-container #item-detail-content .custom-url-toggle-button,
-#cinemaghar-container #videoContainer .custom-url-toggle-button /* If shown within player */ {
+#cinemaghar-container #videoContainer .custom-url-toggle-button {
   background-color: var(--button-custom-url-toggle-bg);
-  display: none; /* Hidden by default, shown by JS on error */
+  display: none;
 }
 #cinemaghar-container #item-detail-content .custom-url-toggle-button:hover,
 #cinemaghar-container #videoContainer .custom-url-toggle-button:hover {
     background-color: var(--button-custom-url-toggle-hover);
 }
-#cinemaghar-container #item-detail-content .play-custom-url-button, /* Button within detail view */
-#cinemaghar-container #playerCustomUrlSection button /* Button inside player */ {
+#cinemaghar-container #item-detail-content .play-custom-url-button,
+#cinemaghar-container #playerCustomUrlSection button {
     background-color: var(--button-custom-url-bg);
-    color: var(--button-custom-url-text) !important; /* Ensure text is dark */
+    color: var(--button-custom-url-text) !important;
     font-weight: 600;
 }
 #cinemaghar-container #item-detail-content .play-custom-url-button:hover,
 #cinemaghar-container #playerCustomUrlSection button:hover {
     background-color: var(--button-custom-url-hover);
-    filter: brightness(1.05); /* Slight brighten instead of darken */
+    filter: brightness(1.05);
 }
-/* HubCloud Bypass Button */
 #cinemaghar-container .hubcloud-bypass-button {
     background-color: var(--button-bypass-bg);
     color: var(--button-bypass-text) !important;
@@ -937,10 +1007,9 @@ body {
 #cinemaghar-container .hubcloud-bypass-button:hover:not(:disabled) {
     background-color: var(--button-bypass-hover);
 }
-#cinemaghar-container .hubcloud-bypass-button.loading { /* Style when bypassing */
+#cinemaghar-container .hubcloud-bypass-button.loading {
     filter: brightness(0.9);
 }
-/* NEW: GDFLIX Bypass Button */
 #cinemaghar-container .gdflix-bypass-button {
     background-color: var(--button-gdflix-bypass-bg);
     color: var(--button-gdflix-bypass-text) !important;
@@ -948,11 +1017,11 @@ body {
 #cinemaghar-container .gdflix-bypass-button:hover:not(:disabled) {
     background-color: var(--button-gdflix-bypass-hover);
 }
-#cinemaghar-container .gdflix-bypass-button.loading { /* Style when bypassing */
+#cinemaghar-container .gdflix-bypass-button.loading {
     filter: brightness(0.9);
 }
 
-/* --- Copy Feedback & Bypass Feedback (Shared Class & Specific) --- */
+/* --- Copy Feedback & Bypass Feedback (Retained) --- */
 #cinemaghar-container .copy-feedback,
 #cinemaghar-container .bypass-feedback {
     display: none;
@@ -980,12 +1049,11 @@ body {
      color: var(--error-color);
 }
  #cinemaghar-container .bypass-feedback.loading {
-     color: var(--text-muted); /* Loading text color */
+     color: var(--text-muted);
      font-style: italic;
 }
 
-/* --- Video Player Container --- */
-/* Position it generally, will be moved or displayed */
+/* --- Video Player Container (Retained) --- */
 #cinemaghar-container .video-container {
     margin: 20px auto 0 auto;
     background: #f0f2f5;
@@ -997,24 +1065,22 @@ body {
     width: 100%;
     max-width: 850px;
     text-align: center;
-    display: none; /* Initially hidden */
+    display: none;
     flex-direction: column;
-    z-index: 900; /* Ensure it's above table content */
+    z-index: 900;
 }
-/* Styles when used for global custom URL */
 #cinemaghar-container .video-container.global-custom-url-mode {
-   display: flex; /* Make visible */
-   position: fixed; /* Float above */
+   display: flex;
+   position: fixed;
    top: 50%;
    left: 50%;
    transform: translate(-50%, -50%);
    width: 90%;
-   max-width: 600px; /* Limit width for modal-like appearance */
-   z-index: 9998; /* High z-index */
+   max-width: 600px;
+   z-index: 9998;
    padding: 30px 25px;
    border: 1px solid var(--border-color);
 }
-
 #cinemaghar-container .close-btn {
     position: absolute;
     top: 15px;
@@ -1027,19 +1093,17 @@ body {
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    z-index: 10; /* Above other player elements */
+    z-index: 10;
     transition: background-color 0.2s ease;
 }
 #cinemaghar-container .close-btn:hover { background-color: #c82333; }
-
-/* NEW: Custom URL section inside the player */
 #cinemaghar-container #playerCustomUrlSection {
-    display: none; /* Hidden by default */
+    display: none;
     padding: 20px 10px 10px 10px;
     text-align: left;
     flex-direction: column;
     gap: 10px;
-    margin-bottom: 15px; /* Space below */
+    margin-bottom: 15px;
     border-bottom: 1px dashed var(--border-color);
 }
 #cinemaghar-container #playerCustomUrlSection label {
@@ -1061,7 +1125,7 @@ body {
      outline: none;
 }
 #cinemaghar-container #playerCustomUrlSection button {
-     align-self: flex-start; /* Align button to the left */
+     align-self: flex-start;
      padding: 9px 18px;
      font-size: 14px;
 }
@@ -1069,10 +1133,9 @@ body {
     font-size: 13px;
     color: var(--error-color);
     margin-top: 5px;
-    min-height: 1.2em; /* Reserve space */
+    min-height: 1.2em;
     font-weight: 500;
 }
-
 #cinemaghar-container #audioWarning { display: none; background-color: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); padding: 12px; margin-bottom: 15px; border-radius: var(--border-radius-sm); font-size: 14px; text-align: center; position: relative; z-index: 1; line-height: 1.5; flex-shrink: 0; }
 #cinemaghar-container #audioWarning strong { font-weight: 600; }
 #cinemaghar-container #html5VideoPlayer { width: 100%; max-height: 480px; display: block; margin: 10px auto 15px auto; background: black; border-radius: var(--border-radius-sm); outline: none; box-shadow: var(--shadow-md); flex-shrink: 1; flex-grow: 1; object-fit: contain; cursor: default; }
@@ -1086,21 +1149,18 @@ body {
 #cinemaghar-container .vlc-copy-box strong { color: var(--text-color); font-weight: 600; display: block; margin-bottom: 5px; }
 #cinemaghar-container .vlc-copy-box code { background: #dcdcdc; padding: 3px 6px; border-radius: var(--border-radius-sm); font-family: 'Courier New', Courier, monospace; word-break: break-all; color: #333; font-size: 13px; display: block; margin-top: 3px; user-select: all; }
 .player-control-group { display: flex; align-items: center; gap: 6px; } .player-control-group label { font-size: 12px; color: var(--text-muted); white-space: nowrap; } #volumeSlider { width: 80px; cursor: pointer; height: 5px; transition: opacity 0.2s ease; vertical-align: middle; accent-color: var(--primary-color); } #playbackSpeedSelect { padding: 4px 8px; font-size: 12px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background-color: #fff; height: 30px; line-height: 1; vertical-align: middle; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%236c757d" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>'); background-repeat: no-repeat; background-position: right 5px center; background-size: 12px 10px; padding-right: 25px; }
-
-/* --- Fullscreen Player Styles --- */
 #cinemaghar-container .video-container.is-fullscreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; max-width: none; padding: 0; margin: 0; border-radius: 0; background-color: black; z-index: 2147483647; display: flex; flex-direction: column; justify-content: center; }
 #cinemaghar-container .video-container.is-fullscreen #html5VideoPlayer { width: 100%; height: 100%; max-height: none; flex-grow: 1; flex-shrink: 1; border-radius: 0; box-shadow: none; margin: 0; object-fit: contain; cursor: default; }
-/* Hide everything except video in fullscreen */
 #cinemaghar-container .video-container.is-fullscreen .custom-controls,
 #cinemaghar-container .video-container.is-fullscreen .close-btn,
 #cinemaghar-container .video-container.is-fullscreen #videoTitle,
 #cinemaghar-container .video-container.is-fullscreen #audioWarning,
 #cinemaghar-container .video-container.is-fullscreen .vlc-copy-box,
-#cinemaghar-container .video-container.is-fullscreen #playerCustomUrlSection /* Hide custom URL input too */ {
+#cinemaghar-container .video-container.is-fullscreen #playerCustomUrlSection {
     display: none !important;
 }
 
-/* --- Pagination --- */
+/* --- Pagination (Retained) --- */
 .pagination-container { text-align: center; margin: 30px 0 15px 0; user-select: none; }
 .pagination-container button, .pagination-container span { display: inline-block; padding: 9px 16px; margin: 0 4px; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); background-color: white; color: var(--primary-color); cursor: pointer; font-size: 14px; transition: all 0.2s ease; vertical-align: middle; }
 .pagination-container button:hover:not(:disabled) { background-color: var(--pagination-hover-bg); border-color: #adb5bd; }
@@ -1108,16 +1168,14 @@ body {
 .pagination-container button:disabled { color: var(--pagination-disabled-color); background-color: var(--pagination-disabled-bg); border-color: var(--pagination-disabled-border); cursor: not-allowed; opacity: 0.7; }
 .pagination-container .page-info { font-size: 13px; color: var(--text-muted); margin: 0 5px; padding: 9px 0; border: none; background: none; cursor: default; display: inline-block; vertical-align: middle; }
 
-/* --- Spinner --- */
+/* --- Spinner (Retained) --- */
 .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: var(--primary-color); margin: 30px auto; animation: spin 1s ease infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-/* Loading messages with spinner */
 .loading-inline-spinner { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 20px; }
 .loading-inline-spinner .spinner { margin: 0; width: 24px; height: 24px; border-width: 3px; }
 .loading-inline-spinner span { color: var(--text-muted); font-size: 14px; }
 
-/* Error message container styling */
+/* --- Error Message Container (Retained) --- */
 .error-container {
     padding: 20px;
     text-align: center;
@@ -1130,7 +1188,7 @@ body {
     max-width: 800px;
 }
 
-/* --- Footer Styles --- */
+/* --- Footer Styles (Retained) --- */
 #page-footer {
     width: 100%;
     margin-top: 40px;
@@ -1145,7 +1203,7 @@ body {
     flex-shrink: 0;
     transition: display var(--transition-speed) var(--transition-timing);
 }
-#cinemaghar-container.item-detail-active #page-footer { /* Updated class */
+#cinemaghar-container.item-detail-active #page-footer {
     display: none;
 }
 #page-footer .footer-text {
@@ -1191,39 +1249,32 @@ body {
     opacity: 1;
 }
 
-/* --- START OF TMDb Integration Styles --- */
-
-/* Container for all TMDb details */
+/* --- TMDb Integration Styles (Retained for Item Detail View) --- */
 .tmdb-details-container {
     display: flex;
-    flex-direction: column; /* Stack poster/info on small screens */
+    flex-direction: column;
     gap: 20px;
     margin-bottom: 25px;
     padding-bottom: 20px;
-    /* border-bottom: 1px dashed var(--border-color); */ /* Separator moved below */
 }
-
-/* Poster column */
 .tmdb-poster-column {
     flex-shrink: 0;
     text-align: center;
 }
-
 .tmdb-poster {
-    max-width: 200px; /* Limit poster width */
+    max-width: 200px;
     width: 100%;
     height: auto;
     border-radius: var(--border-radius-sm);
     box-shadow: var(--shadow-md);
-    margin: 0 auto; /* Center on mobile */
+    margin: 0 auto;
     display: block;
-    background-color: var(--light-bg); /* Placeholder bg */
+    background-color: var(--light-bg);
     border: 1px solid var(--border-color);
 }
-
 .tmdb-poster-placeholder {
     width: 180px;
-    height: 270px; /* Approx aspect ratio */
+    height: 270px;
     background-color: var(--table-header-bg);
     color: var(--text-muted);
     display: flex;
@@ -1235,14 +1286,11 @@ body {
     margin: 0 auto;
     border: 1px solid var(--border-color);
 }
-
-/* Info column (title, overview, etc.) */
 .tmdb-info-column {
     flex-grow: 1;
-    min-width: 0; /* Prevent overflow issues */
+    min-width: 0;
     text-align: left;
 }
-
 .tmdb-title {
     font-size: 22px;
     font-weight: 600;
@@ -1250,14 +1298,12 @@ body {
     color: var(--text-color);
     line-height: 1.3;
 }
-
 .tmdb-tagline {
     font-size: 14px;
     font-style: italic;
     color: var(--text-muted);
     margin-bottom: 15px;
 }
-
 .tmdb-meta {
     display: flex;
     flex-wrap: wrap;
@@ -1270,7 +1316,6 @@ body {
 .tmdb-meta > div, .tmdb-meta > span {
      white-space: nowrap;
 }
-
 .tmdb-rating {
     font-weight: 600;
     color: var(--text-color);
@@ -1278,11 +1323,10 @@ body {
     display: inline-flex;
     align-items: center;
 }
-.tmdb-rating span { /* Star icon if added */
+.tmdb-rating span {
     margin-right: 4px;
-    color: #f5c518; /* IMDb yellow */
+    color: #f5c518;
 }
-
 .tmdb-genres {
     font-size: 13px;
     margin-bottom: 15px;
@@ -1304,7 +1348,6 @@ body {
     font-size: 12px;
     font-weight: 500;
 }
-
 .tmdb-overview {
     font-size: 14px;
     line-height: 1.7;
@@ -1320,7 +1363,6 @@ body {
     margin: 0;
     color: var(--text-color);
 }
-
 .tmdb-fetch-failed {
     font-size: 14px;
     color: var(--text-muted);
@@ -1332,8 +1374,6 @@ body {
     text-align: center;
     margin-bottom: 20px;
 }
-
-/* Optional: Basic Actor List Styles */
 .tmdb-actors {
     font-size: 13px;
     margin-top: 15px;
@@ -1356,9 +1396,6 @@ body {
 .tmdb-actors li {
     margin-bottom: 4px;
 }
-
-
-/* Link button specifically for TMDb */
 #cinemaghar-container .tmdb-link-button {
     background-color: var(--button-tmdb-link-bg);
 }
@@ -1366,46 +1403,37 @@ body {
     background-color: var(--button-tmdb-link-hover);
 }
 #cinemaghar-container .tmdb-link-button svg {
-    fill: white; /* Assuming placeholder icon */
+    fill: white;
 }
-/* Use same background for IMDb button if it's a google search fallback */
 #cinemaghar-container .imdb-button {
-     background-color: var(--button-imdb-bg); /* From :root */
+     background-color: var(--button-imdb-bg);
 }
 #cinemaghar-container .imdb-button:hover {
-     background-color: var(--button-imdb-hover); /* From :root */
+     background-color: var(--button-imdb-hover);
 }
-
-/* Separator between TMDb and Internal Info */
 hr.detail-separator {
     border: none;
     border-top: 1px solid var(--border-color);
-    margin: 0 0 25px 0; /* Adjusted margin */
+    margin: 0 0 25px 0;
 }
-
-
-/* Responsive adjustments for TMDb section */
 @media screen and (min-width: 600px) {
     .tmdb-details-container {
-        flex-direction: row; /* Poster and info side-by-side */
+        flex-direction: row;
         align-items: flex-start;
     }
     .tmdb-poster-column {
-        flex-basis: 200px; /* Fixed width for poster column */
+        flex-basis: 200px;
         margin-right: 20px;
-        margin-left: 0; /* Align left */
+        margin-left: 0;
         text-align: left;
     }
      .tmdb-poster, .tmdb-poster-placeholder {
-        margin: 0; /* Align left */
+        margin: 0;
     }
     .tmdb-info-column {
-         flex-basis: 0; /* Allow it to take remaining space */
+         flex-basis: 0;
     }
 }
-
-/* --- END OF TMDb Integration Styles --- */
-
 
 /* --- Responsive Styles --- */
 @media screen and (max-width: 768px) {
@@ -1419,53 +1447,21 @@ hr.detail-separator {
       flex-grow: 1;
   }
 
-  #search-focus-area {
-      padding: 70px 15px 20px 15px;
-  }
+  #search-focus-area { padding: 70px 15px 20px 15px; }
   #cinemaghar-container.results-active #search-focus-area {
       padding: 15px 15px 10px 15px;
       border-bottom: 1px solid var(--border-color);
       min-height: 67px;
   }
-
-  #search-focus-area .simple-title {
-      font-size: 42px;
-      margin-bottom: 0px;
-  }
-  #search-focus-area .signature {
-      font-size: 11px;
-      margin: -2px auto 20px auto;
-      max-width: 95%;
-  }
-
-  .search-input-wrapper {
-      margin-bottom: 15px; /* Adjusted for actions */
-      max-width: 95%;
-      gap: 0;
-  }
-  #cinemaghar-container #mainSearchInput {
-      padding: 10px 15px 10px 40px;
-      font-size: 14px;
-      height: 42px;
-      border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
-  }
-   #cinemaghar-container .search-input-wrapper #searchSubmitButton {
-       height: 42px;
-       padding: 0 18px;
-       font-size: 13px;
-       border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
-   }
+  #search-focus-area .simple-title { font-size: 42px; margin-bottom: 0px; }
+  #search-focus-area .signature { font-size: 11px; margin: -2px auto 20px auto; max-width: 95%; }
+  .search-input-wrapper { margin-bottom: 15px; max-width: 95%; gap: 0; }
+  #cinemaghar-container #mainSearchInput { padding: 10px 15px 10px 40px; font-size: 14px; height: 42px; border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm); }
+   #cinemaghar-container .search-input-wrapper #searchSubmitButton { height: 42px; padding: 0 18px; font-size: 13px; border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0; }
   .search-input-wrapper::before { left: 12px; width: 16px; height: 16px; opacity: 0.6; }
-
-  #searchInputSuggestions {
-      width: 100%;
-      max-width: 100%;
-      top: calc(100% + 1px);
-      border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
-  }
+  #searchInputSuggestions { width: 100%; max-width: 100%; top: calc(100% + 1px); border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm); }
   #searchInputSuggestions div { padding: 9px 15px 9px 40px; font-size: 14px; }
-
-  .search-actions { gap: 10px; margin-bottom: 25px; margin-top: 10px; } /* Adjusted margin */
+  .search-actions { gap: 10px; margin-bottom: 25px; margin-top: 10px; }
   #cinemaghar-container .search-actions .button { padding: 9px 16px; font-size: 13px; }
 
   #updates-preview-section {
@@ -1477,151 +1473,71 @@ hr.detail-separator {
       border-radius: 0;
   }
   #updates-preview-section h3 { font-size: 14px; margin-bottom: 12px; }
-  #updates-preview-list { padding-top: 10px;}
-  .update-item {
-      font-size: 13px;
-      padding: 10px 5px;
-      gap: 5px;
+  #updates-preview-list {
+      padding-top: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); /* Smaller cards for preview */
+      gap: 10px;
   }
-  .update-item .preview-col-id { width: 12%; font-size: 12px; }
-  .update-item .preview-col-filename { width: 53%; font-weight: 500; }
-  .update-item .preview-col-filename .quality-logo { height: 1em; }
-  .update-item .preview-col-date { width: 18%; font-size: 11px; }
-  .update-item .preview-col-view { width: 17%; }
-  .update-item .preview-col-view .button.view-button { font-size: 11px; padding: 5px 8px; min-width: 40px; }
-
+  .update-item { /* Card styling from main grid applies, but aspect ratio might differ */
+      aspect-ratio: 2 / 3.1; /* Adjust for potentially smaller titles or less info */
+  }
+  .update-item .item-title-preview {
+      font-size: 12px;
+      padding: 6px 8px;
+      min-height: 38px; /* Adjust for smaller font */
+  }
   #showMoreUpdatesButton { font-size: 13px; padding: 8px 18px; }
 
-
   #results-area { margin: 0; padding: 15px; border-radius: 0;}
-
-  #item-detail-view {
-      padding: 15px;
-      margin-top: 10px;
-      max-width: 95%;
-      border-radius: var(--border-radius-sm);
+  .grid-view-container { /* Main results grid */
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* e.g., 3 cards across */
+      gap: 15px;
   }
-  #item-detail-view .back-button {
-      margin-bottom: 20px;
-      padding: 7px 12px;
+  .grid-item {
+      aspect-ratio: 2 / 3.2; /* Adjust if needed */
+  }
+  .grid-item .item-title {
       font-size: 13px;
+      padding: 8px 10px;
+      min-height: 40px;
   }
-  #item-detail-content {
-      padding: 15px 10px;
-  }
-  #item-detail-content .action-info {
-      font-size: 13px; margin-bottom: 15px;
-  }
-   #item-detail-content .action-info .info-item {
-      margin-bottom: 6px; line-height: 1.5;
-  }
-   #item-detail-content .action-info strong {
-      min-width: 65px; margin-right: 5px;
-  }
-   #item-detail-content .action-info .quality-logo {
-      height: 0.9em;
-  }
-   #item-detail-content .action-buttons-container {
-      flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px;
-   }
-   #item-detail-content .action-buttons-container .button {
-      font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; box-sizing: border-box;
-   }
-   #item-detail-content .action-buttons-container .copy-feedback,
-   #item-detail-content .action-buttons-container .bypass-feedback {
-      margin-left: 0;
-      margin-top: 5px;
-      text-align: center;
-      width: 100%;
-      display: block;
-      vertical-align: initial;
-   }
 
-  /* Custom URL section mobile (within item detail view) */
+  #item-detail-view { padding: 15px; margin-top: 10px; max-width: 95%; border-radius: var(--border-radius-sm); }
+  #item-detail-view .back-button { margin-bottom: 20px; padding: 7px 12px; font-size: 13px; }
+  #item-detail-content { padding: 15px 10px; }
+  #item-detail-content .action-info { font-size: 13px; margin-bottom: 15px; }
+   #item-detail-content .action-info .info-item { margin-bottom: 6px; line-height: 1.5; }
+   #item-detail-content .action-info strong { min-width: 65px; margin-right: 5px; }
+   #item-detail-content .action-info .quality-logo { height: 0.9em; }
+   #item-detail-content .action-buttons-container { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 15px; }
+   #item-detail-content .action-buttons-container .button { font-size: 13px; padding: 10px 15px; width: 100%; margin: 0; box-sizing: border-box; }
+   #item-detail-content .action-buttons-container .copy-feedback,
+   #item-detail-content .action-buttons-container .bypass-feedback { margin-left: 0; margin-top: 5px; text-align: center; width: 100%; display: block; vertical-align: initial; }
   #item-detail-content .custom-url-container { padding: 10px; gap: 8px; margin-top: 10px; }
   #item-detail-content .custom-url-input { padding: 8px 10px; font-size: 13px; }
-  #item-detail-content .play-custom-url-button {
-      padding: 9px 15px; font-size: 13px; width: 100%;
-  }
-  #item-detail-content .custom-url-toggle-button { width: 100%; } /* Make toggle full width */
-  #item-detail-content .hubcloud-bypass-button, /* Make Hubcloud bypass full width */
-  #item-detail-content .gdflix-bypass-button { /* Make GDFLIX bypass full width */
-     width: 100%;
-  }
-  #item-detail-content .bypass-feedback {
-      display: block;
-      width: 100%;
-      text-align: center;
-      margin-left: 0;
-      margin-top: 5px;
-      vertical-align: initial;
-  }
-
-
-  #cinemaghar-container .back-button {
-      padding: 7px 12px;
-      font-size: 13px;
-  }
-
-  .results-filter-area {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
-      margin: 0 0 15px 0;
-      padding-bottom: 15px;
-  }
+  #item-detail-content .play-custom-url-button { padding: 9px 15px; font-size: 13px; width: 100%; }
+  #item-detail-content .custom-url-toggle-button { width: 100%; }
+  #item-detail-content .hubcloud-bypass-button,
+  #item-detail-content .gdflix-bypass-button { width: 100%; }
+  #item-detail-content .bypass-feedback { display: block; width: 100%; text-align: center; margin-left: 0; margin-top: 5px; vertical-align: initial; }
+  #cinemaghar-container .back-button { padding: 7px 12px; font-size: 13px; }
+  .results-filter-area { flex-direction: column; align-items: stretch; gap: 12px; margin: 0 0 15px 0; padding-bottom: 15px; }
   .results-filter-area .filter-group { justify-content: space-between; }
   #cinemaghar-container #mainQualityFilterSelect { height: 40px; min-width: unset; flex-grow: 1; }
-
   .tab-navigation { margin-bottom: 20px; }
   .tab-navigation .tab-button { padding: 10px 15px; font-size: 15px; }
 
-  #cinemaghar-container .table-container {
-      border: none;
-      box-shadow: none;
-      border-radius: 0;
-      margin-left: -15px;
-      margin-right: -15px;
-      overflow-x: visible;
-   }
-   #cinemaghar-container table {
-        min-width: unset;
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-sm);
-        box-shadow: var(--shadow-sm);
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-   }
-   #cinemaghar-container thead, #cinemaghar-container tbody, #cinemaghar-container tr { display: table; width: 100%; table-layout: fixed; }
-   #cinemaghar-container thead { position: sticky; top: 0; z-index: 3; background: var(--table-header-bg); }
-   #cinemaghar-container th, #cinemaghar-container td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid var(--border-color); display: table-cell; white-space: normal; vertical-align: middle; }
+  /* Remove table-specific mobile styles, as tables are gone from main view */
+  /*
+  #cinemaghar-container .table-container { ... }
+  #cinemaghar-container table { ... }
+  #cinemaghar-container thead, ... { ... }
+  #cinemaghar-container th, ... { ... }
+  #cinemaghar-container thead tr th.col-size, ... { display: none; }
+  #cinemaghar-container th.col-id, ... (column widths) ... { ... }
+  */
 
-  /* Hide columns on mobile */
-  #cinemaghar-container thead tr th.col-size,
-  #cinemaghar-container thead tr th.col-updated,
-  #cinemaghar-container tbody tr td.col-size,
-  #cinemaghar-container tbody tr td.col-updated { display: none; }
-
-   /* Adjust visible column widths */
-   #cinemaghar-container th.col-id, #cinemaghar-container td.col-id { width: 15%; text-align: center; }
-   #cinemaghar-container th.col-filename, #cinemaghar-container td.col-filename { width: 45%; font-weight: 500; }
-   #cinemaghar-container th.col-quality, #cinemaghar-container td.col-quality { width: 20%; text-align: center; font-weight: 500;}
-   #cinemaghar-container th.col-view, #cinemaghar-container td.col-view { width: 20%; text-align: center; }
-
-  #cinemaghar-container th .sort-indicator { margin-left: 4px; border-width: 4px; }
-  #cinemaghar-container th.sort-asc .sort-indicator { border-bottom-width: 4px; }
-  #cinemaghar-container th.sort-desc .sort-indicator { border-top-width: 4px; }
-
-  #cinemaghar-container td.col-filename { word-break: break-word; white-space: normal; cursor: pointer; }
-  #cinemaghar-container td.col-filename .quality-logo { height: 0.9em; margin-left: 3px; vertical-align: baseline; }
-  #cinemaghar-container td.col-quality { min-width: unset; }
-  #cinemaghar-container .movie-data-row .view-button { font-size: 12px; padding: 6px 8px !important; min-width: 45px; width: auto; }
-
-
-  /* Player adjustments */
-  #cinemaghar-container .video-container:not(.global-custom-url-mode) #html5VideoPlayer { max-height: 280px; border-radius: var(--border-radius-sm);} /* Only constrain height if not global */
+  #cinemaghar-container .video-container:not(.global-custom-url-mode) #html5VideoPlayer { max-height: 280px; border-radius: var(--border-radius-sm);}
   #cinemaghar-container .video-container { padding: 45px 10px 15px 10px; max-width: 100%; margin-left: 0; margin-right: 0; border-radius: var(--border-radius-sm); }
   #cinemaghar-container .video-container.global-custom-url-mode { width: 95%; max-width: 95%; padding: 25px 15px; }
   #cinemaghar-container .video-container.is-fullscreen #html5VideoPlayer { max-height: none; }
@@ -1636,46 +1552,49 @@ hr.detail-separator {
   .player-control-group label { font-size: 11px;}
   #volumeSlider { width: 60px;}
   #playbackSpeedSelect { font-size: 12px; padding: 3px 6px; height: 34px; }
+  .pagination-container { margin: 20px 0 10px 0; }
+  .pagination-container button, .pagination-container span { padding: 8px 12px; font-size: 13px; margin: 0 3px;}
+  .pagination-container .page-info { font-size: 12px; margin: 0 5px; padding: 8px 0;}
+  #page-footer { margin-top: 30px; padding: 20px 15px; gap: 12px; }
+  #page-footer .footer-text { font-size: 12px; }
+  #page-footer .footer-buttons { gap: 12px; }
+  #cinemaghar-container #page-footer .button { font-size: 12px; padding: 7px 12px; }
+  #cinemaghar-container #page-footer .button svg { margin-right: 5px; }
+  .tmdb-title { font-size: 20px; }
+  .tmdb-tagline { font-size: 13px; margin-bottom: 12px; }
+  .tmdb-meta { font-size: 13px; gap: 12px; margin-bottom: 12px; }
+  .tmdb-rating { font-size: 14px; }
+  .tmdb-genres { font-size: 12px; margin-bottom: 12px; }
+  .genre-tag { font-size: 11px; padding: 2px 6px; }
+  .tmdb-overview { font-size: 13px; margin-bottom: 12px; line-height: 1.6; }
+  .tmdb-fetch-failed { font-size: 13px; padding: 12px; }
+  hr.detail-separator { margin-bottom: 20px; }
+  .tmdb-actors { font-size: 12px; margin-top: 12px; padding-top: 12px; }
+  .tmdb-actors strong { margin-bottom: 6px; }
+}
 
-  /* Pagination Adjustments */
-    .pagination-container { margin: 20px 0 10px 0; }
-    .pagination-container button,
-    .pagination-container span { padding: 8px 12px; font-size: 13px; margin: 0 3px;}
-    .pagination-container .page-info { font-size: 12px; margin: 0 5px; padding: 8px 0;}
-
-    /* Footer Mobile Adjustments */
-    #page-footer {
-        margin-top: 30px;
-        padding: 20px 15px;
-        gap: 12px;
+@media screen and (max-width: 480px) { /* Even smaller screens */
+    #updates-preview-list {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* Smaller cards for preview */
+        gap: 8px;
     }
-    #page-footer .footer-text {
+    .update-item .item-title-preview {
+        font-size: 11px;
+        padding: 5px;
+        min-height: 32px;
+    }
+    .update-item .update-date-overlay {
+        font-size: 9px;
+        padding: 1px 3px;
+    }
+    .grid-view-container { /* Main results grid */
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* e.g., 2-3 cards */
+        gap: 10px;
+    }
+    .grid-item .item-title {
         font-size: 12px;
+        padding: 6px 8px;
+        min-height: 36px;
     }
-    #page-footer .footer-buttons {
-        gap: 12px;
-    }
-    #cinemaghar-container #page-footer .button {
-        font-size: 12px;
-        padding: 7px 12px;
-    }
-    #cinemaghar-container #page-footer .button svg {
-        margin-right: 5px;
-    }
-
-    /* TMDb Mobile Adjustments */
-    .tmdb-title { font-size: 20px; }
-     .tmdb-tagline { font-size: 13px; margin-bottom: 12px; }
-     .tmdb-meta { font-size: 13px; gap: 12px; margin-bottom: 12px; }
-     .tmdb-rating { font-size: 14px; }
-     .tmdb-genres { font-size: 12px; margin-bottom: 12px; }
-     .genre-tag { font-size: 11px; padding: 2px 6px; }
-     .tmdb-overview { font-size: 13px; margin-bottom: 12px; line-height: 1.6; }
-     .tmdb-fetch-failed { font-size: 13px; padding: 12px; }
-     hr.detail-separator { margin-bottom: 20px; }
-
-     /* Optional: Actor list mobile */
-     .tmdb-actors { font-size: 12px; margin-top: 12px; padding-top: 12px; }
-     .tmdb-actors strong { margin-bottom: 6px; }
 }
 /* --- END OF style.css --- */
