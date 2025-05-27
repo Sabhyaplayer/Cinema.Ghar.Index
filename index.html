@@ -43,7 +43,7 @@
   <!-- Updates Preview Section (only shown on homepage) -->
   <div id="updates-preview-section" style="display: none;">
       <h3>Recently Added</h3>
-      <div id="updates-preview-list">
+      <div id="updates-preview-list" class="grid-view-container"> <!-- Added grid-view-container class for styling -->
           <div class="loading-inline-spinner" role="status" aria-live="polite">
               <div class="spinner"></div>
               <span>Loading updates...</span>
@@ -67,6 +67,7 @@
               <!-- Options populated by JS -->
           </select>
       </div>
+      <!-- TODO: Add sorting controls here if desired (e.g., dropdowns) -->
   </div>
 
   <!-- Tab Navigation -->
@@ -80,62 +81,25 @@
   <div class="tab-content">
       <!-- All Files Panel -->
       <div id="allFilesTabPanel" class="active">
-          <div class="table-container">
-              <table id="allFilesTable">
-                  <thead>
-                      <tr>
-                          <th class="sortable col-id" data-sort-key="id">#<span class="sort-indicator"></span></th>
-                          <th class="sortable col-filename" data-sort-key="filename">Filename<span class="sort-indicator"></span></th>
-                          <th class="sortable col-size" data-sort-key="size">Size<span class="sort-indicator"></span></th>
-                          <th class="sortable col-quality" data-sort-key="quality">Quality<span class="sort-indicator"></span></th>
-                          <th class="sortable col-updated" data-sort-key="lastUpdated">Updated<span class="sort-indicator"></span></th>
-                          <th class="col-view">View</th>
-                      </tr>
-                  </thead>
-                  <tbody id="allFilesTableBody">
-                     <tr><td colspan="6" class="status-message">Enter search term above.</td></tr>
-                  </tbody>
-              </table>
+          <div id="allFilesGridContainer" class="grid-view-container">
+              <div class="status-message" style="grid-column: 1 / -1;">Enter search term above.</div> <!-- Spans all columns if grid is empty -->
+              <!-- Grid items will be populated here by JavaScript -->
           </div>
           <div class="pagination-container" id="allFilesPaginationControls" style="display: none;"></div>
       </div>
 
        <!-- Movies Panel -->
       <div id="moviesTabPanel">
-          <div class="table-container">
-              <table id="moviesTable">
-                  <thead>
-                      <tr>
-                          <th class="sortable col-id" data-sort-key="id">#<span class="sort-indicator"></span></th>
-                          <th class="sortable col-filename" data-sort-key="filename">Filename<span class="sort-indicator"></span></th>
-                          <th class="sortable col-size" data-sort-key="size">Size<span class="sort-indicator"></span></th>
-                          <th class="sortable col-quality" data-sort-key="quality">Quality<span class="sort-indicator"></span></th>
-                          <th class="sortable col-updated" data-sort-key="lastUpdated">Updated<span class="sort-indicator"></span></th>
-                          <th class="col-view">View</th>
-                      </tr>
-                  </thead>
-                  <tbody id="moviesTableBody"></tbody>
-              </table>
+          <div id="moviesGridContainer" class="grid-view-container">
+              <!-- Grid items will be populated here by JavaScript -->
           </div>
           <div class="pagination-container" id="moviesPaginationControls" style="display: none;"></div>
       </div>
 
        <!-- Series Panel -->
       <div id="seriesTabPanel">
-          <div class="table-container">
-              <table id="seriesTable">
-                   <thead>
-                      <tr>
-                          <th class="sortable col-id" data-sort-key="id">#<span class="sort-indicator"></span></th>
-                          <th class="sortable col-filename" data-sort-key="filename">Filename<span class="sort-indicator"></span></th>
-                          <th class="sortable col-size" data-sort-key="size">Size<span class="sort-indicator"></span></th>
-                          <th class="sortable col-quality" data-sort-key="quality">Quality<span class="sort-indicator"></span></th>
-                          <th class="sortable col-updated" data-sort-key="lastUpdated">Updated<span class="sort-indicator"></span></th>
-                          <th class="col-view">View</th>
-                      </tr>
-                  </thead>
-                  <tbody id="seriesTableBody"></tbody>
-              </table>
+          <div id="seriesGridContainer" class="grid-view-container">
+              <!-- Grid items will be populated here by JavaScript -->
           </div>
           <div class="pagination-container" id="seriesPaginationControls" style="display: none;"></div>
       </div>
