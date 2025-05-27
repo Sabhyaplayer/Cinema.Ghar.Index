@@ -877,77 +877,79 @@
         if (backToHomeButtonShared) backToHomeButtonShared.style.display = isShareMode ? 'inline-flex' : 'none';
         if (backToResultsButton) backToResultsButton.style.display = isShareMode ? 'none' : 'inline-flex';
 
-        // Try to find the group in existing data (search results or initial load data)
-        let groupToDisplay = currentGroupedSearchResults.find(g => g.groupKey === groupKey);
-        if (!groupToDisplay) {
-            groupToDisplay = localGroupedData.find(g => g.groupKey === groupKey);
-        }
-
-        if (groupToDisplay) {
-            currentItemDetailGroup = { ...groupToDisplay }; // Make a copy to avoid modifying shared state directly for TMDb
-            document.title = `${currentItemDetailGroup.displayTitle || 'Item Detail'} - Cinema Ghar`;
-
-            // Fetch full TMDb details for the group if not already present or only partial
-            if (!currentItemDetailGroup.tmdbDetails || !currentItemDetailGroup.tmdbDetails.genres) { // Check for a field like genres to see if full details were fetched
-                const tmdbQuery = new URLSearchParams();
-                tmdbQuery.set('query', currentItemDetailGroup.displayTitle);
-                tmdbQuery.set('type', currentItemDetailGroup.isSeries ? 'tv' : 'movie');
-                if (!currentItemDetailGroup.isSeries && currentItemDetailGroup.displayYear) {
-                    tmdbQuery.set('year', currentItemDetailGroup.displayYear);
-                }
-                tmdbQuery.set('fetchFullDetails', 'true'); // Request full details
-
-                const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
-                const tmdbController = new AbortController();
-                const tmdbTimeoutId = setTimeout(() => tmdbController.abort(), config.TMDB_FETCH_TIMEOUT);
-
-                try {
-                    const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
-                    clearTimeout(tmdbTimeoutId);
-                    if (tmdbResponse.ok) {
-                        const fetchedTmdbData = await tmdbResponse.json();
-                        // Merge fetched TMDb details into the group's tmdbDetails
-                        currentItemDetailGroup.tmdbDetails = { ...(currentItemDetailGroup.tmdbDetails || {}), ...fetchedTmdbData };
-                        currentItemDetailGroup.posterPathToUse = fetchedTmdbData.posterPath || currentItemDetailGroup.posterPathToUse; // Update poster if better one found
-                    } else { console.warn("TMDb full fetch failed for detail view:", tmdbResponse.status); }
-                } catch (tmdbError) {
-                    clearTimeout(tmdbTimeoutId);
-                    if (tmdbError.name !== 'AbortError') console.error("Error fetching TMDb full details for detail view:", tmdbError);
-                }
+        try { // ****** CORRECTED: Added try { here ******
+            // Try to find the group in existing data (search results or initial load data)
+            let groupToDisplay = currentGroupedSearchResults.find(g => g.groupKey === groupKey);
+            if (!groupToDisplay) {
+                groupToDisplay = localGroupedData.find(g => g.groupKey === groupKey);
             }
-            if (signal.aborted) return;
-            const contentHTML = createItemDetailContentHTML(currentItemDetailGroup, currentItemDetailGroup.tmdbDetails);
-            itemDetailContent.innerHTML = contentHTML;
-            if (videoContainer) videoContainer.style.display = 'none';
 
-        } else {
-            // Group not found in existing data. This is where API would ideally fetch by group.
-            // For now, show an error or try a fallback search.
-            console.error(`Group with key ${groupKey} not found in currentGroupedSearchResults or localGroupedData.`);
-            itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Details for <strong>${sanitize(groupKey)}</strong> could not be loaded. It might be an old item or link. Try searching.</div>`;
-            document.title = "Item Not Found - Cinema Ghar";
-        }
+            if (groupToDisplay) {
+                currentItemDetailGroup = { ...groupToDisplay }; // Make a copy to avoid modifying shared state directly for TMDb
+                document.title = `${currentItemDetailGroup.displayTitle || 'Item Detail'} - Cinema Ghar`;
 
-    } catch (error) { // This try-catch was outside, moved it to encompass the logic better
-        if (signal.aborted || error.name === 'AbortError') {
-            console.log(`Item detail fetch aborted for groupKey: ${groupKey} (caught).`);
-        } else {
-            itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item details for <strong>${sanitize(groupKey)}</strong>: ${sanitize(error.message)}.</div>`;
-            document.title = "Error Loading Item - Cinema Ghar";
-            currentItemDetailGroup = null;
-        }
-    } finally {
-        if (itemDetailAbortController && itemDetailAbortController.signal === signal && !signal.aborted) {
-            itemDetailAbortController = null;
-        }
-        if (itemDetailContent.innerHTML && !itemDetailContent.querySelector('.loading-inline-spinner')) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        if (pageLoader && pageLoader.style.display !== 'none') {
-            pageLoader.style.display = 'none';
+                // Fetch full TMDb details for the group if not already present or only partial
+                if (!currentItemDetailGroup.tmdbDetails || !currentItemDetailGroup.tmdbDetails.genres) { // Check for a field like genres to see if full details were fetched
+                    const tmdbQuery = new URLSearchParams();
+                    tmdbQuery.set('query', currentItemDetailGroup.displayTitle);
+                    tmdbQuery.set('type', currentItemDetailGroup.isSeries ? 'tv' : 'movie');
+                    if (!currentItemDetailGroup.isSeries && currentItemDetailGroup.displayYear) {
+                        tmdbQuery.set('year', currentItemDetailGroup.displayYear);
+                    }
+                    tmdbQuery.set('fetchFullDetails', 'true'); // Request full details
+
+                    const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
+                    const tmdbController = new AbortController();
+                    const tmdbTimeoutId = setTimeout(() => tmdbController.abort(), config.TMDB_FETCH_TIMEOUT);
+
+                    try {
+                        const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
+                        clearTimeout(tmdbTimeoutId);
+                        if (tmdbResponse.ok) {
+                            const fetchedTmdbData = await tmdbResponse.json();
+                            // Merge fetched TMDb details into the group's tmdbDetails
+                            currentItemDetailGroup.tmdbDetails = { ...(currentItemDetailGroup.tmdbDetails || {}), ...fetchedTmdbData };
+                            currentItemDetailGroup.posterPathToUse = fetchedTmdbData.posterPath || currentItemDetailGroup.posterPathToUse; // Update poster if better one found
+                        } else { console.warn("TMDb full fetch failed for detail view:", tmdbResponse.status); }
+                    } catch (tmdbError) {
+                        clearTimeout(tmdbTimeoutId);
+                        if (tmdbError.name !== 'AbortError') console.error("Error fetching TMDb full details for detail view:", tmdbError);
+                    }
+                }
+                if (signal.aborted) return;
+                const contentHTML = createItemDetailContentHTML(currentItemDetailGroup, currentItemDetailGroup.tmdbDetails);
+                itemDetailContent.innerHTML = contentHTML;
+                if (videoContainer) videoContainer.style.display = 'none';
+
+            } else {
+                // Group not found in existing data. This is where API would ideally fetch by group.
+                // For now, show an error or try a fallback search.
+                console.error(`Group with key ${groupKey} not found in currentGroupedSearchResults or localGroupedData.`);
+                itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Details for <strong>${sanitize(groupKey)}</strong> could not be loaded. It might be an old item or link. Try searching.</div>`;
+                document.title = "Item Not Found - Cinema Ghar";
+            }
+        // ****** CORRECTED: The try block closes here, before the catch ******
+        } catch (error) { 
+            if (signal.aborted || error.name === 'AbortError') {
+                console.log(`Item detail fetch aborted for groupKey: ${groupKey} (caught).`);
+            } else {
+                itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item details for <strong>${sanitize(groupKey)}</strong>: ${sanitize(error.message)}.</div>`;
+                document.title = "Error Loading Item - Cinema Ghar";
+                currentItemDetailGroup = null;
+            }
+        } finally {
+            if (itemDetailAbortController && itemDetailAbortController.signal === signal && !signal.aborted) {
+                itemDetailAbortController = null;
+            }
+            if (itemDetailContent.innerHTML && !itemDetailContent.querySelector('.loading-inline-spinner')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            if (pageLoader && pageLoader.style.display !== 'none') {
+                pageLoader.style.display = 'none';
+            }
         }
     }
-}
+
 
     function updateItemDetailAfterBypass(encodedFinalUrl, bypassedFileId) {
         if (!currentItemDetailGroup || !itemDetailContent || !bypassedFileId) return;
