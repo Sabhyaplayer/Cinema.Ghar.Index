@@ -340,57 +340,82 @@ function createMovieGridItemHTML(movie) {
 }
 
     async function fetchPosterForItem(movie, imgElement, spinnerElement) {
-        if (!movie || !movie.extractedTitle || !imgElement || movie.tmdbDetails?.posterPathFetched || movie.tmdbDetails?.posterPathFetchFailed) {
-            if(spinnerElement) spinnerElement.style.display = 'none';
-            return;
-        }
-        if(spinnerElement) spinnerElement.style.display = 'block';
-
-        try {
-            const tmdbQuery = new URLSearchParams();
-            tmdbQuery.set('query', movie.extractedTitle);
-            tmdbQuery.set('type', movie.isSeries ? 'tv' : 'movie');
-            if (!movie.isSeries && movie.extractedYear) {
-                tmdbQuery.set('year', movie.extractedYear);
-            }
-            const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
-            const tmdbController = new AbortController();
-            const tmdbTimeoutId = setTimeout(() => tmdbController.abort(), config.TMDB_FETCH_TIMEOUT);
-
-            const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
-            clearTimeout(tmdbTimeoutId);
-
-            if (tmdbResponse.ok) {
-                const fetchedTmdbData = await tmdbResponse.json();
-                if (fetchedTmdbData && fetchedTmdbData.posterPath) {
-                    imgElement.src = fetchedTmdbData.posterPath;
-                    imgElement.classList.remove('load-error');
-                    if (!movie.tmdbDetails) movie.tmdbDetails = {};
-                    movie.tmdbDetails.posterPath = fetchedTmdbData.posterPath;
-                    // Store other relevant minimal details if needed for the card
-                    movie.tmdbDetails.title = fetchedTmdbData.title; // TMDb title for consistency
-                } else {
-                    imgElement.classList.add('load-error'); // Mark as error if no poster in valid response
-                }
-                if (!movie.tmdbDetails) movie.tmdbDetails = {}; // Ensure tmdbDetails object exists
-                movie.tmdbDetails.posterPathFetched = true; // Mark as attempted
-            } else {
-                console.warn(`Failed to fetch TMDb poster for "${movie.extractedTitle}" (${tmdbResponse.status})`);
-                imgElement.classList.add('load-error');
-                if (!movie.tmdbDetails) movie.tmdbDetails = {};
-                movie.tmdbDetails.posterPathFetchFailed = true;
-            }
-        } catch (tmdbError) {
-            if (tmdbError.name !== 'AbortError') {
-                console.error("Error fetching TMDb poster for grid:", tmdbError);
-            }
-            imgElement.classList.add('load-error');
-            if (!movie.tmdbDetails) movie.tmdbDetails = {};
-            movie.tmdbDetails.posterPathFetchFailed = true;
-        } finally {
-            if(spinnerElement) spinnerElement.style.display = 'none';
-        }
+    // Ensure imgElement is valid before proceeding
+    if (!imgElement) {
+        console.warn("fetchPosterForItem called with invalid imgElement for movie:", movie?.extractedTitle);
+        if (spinnerElement) spinnerElement.style.display = 'none';
+        return;
     }
+
+    // Standard checks
+    if (!movie || !movie.extractedTitle || movie.tmdbDetails?.posterPathFetched || movie.tmdbDetails?.posterPathFetchFailed) {
+        if (spinnerElement) spinnerElement.style.display = 'none';
+        // If posterPath already exists from a previous fetch, ensure the img src reflects it
+        if (movie?.tmdbDetails?.posterPath && imgElement.src !== movie.tmdbDetails.posterPath) {
+            imgElement.src = movie.tmdbDetails.posterPath;
+            imgElement.classList.remove('load-error');
+        } else if (!movie?.tmdbDetails?.posterPath && imgElement.src !== config.POSTER_PLACEHOLDER_URL) {
+            // If no poster path and not already placeholder, set to placeholder
+            imgElement.src = config.POSTER_PLACEHOLDER_URL;
+            imgElement.classList.add('load-error'); // Or remove load-error if placeholder is desired state
+        }
+        return;
+    }
+
+    if (spinnerElement) spinnerElement.style.display = 'block';
+
+    try {
+        const tmdbQuery = new URLSearchParams();
+        tmdbQuery.set('query', movie.extractedTitle);
+        tmdbQuery.set('type', movie.isSeries ? 'tv' : 'movie');
+        if (!movie.isSeries && movie.extractedYear) {
+            tmdbQuery.set('year', movie.extractedYear);
+        }
+        const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
+        const tmdbController = new AbortController();
+        const tmdbTimeoutId = setTimeout(() => tmdbController.abort(), config.TMDB_FETCH_TIMEOUT);
+
+        const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
+        clearTimeout(tmdbTimeoutId);
+
+        if (!movie.tmdbDetails) movie.tmdbDetails = {}; // Ensure tmdbDetails object exists
+
+        if (tmdbResponse.ok) {
+            const fetchedTmdbData = await tmdbResponse.json();
+            if (fetchedTmdbData && fetchedTmdbData.posterPath) {
+                console.log(`SUCCESS: Setting poster for "${movie.extractedTitle}" to: ${fetchedTmdbData.posterPath}`);
+                imgElement.src = fetchedTmdbData.posterPath;
+                imgElement.classList.remove('load-error');
+                movie.tmdbDetails.posterPath = fetchedTmdbData.posterPath;
+                movie.tmdbDetails.title = fetchedTmdbData.title; // TMDb title for consistency
+            } else {
+                console.warn(`TMDb fetch OK, but no posterPath in response for "${movie.extractedTitle}". Response:`, fetchedTmdbData);
+                imgElement.src = config.POSTER_PLACEHOLDER_URL; // Fallback to placeholder
+                imgElement.classList.add('load-error');
+                movie.tmdbDetails.posterPathFetchFailed = true; // Mark as failed if no poster in valid response
+            }
+        } else {
+            console.warn(`Failed to fetch TMDb poster for "${movie.extractedTitle}" (HTTP Status: ${tmdbResponse.status})`);
+            imgElement.src = config.POSTER_PLACEHOLDER_URL; // Fallback to placeholder
+            imgElement.classList.add('load-error');
+            movie.tmdbDetails.posterPathFetchFailed = true;
+        }
+        movie.tmdbDetails.posterPathFetched = true; // Mark as attempted regardless of outcome
+    } catch (tmdbError) {
+        if (tmdbError.name !== 'AbortError') {
+            console.error(`Error fetching TMDb poster for "${movie.extractedTitle}":`, tmdbError);
+        } else {
+            console.log(`TMDb poster fetch aborted for "${movie.extractedTitle}".`);
+        }
+        imgElement.src = config.POSTER_PLACEHOLDER_URL; // Fallback to placeholder on error
+        imgElement.classList.add('load-error');
+        if (!movie.tmdbDetails) movie.tmdbDetails = {};
+        movie.tmdbDetails.posterPathFetchFailed = true;
+        movie.tmdbDetails.posterPathFetched = true; // Still mark as fetched (attempted)
+    } finally {
+        if (spinnerElement) spinnerElement.style.display = 'none';
+    }
+}
 
 
     // --- View Control (largely unchanged) ---
