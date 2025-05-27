@@ -730,7 +730,7 @@ body {
     height: 100%;
     object-fit: cover; /* Scale image to cover, might crop */
     display: block; /* Remove extra space below img */
-    opacity: 0; /* Hidden initially, faded in by JS */
+    opacity: 1; 
     transition: opacity 0.4s ease;
 }
 .grid-item .poster-image.loaded {
