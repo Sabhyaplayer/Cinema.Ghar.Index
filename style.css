@@ -892,7 +892,7 @@ body {
     font-size: 1.1em;
     line-height: 1;
 }
-#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer . button):not(.back-button) svg,
+#cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.back-button) svg,
 #cinemaghar-container .button:not(#searchSubmitButton):not(#page-footer .button):not(.back-button) .button-spinner {
     width: 1.1em;
     height: 1.1em;
