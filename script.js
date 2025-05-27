@@ -463,43 +463,78 @@
     }
 
     // NEW: HTML for the header of the Group Detail view (TMDb info)
-    function createGroupDetailHeaderHTML(group) {
-        if (!group || !group.tmdbDetails) {
-            return `<div class="tmdb-fetch-failed">Could not load details for this item.</div>`;
-        }
-        const tmdbDetails = group.tmdbDetails;
-        const posterHTML = tmdbDetails.posterPath ? `<img src="${sanitize(tmdbDetails.posterPath)}" alt="Poster for ${sanitize(tmdbDetails.title)}" class="tmdb-poster">` : '<div class="tmdb-poster-placeholder">No Poster</div>';
-        const ratingHTML = tmdbDetails.voteAverage && tmdbDetails.voteCount ? `<span class="tmdb-rating" title="${tmdbDetails.voteCount} votes">⭐ ${sanitize(tmdbDetails.voteAverage)}/10</span>` : '';
-        const genresHTML = tmdbDetails.genres && tmdbDetails.genres.length > 0 ? `<div class="tmdb-genres"><strong>Genres:</strong> ${tmdbDetails.genres.map(g => `<span class="genre-tag">${sanitize(g)}</span>`).join(' ')}</div>` : '';
-        const overviewHTML = tmdbDetails.overview ? `<div class="tmdb-overview"><strong>Overview:</strong><p>${sanitize(tmdbDetails.overview)}</p></div>` : '';
-        const releaseDateHTML = tmdbDetails.releaseDate ? `<div><strong>Released:</strong> ${sanitize(TimeAgo.formatFullDate(new Date(tmdbDetails.releaseDate), true))}</div>` : '';
-        const runtimeHTML = tmdbDetails.runtime ? `<div><strong>Runtime:</strong> ${sanitize(tmdbDetails.runtime)} min</div>` : '';
-        const taglineHTML = tmdbDetails.tagline ? `<div class="tmdb-tagline"><em>${sanitize(tmdbDetails.tagline)}</em></div>` : '';
-        // Actors can be added if fetchedFullDetails=true was used and successful
-        const actorsHTML = tmdbDetails.actors && tmdbDetails.actors.length > 0 ? `<div class="tmdb-actors"><strong>Starring:</strong><ul>${tmdbDetails.actors.map(actor => `<li>${sanitize(actor.name)} (${sanitize(actor.character)})</li>`).join('')}</ul></div>` : '';
-        let externalInfoButtonHTML = '';
-        if (tmdbDetails.tmdbLink) {
-            const infoIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`;
-            const tmdbLabel = group.isSeries ? "View on TMDb (TV)" : "View on TMDb (Movie)";
-            externalInfoButtonHTML = `<a href="${sanitize(tmdbDetails.tmdbLink)}" target="_blank" rel="noopener noreferrer" class="button tmdb-link-button">${infoIconSVG} ${tmdbLabel}</a>`;
-        }
-
-
-        return `
-            <div class="tmdb-details-container">
-                <div class="tmdb-poster-column">${posterHTML}</div>
-                <div class="tmdb-info-column">
-                    ${tmdbDetails.title ? `<h2 class="tmdb-title">${sanitize(tmdbDetails.title)}</h2>` : `<h2>${sanitize(group.displayTitle)}</h2>`}
-                    ${taglineHTML}
-                    <div class="tmdb-meta">${ratingHTML}${releaseDateHTML}${runtimeHTML}</div>
-                    ${genresHTML}
-                    ${overviewHTML}
-                    ${actorsHTML}
-                    <div class="group-external-links">${externalInfoButtonHTML}</div>
-                </div>
-            </div>
-        `;
+    // NEW: HTML for the header of the Group Detail view (TMDb info)
+function createGroupDetailHeaderHTML(group) {
+    if (!group || !group.tmdbDetails) {
+        // Try to use group's own displayTitle if TMDb details are missing
+        const fallbackTitle = group.displayTitle || 'Unknown Item';
+        return `<div class="tmdb-fetch-failed">Could not load details for ${sanitize(fallbackTitle)}.</div>`;
     }
+    const tmdbDetails = group.tmdbDetails;
+    const posterHTML = tmdbDetails.posterPath ? `<img src="${sanitize(tmdbDetails.posterPath)}" alt="Poster for ${sanitize(tmdbDetails.title || group.displayTitle)}" class="tmdb-poster">` : '<div class="tmdb-poster-placeholder">No Poster</div>';
+    const ratingHTML = tmdbDetails.voteAverage && tmdbDetails.voteCount ? `<span class="tmdb-rating" title="${tmdbDetails.voteCount} votes">⭐ ${sanitize(tmdbDetails.voteAverage)}/10</span>` : '';
+    const genresHTML = tmdbDetails.genres && tmdbDetails.genres.length > 0 ? `<div class="tmdb-genres"><strong>Genres:</strong> ${tmdbDetails.genres.map(g => `<span class="genre-tag">${sanitize(g)}</span>`).join(' ')}</div>` : '';
+    const overviewHTML = tmdbDetails.overview ? `<div class="tmdb-overview"><strong>Overview:</strong><p>${sanitize(tmdbDetails.overview)}</p></div>` : '';
+    const releaseDateHTML = tmdbDetails.releaseDate ? `<div><strong>Released:</strong> ${sanitize(TimeAgo.formatFullDate(new Date(tmdbDetails.releaseDate), true))}</div>` : '';
+    const runtimeHTML = tmdbDetails.runtime ? `<div><strong>Runtime:</strong> ${sanitize(tmdbDetails.runtime)} min</div>` : '';
+    const taglineHTML = tmdbDetails.tagline ? `<div class="tmdb-tagline"><em>${sanitize(tmdbDetails.tagline)}</em></div>` : '';
+    const actorsHTML = tmdbDetails.actors && tmdbDetails.actors.length > 0 ? `<div class="tmdb-actors"><strong>Starring:</strong><ul>${tmdbDetails.actors.map(actor => `<li>${sanitize(actor.name)} (${sanitize(actor.character)})</li>`).join('')}</ul></div>` : '';
+
+    // --- YOUTUBE TRAILER & TMDB LINK BUTTONS ---
+    let externalLinksHTML = '<div class="group-external-links">';
+    const groupTitleForSearch = tmdbDetails.title || group.displayTitle || group.representativeFile?.extractedTitle;
+
+    if (groupTitleForSearch) {
+        // YouTube Trailer Button
+        let ytSearchTerms = [groupTitleForSearch];
+        if (group.isSeries && group.representativeFile?.extractedSeason) { // Use representative file for season if available
+            // ytSearchTerms.push(`Season ${group.representativeFile.extractedSeason}`); // Less specific for group trailer
+        } else if (!group.isSeries && group.year) {
+            ytSearchTerms.push(String(group.year));
+        }
+        ytSearchTerms.push("Official Trailer");
+        // Check if any file in the group has Hindi language (simple check)
+        const includesHindi = group.files.some(f => (f.languages || '').toLowerCase().includes('hindi'));
+        if (includesHindi) { ytSearchTerms.push("Hindi"); }
+
+        const youtubeSearchQuery = encodeURIComponent(ytSearchTerms.join(' '));
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${youtubeSearchQuery}`;
+        const youtubeIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.267,4,12,4,12,4S5.733,4,4.186,4.418 c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.734,2,12,2,12s0,4.266,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768 C5.733,20,12,20,12,20s6.267,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.266,22,12,22,12S22,7.734,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"></path></svg>`;
+        externalLinksHTML += `<a href="${youtubeSearchUrl}" target="_blank" rel="noopener noreferrer" class="button youtube-button">${youtubeIconSVG} Watch Trailer</a>`;
+    }
+
+    // TMDb Link Button
+    if (tmdbDetails.tmdbLink) {
+        const infoIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`;
+        const tmdbLabel = group.isSeries ? "View on TMDb (TV)" : "View on TMDb (Movie)";
+        externalLinksHTML += `<a href="${sanitize(tmdbDetails.tmdbLink)}" target="_blank" rel="noopener noreferrer" class="button tmdb-link-button">${infoIconSVG} ${tmdbLabel}</a>`;
+    } else if (groupTitleForSearch) { // Fallback to IMDb search if no direct TMDb link
+        const infoIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`;
+        let imdbQueryTerms = [`"${groupTitleForSearch}"`];
+        if (!group.isSeries && group.year) { imdbQueryTerms.push(String(group.year)); }
+        imdbQueryTerms.push("IMDb");
+        const imdbSearchQuery = imdbQueryTerms.join(' ');
+        const imdbSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(imdbSearchQuery)}&btnI=1`; // "I'm feeling lucky" for IMDb
+        externalLinksHTML += `<a href="${imdbSearchUrl}" target="_blank" rel="noopener noreferrer" class="button imdb-button">${infoIconSVG} Find on IMDb</a>`;
+    }
+    externalLinksHTML += '</div>';
+    // --- END YOUTUBE TRAILER & TMDB LINK BUTTONS ---
+
+    return `
+        <div class="tmdb-details-container">
+            <div class="tmdb-poster-column">${posterHTML}</div>
+            <div class="tmdb-info-column">
+                <h2 class="tmdb-title">${sanitize(tmdbDetails.title || group.displayTitle || 'Unknown Title')}</h2>
+                ${taglineHTML}
+                <div class="tmdb-meta">${ratingHTML}${releaseDateHTML}${runtimeHTML}</div>
+                ${genresHTML}
+                ${overviewHTML}
+                ${actorsHTML}
+                ${externalLinksHTML} {/* Inserted here */}
+            </div>
+        </div>
+    `;
+}
 
     // NEW: HTML for the list of files in Group Detail view
     function createGroupDetailFileListHTML(group) {
@@ -540,75 +575,108 @@
     }
 
     // MODIFIED/NEW: HTML for action buttons for a *specific file* (used in Group Detail)
-    // Takes the file object and tmdbDetails of the PARENT GROUP
-    function createFileActionsHTML(file, groupTmdbDetails) {
-        const displayFilename = file.displayFilename;
-        const displaySize = file.sizeData.display;
-        const displayQuality = file.displayQuality;
+// Takes the file object and tmdbDetails of the PARENT GROUP
+function createFileActionsHTML(file, groupTmdbDetails) { // groupTmdbDetails is for the parent group
+    const displayFilename = file.displayFilename;
+    const displaySize = file.sizeData.display;
+    const displayQuality = file.displayQuality;
 
-        // Use group's title for stream, but file's quality
-        const streamTitle = (groupTmdbDetails?.title || file.extractedTitle || displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim()) + (displayQuality !== 'N/A' ? ` (${displayQuality})` : '');
+    // Use group's title for stream, but file's quality
+    const streamTitle = (groupTmdbDetails?.title || file.extractedTitle || displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim()) + (displayQuality !== 'N/A' ? ` (${displayQuality})` : '');
 
-        const timestampString = file.last_updated_ts;
-        const formattedDateRelative = TimeAgo.format(timestampString);
-        const dateObject = timestampString ? new Date(timestampString) : null;
-        const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A';
+    const timestampString = file.last_updated_ts;
+    const formattedDateRelative = TimeAgo.format(timestampString);
+    const dateObject = timestampString ? new Date(timestampString) : null;
+    const formattedDateFull = (dateObject && !isNaN(dateObject)) ? TimeAgo.formatFullDate(dateObject) : 'N/A';
 
-        let hdrLogoHtml = ''; let fourkLogoHtml = '';
-        const lowerFilename = (displayFilename || '').toLowerCase();
-        if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
-        if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
+    let hdrLogoHtml = ''; let fourkLogoHtml = '';
+    const lowerFilename = (displayFilename || '').toLowerCase();
+    if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
+    if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
 
-        const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
-        const escapedFilename = displayFilename.replace(/'/g, "\\'");
-        const escapedUrl = file.url ? file.url.replace(/'/g, "\\'") : '';
-        const escapedId = file.id ? String(file.id).replace(/[^a-zA-Z0-9-_]/g, '') : ''; // File's own ID for share
-        const escapedHubcloudUrl = file.hubcloud_link ? file.hubcloud_link.replace(/'/g, "\\'") : '';
-        const escapedGdflixUrl = file.gdflix_link ? file.gdflix_link.replace(/'/g, "\\'") : '';
+    const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
+    const escapedFilename = displayFilename.replace(/'/g, "\\'");
+    const escapedUrl = file.url ? file.url.replace(/'/g, "\\'") : '';
+    const escapedId = file.id ? String(file.id).replace(/[^a-zA-Z0-9-_]/g, '') : ''; // File's own ID
+    const escapedHubcloudUrl = file.hubcloud_link ? file.hubcloud_link.replace(/'/g, "\\'") : '';
+    const escapedGdflixUrl = file.gdflix_link ? file.gdflix_link.replace(/'/g, "\\'") : '';
 
-        let urlDependentButtonsHTML = '';
-        let bypassButtonsHTML = '';
-        let otherLinkButtonsHTML = ''; // Keep minimal here, main trailer/IMDb links are at group level
+    let urlDependentButtonsHTML = '';
+    let bypassButtonsHTML = '';
+    let otherLinkButtonsHTML = '';
 
-        if (file.url) {
-            urlDependentButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play File</button>`;
-            urlDependentButtonsHTML += `<a class="button download-button" href="${file.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`;
-            urlDependentButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`;
-            if (navigator.userAgent.toLowerCase().includes("android")) {
-                urlDependentButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play in VLC or MX Player</button>`;
-            }
+    if (file.url) {
+        urlDependentButtonsHTML += `<button class="button play-button" data-action="play" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play File</button>`;
+        urlDependentButtonsHTML += `<a class="button download-button" href="${file.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Direct Download</a>`;
+        urlDependentButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL (for VLC/MX)</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`;
+        if (navigator.userAgent.toLowerCase().includes("android")) {
+            urlDependentButtonsHTML += `<button class="button intent-button" data-action="open-intent" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play in VLC or MX Player</button>`;
         }
-        // For bypass, we need to pass the file's original ID to update its URL after bypass.
-        const fileRefAttr = `data-file-id-ref="${escapedId}"`;
-        if (file.hubcloud_link) { bypassButtonsHTML += `<button class="button hubcloud-bypass-button" data-action="bypass-hubcloud" data-hubcloud-url="${escapedHubcloudUrl}" ${fileRefAttr}><span aria-hidden="true" class="button-icon">☁️</span><span class="button-spinner spinner"></span><span class="button-text">Bypass HubCloud</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`; }
-        if (file.gdflix_link) { bypassButtonsHTML += `<button class="button gdflix-bypass-button" data-action="bypass-gdflix" data-gdflix-url="${escapedGdflixUrl}" ${fileRefAttr}><span aria-hidden="true" class="button-icon">🎬</span><span class="button-spinner spinner"></span><span class="button-text">Bypass GDFLIX</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`; }
-
-        otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url-input" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL for this player</button>`;
-        if (file.telegram_link) { otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(file.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`; }
-        // Raw links if bypass buttons aren't generated but links exist
-        if (file.gdflix_link && !bypassButtonsHTML.includes('gdflix-bypass-button')) { otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(file.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`; }
-        if (file.hubcloud_link && !bypassButtonsHTML.includes('hubcloud-bypass-button')) { otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(file.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`; }
-
-        if (file.id) {
-             // Share link should point to the group and pre-select this file ideally, or just share the file details.
-             // For now, let's make it share a direct link to the group, selection is harder.
-             const groupShareUrl = `${window.location.origin}${window.location.pathname}?groupKey=${encodeURIComponent(currentGroupDetailData.groupKey)}&fileId=${escapedId}`;
-            otherLinkButtonsHTML += `<button class="button share-button" data-action="share-file" data-share-url="${groupShareUrl}" data-share-title="${escapedStreamTitle}" data-share-text="Check out this file: ${escapedFilename}"><span aria-hidden="true">🔗</span> Share This File</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`;
-        }
-
-
-        const internalInfoHTML = `
-            <div class="action-info" data-stream-title="${escapedStreamTitle}">
-                <span class="info-item"><strong>File:</strong> ${displayFilename}</span>
-                <span class="info-item"><strong>Quality:</strong> ${displayQuality} ${fourkLogoHtml}${hdrLogoHtml}</span>
-                <span class="info-item"><strong>Size:</strong> ${displaySize}</span>
-                <span class="info-item"><strong>Language:</strong> ${sanitize(file.languages || 'N/A')}</span>
-                <span class="info-item"><strong>Updated:</strong> ${formattedDateFull} (${formattedDateRelative})</span>
-                ${file.originalFilename ? `<span class="info-item"><strong>Original Name:</strong> ${sanitize(file.originalFilename)}</span>` : ''}
-            </div>`;
-        const buttonsHTML = `<div class="action-buttons-container">${urlDependentButtonsHTML}${bypassButtonsHTML}${otherLinkButtonsHTML}</div>`;
-        return `${internalInfoHTML}${buttonsHTML}`;
     }
+
+    const fileRefAttr = `data-file-id-ref="${escapedId}"`; // For bypass to know which file to update
+
+    // --- MODIFIED BYPASS BUTTONS ---
+    // HubCloud Button
+    const hubcloudDisabled = !file.hubcloud_link;
+    bypassButtonsHTML += `
+        <button class="button hubcloud-bypass-button ${hubcloudDisabled ? 'disabled-visual' : ''}" 
+                data-action="bypass-hubcloud" 
+                data-hubcloud-url="${escapedHubcloudUrl}" 
+                ${fileRefAttr} 
+                ${hubcloudDisabled ? 'disabled title="HubCloud link not available for this file"' : 'title="Bypass HubCloud link for this file"'}>
+            <span aria-hidden="true" class="button-icon">☁️</span>
+            <span class="button-spinner spinner"></span>
+            <span class="button-text">Bypass HubCloud</span>
+        </button>
+        <span class="bypass-feedback" role="status" aria-live="polite"></span>`;
+
+    // GDFLIX Button
+    const gdflixDisabled = !file.gdflix_link;
+    bypassButtonsHTML += `
+        <button class="button gdflix-bypass-button ${gdflixDisabled ? 'disabled-visual' : ''}" 
+                data-action="bypass-gdflix" 
+                data-gdflix-url="${escapedGdflixUrl}" 
+                ${fileRefAttr}
+                ${gdflixDisabled ? 'disabled title="GDFLIX link not available for this file"' : 'title="Bypass GDFLIX link for this file"'}>
+            <span aria-hidden="true" class="button-icon">🎬</span>
+            <span class="button-spinner spinner"></span>
+            <span class="button-text">Bypass GDFLIX</span>
+        </button>
+        <span class="bypass-feedback" role="status" aria-live="polite"></span>`;
+    // --- END MODIFIED BYPASS BUTTONS ---
+
+
+    otherLinkButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url-input" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL for this player</button>`;
+    if (file.telegram_link) { otherLinkButtonsHTML += `<a class="button telegram-button" href="${sanitize(file.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`; }
+
+    // Raw links (these are fine, they are only shown if bypass buttons AREN'T there)
+    if (file.gdflix_link && !bypassButtonsHTML.includes('data-action="bypass-gdflix"')) { // Check if bypass button was already added
+         if (!gdflixDisabled) otherLinkButtonsHTML += `<a class="button gdflix-button" href="${sanitize(file.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`;
+    }
+    if (file.hubcloud_link && !bypassButtonsHTML.includes('data-action="bypass-hubcloud"')) {
+         if (!hubcloudDisabled) otherLinkButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(file.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`;
+    }
+
+
+    if (file.id) {
+         const groupShareUrl = `${window.location.origin}${window.location.pathname}?groupKey=${encodeURIComponent(currentGroupDetailData.groupKey)}&fileId=${escapedId}`;
+        otherLinkButtonsHTML += `<button class="button share-button" data-action="share-file" data-share-url="${groupShareUrl}" data-share-title="${escapedStreamTitle}" data-share-text="Check out this file: ${escapedFilename}"><span aria-hidden="true">🔗</span> Share This File</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`;
+    }
+
+
+    const internalInfoHTML = `
+        <div class="action-info" data-stream-title="${escapedStreamTitle}">
+            <span class="info-item"><strong>File:</strong> ${displayFilename}</span>
+            <span class="info-item"><strong>Quality:</strong> ${displayQuality} ${fourkLogoHtml}${hdrLogoHtml}</span>
+            <span class="info-item"><strong>Size:</strong> ${displaySize}</span>
+            <span class="info-item"><strong>Language:</strong> ${sanitize(file.languages || 'N/A')}</span>
+            <span class="info-item"><strong>Updated:</strong> ${formattedDateFull} (${formattedDateRelative})</span>
+            ${file.originalFilename ? `<span class="info-item"><strong>Original Name:</strong> ${sanitize(file.originalFilename)}</span>` : ''}
+        </div>`;
+    const buttonsHTML = `<div class="action-buttons-container">${urlDependentButtonsHTML}${bypassButtonsHTML}${otherLinkButtonsHTML}</div>`;
+    return `${internalInfoHTML}${buttonsHTML}`;
+}
 
 
     // --- View Control ---
