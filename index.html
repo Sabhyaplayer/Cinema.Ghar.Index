@@ -8,219 +8,231 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Product+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Link to the external CSS file -->
-    <link rel="stylesheet" href="style.css">
+<!-- Link to the external CSS file -->
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Main Container: Holds everything, controls background/shadow -->
-    <div id="cinemaghar-container">
-        <!-- Page Loader: Shown initially, hidden by JS after load -->
-        <div id="page-loader">
-            <div class="spinner-container" role="status" aria-live="polite">
-                <div class="spinner"></div>
-                <span>Loading Cinema Ghar Index...</span>
-            </div>
-        </div>
+<!-- Main Container: Holds everything, controls background/shadow -->
+<div id="cinemaghar-container">
+  <!-- Page Loader: Shown initially, hidden by JS after load -->
+  <div id="page-loader">
+      <div class="spinner-container" role="status" aria-live="polite">
+          <div class="spinner"></div>
+          <span>Loading Cinema Ghar Index...</span>
+      </div>
+  </div>
+  <!-- Search Focus Area: Centered initially, moves top when results show -->
+  <div id="search-focus-area" style="display: flex;">
+      <h1 class="simple-title" onclick="resetToHomepage()">
+          Cinema Ghar Index
+      </h1>
+      <p class="signature">Curated with ❣️ by The_SabhyaPlayer</p>
+<!-- Search Input -->
+  <div class="search-input-wrapper">
+      <input type="search" id="mainSearchInput" placeholder="Search your movie, series, or file" autocomplete="off" aria-label="Search for movies, series, or files"/>
+      <div id="searchInputSuggestions"></div>
+      <button class="button" id="searchSubmitButton" onclick="handleSearchSubmit()">Search</button>
+  </div>
+  <!-- Search Actions: Contains global custom URL button -->
+  <div class="search-actions">
+       <button class="button" id="playCustomUrlGlobalButton">
+            <span aria-hidden="true">🔗</span> Play Custom URL
+       </button>
+       <!-- Other optional buttons could go here -->
+  </div>
+  <!-- Updates Preview Section (only shown on homepage) -->
+  <div id="updates-preview-section" style="display: none;">
+      <h3>Recently Added</h3>
+      <div id="updates-preview-list" class="grid-view-container"> <!-- Will show grouped movie/series posters -->
+          <div class="loading-inline-spinner" role="status" aria-live="polite">
+              <div class="spinner"></div>
+              <span>Loading updates...</span>
+          </div>
+      </div>
+      <button id="showMoreUpdatesButton" style="display: none;" onclick="appendMoreUpdates()">Show More</button>
+  </div>
 
-        <!-- Search Focus Area: Centered initially, moves top when results show -->
-        <div id="search-focus-area" style="display: flex;">
-            <h1 class="simple-title" onclick="resetToHomepage()">
-                Cinema Ghar Index
-            </h1>
-            <p class="signature">Curated with ❣️ by The_SabhyaPlayer</p>
-            <!-- Search Input -->
-            <div class="search-input-wrapper">
-                <input type="search" id="mainSearchInput" placeholder="Search your movie, series, or file" autocomplete="off" aria-label="Search for movies, series, or files"/>
-                <div id="searchInputSuggestions"></div>
-                <button class="button" id="searchSubmitButton" onclick="handleSearchSubmit()">Search</button>
-            </div>
-            <!-- Search Actions: Contains global custom URL button -->
-            <div class="search-actions">
-                 <button class="button" id="playCustomUrlGlobalButton">
-                      <span aria-hidden="true">🔗</span> Play Custom URL
-                 </button>
-                 <!-- Other optional buttons could go here -->
-            </div>
-            <!-- Updates Preview Section (only shown on homepage) -->
-            <div id="updates-preview-section" style="display: none;">
-                <h3>Recently Added</h3>
-                <div id="updates-preview-list" class="grid-view-container">
-                    <div class="loading-inline-spinner" role="status" aria-live="polite">
-                        <div class="spinner"></div>
-                        <span>Loading updates...</span>
-                    </div>
-                </div>
-                <button id="showMoreUpdatesButton" style="display: none;" onclick="appendMoreUpdates()">Show More</button>
-            </div>
-        </div> <!-- End #search-focus-area -->
+  </div> <!-- End #search-focus-area -->
+  <!-- Results Area: Hidden initially, displayed below search when active -->
+  <main id="results-area">
+      <button id="backToHomeButtonResults" class="button back-button" onclick="resetToHomepage()">
+          ← Back to Home
+      </button>
+<!-- Filter Area within Results -->
+  <div class="results-filter-area">
+      <div class="filter-group">
+          <label for="mainQualityFilterSelect">Filter by Quality:</label>
+          <select id="mainQualityFilterSelect">
+              <option value="">All Qualities</option>
+              <!-- Options populated by JS -->
+          </select>
+      </div>
+      <!-- TODO: Add sorting controls here if desired (e.g., dropdowns) -->
+  </div>
 
-        <!-- Results Area: Hidden initially, displayed below search when active -->
-        <main id="results-area" style="display: none;">
-            <button id="backToHomeButtonResults" class="button back-button" onclick="resetToHomepage()">
-                ← Back to Home
-            </button>
-            <!-- Filter Area within Results -->
-            <div class="results-filter-area">
-                <div class="filter-group">
-                    <label for="mainQualityFilterSelect">Filter by Quality:</label>
-                    <select id="mainQualityFilterSelect">
-                        <option value="">All Qualities</option>
-                        <!-- Options populated by JS -->
-                    </select>
-                </div>
-                <!-- Sorting controls could go here if needed for groups (e.g., by title, by latest file) -->
+  <!-- Tab Navigation -->
+  <nav class="tab-navigation">
+      <button class="tab-button active" id="allFilesTabButton" onclick="switchTab('allFiles')">All Content</button> <!-- Renamed for clarity with grouping -->
+      <button class="tab-button" id="moviesTabButton" onclick="switchTab('movies')">Movies</button>
+      <button class="tab-button" id="seriesTabButton" onclick="switchTab('series')">Series</button>
+  </nav>
+
+  <!-- Tab Content Area -->
+  <div class="tab-content">
+      <!-- All Files Panel (will show grouped movie/series posters) -->
+      <div id="allFilesTabPanel" class="active">
+          <div id="allFilesGridContainer" class="grid-view-container">
+              <div class="status-message" style="grid-column: 1 / -1;">Enter search term above.</div>
+              <!-- Grid items (movie/series posters) will be populated here by JavaScript -->
+          </div>
+          <div class="pagination-container" id="allFilesPaginationControls" style="display: none;"></div>
+      </div>
+
+       <!-- Movies Panel (will show grouped movie posters) -->
+      <div id="moviesTabPanel">
+          <div id="moviesGridContainer" class="grid-view-container">
+              <!-- Grid items (movie posters) will be populated here by JavaScript -->
+          </div>
+          <div class="pagination-container" id="moviesPaginationControls" style="display: none;"></div>
+      </div>
+
+       <!-- Series Panel (will show grouped series posters) -->
+      <div id="seriesTabPanel">
+          <div id="seriesGridContainer" class="grid-view-container">
+              <!-- Grid items (series posters) will be populated here by JavaScript -->
+          </div>
+          <div class="pagination-container" id="seriesPaginationControls" style="display: none;"></div>
+      </div>
+  </div> <!-- End .tab-content -->
+  </main> <!-- End #results-area -->
+
+  <!-- Item Detail View Area (Now for Group Details & Selected File Actions) -->
+  <main id="item-detail-view">
+      <!-- Back button: JS determines context and which one to show -->
+      <button id="backToHomeButtonShared" class="button back-button" onclick="resetToHomepage()">
+          ← Back to Home
+      </button>
+      <button id="backToResultsOrGroupListButton" class="button back-button" onclick="handleBackFromDetailView()">
+          ← Back
+      </button>
+
+      <div id="group-info-area">
+          <!-- Group poster and TMDb details populated by JS -->
+          <div class="loading-inline-spinner" role="status" aria-live="polite">
+              <div class="spinner"></div>
+              <span>Loading movie/series details...</span>
+          </div>
+          <!-- Example structure JS might create here:
+          <div class="tmdb-details-container">
+              <div class="tmdb-poster-column">
+                  <img src="..." alt="Poster for [Group Title]" class="tmdb-poster">
+              </div>
+              <div class="tmdb-info-column">
+                  <h3 class="tmdb-title">[Group Title]</h3>
+                  ... other TMDb info ...
+              </div>
+          </div>
+          -->
+      </div>
+
+      <h3 id="files-list-heading" style="display:none; margin-top: 20px; margin-bottom: 10px; font-size: 1.2em; color: var(--text-color);">Available Files:</h3>
+      <div id="group-files-list-container">
+          <!--
+            List of individual files for the group, populated by JS.
+            Each item would be simpler than a full grid card, e.g.:
+            <div class="file-item-in-group" data-file-id="[file_original_id]">
+                <span class="file-item-name">[Filename.mkv]</span>
+                <span class="file-item-quality">[1080p]</span>
+                <span class="file-item-size">[2.5 GB]</span>
             </div>
+            (Styling for .file-item-in-group would be needed in style.css)
+          -->
+          <div class="loading-inline-spinner" role="status" aria-live="polite">
+              <div class="spinner"></div>
+              <span>Loading files...</span>
+          </div>
+      </div>
 
-            <!-- Tab Navigation -->
-            <nav class="tab-navigation">
-                <button class="tab-button active" id="allFilesTabButton" onclick="switchTab('allFiles')">All Items</button>
-                <button class="tab-button" id="moviesTabButton" onclick="switchTab('movies')">Movies</button>
-                <button class="tab-button" id="seriesTabButton" onclick="switchTab('series')">Series</button>
-            </nav>
+      <div id="selected-file-actions-wrapper" style="display: none; margin-top: 20px;">
+          <hr class="detail-separator">
+          <h4 style="margin-bottom: 15px; font-size: 1.1em; color: var(--text-color);">File Details & Actions:</h4>
+          <div id="item-detail-content"> <!-- Existing div, output of createItemDetailContentHTML goes here -->
+              <div class="loading-inline-spinner" role="status" aria-live="polite">
+                  <div class="spinner"></div>
+                  <span>Select a file above to see actions.</span>
+              </div>
+          </div>
+      </div>
+  </main> <!-- End #item-detail-view -->
 
-            <!-- Tab Content Area -->
-            <div class="tab-content">
-                <!-- All Files Panel (now shows groups) -->
-                <div id="allFilesTabPanel" class="active">
-                    <div id="allFilesGridContainer" class="grid-view-container">
-                        <div class="status-message" style="grid-column: 1 / -1;">Enter search term above.</div>
-                    </div>
-                    <div class="pagination-container" id="allFilesPaginationControls" style="display: none;"></div>
-                </div>
+  <!-- Video Player Container - Initially hidden, moved dynamically by JS -->
+  <div class="video-container" id="videoContainer">
+      <button class="close-btn" onclick="closePlayer(event)" aria-label="Close video player">✖ Close</button>
+<!-- NEW: Custom URL Input Section (Now permanently inside player) -->
+  <div id="playerCustomUrlSection" style="display: none;">
+        <label for="playerCustomUrlInput">Enter Custom Video URL:</label>
+        <input type="url" id="playerCustomUrlInput" class="custom-url-input" placeholder="https://example.com/video.mp4" aria-label="Custom video URL input">
+        <button class="button" id="playerPlayCustomUrlButton">
+            <span aria-hidden="true">▶️</span> Play from Input
+        </button>
+        <span class="player-custom-url-feedback" role="status" aria-live="polite"></span>
+  </div>
 
-                 <!-- Movies Panel (shows movie groups) -->
-                <div id="moviesTabPanel">
-                    <div id="moviesGridContainer" class="grid-view-container">
-                        <!-- Grid items will be populated here by JavaScript -->
-                    </div>
-                    <div class="pagination-container" id="moviesPaginationControls" style="display: none;"></div>
-                </div>
-
-                 <!-- Series Panel (shows series groups) -->
-                <div id="seriesTabPanel">
-                    <div id="seriesGridContainer" class="grid-view-container">
-                        <!-- Grid items will be populated here by JavaScript -->
-                    </div>
-                    <div class="pagination-container" id="seriesPaginationControls" style="display: none;"></div>
-                </div>
-            </div> <!-- End .tab-content -->
-        </main> <!-- End #results-area -->
-
-        <!-- Item Detail View Area (OLD - might be deprecated or used as fallback) -->
-        <main id="item-detail-view" style="display: none;">
-            <button id="backToHomeButtonShared" class="button back-button" onclick="resetToHomepage()">
-                ← Back to Home
-            </button>
-            <button id="backToResultsButton" class="button back-button" onclick="goBackToResults()">
-                ← Back to Results
-            </button>
-            <div id="item-detail-content">
-                <div class="loading-inline-spinner" role="status" aria-live="polite">
-                    <div class="spinner"></div>
-                    <span>Loading item details...</span>
-                </div>
-            </div>
-        </main> <!-- End #item-detail-view -->
-
-        <!-- NEW: Group Detail View Area -->
-        <main id="group-detail-view" style="display: none;">
-            <button id="backToResultsFromGroupButton" class="button back-button" onclick="goBackToResultsFromGroup()">
-                ← Back to Results
-            </button>
-            <button id="backToHomeFromGroupButton" class="button back-button" onclick="resetToHomepage()">
-                ← Back to Home
-            </button>
-            <div id="group-detail-header-content">
-                <!-- TMDb info for the group (poster, title, overview) will be populated here by JS -->
-                <div class="loading-inline-spinner" role="status" aria-live="polite">
-                    <div class="spinner"></div>
-                    <span>Loading group details...</span>
-                </div>
-            </div>
-            <h3 id="group-detail-files-heading">Available Files:</h3>
-            <div id="group-detail-file-list">
-                <!-- List of individual files for the group will be populated here by JS -->
-                 <div class="status-message" style="padding: 20px 0;">Select a group to see its files.</div>
-            </div>
-            <div id="group-detail-file-actions-container" style="display: none;">
-                <h4>File Actions:</h4>
-                <div id="group-detail-file-actions-content">
-                    <!-- Action buttons for a selected file will be populated here by JS -->
-                </div>
-            </div>
-        </main> <!-- End #group-detail-view -->
-
-        <!-- Video Player Container - Initially hidden, moved dynamically by JS -->
-        <div class="video-container" id="videoContainer" style="display: none;">
-            <button class="close-btn" onclick="closePlayer(event)" aria-label="Close video player">✖ Close</button>
-            <!-- Custom URL Input Section (Now permanently inside player, visibility toggled by JS) -->
-            <div id="playerCustomUrlSection" style="display: none;">
-                  <label for="playerCustomUrlInput">Enter Custom Video URL:</label>
-                  <input type="url" id="playerCustomUrlInput" class="custom-url-input" placeholder="https://example.com/video.mp4" aria-label="Custom video URL input">
-                  <button class="button" id="playerPlayCustomUrlButton">
-                      <span aria-hidden="true">▶️</span> Play from Input
-                  </button>
-                  <span class="player-custom-url-feedback" role="status" aria-live="polite"></span>
-            </div>
-
-            <div id="audioWarning" style="display: none;" role="alert"></div>
-            <div id="videoTitle"></div>
-            <video id="html5VideoPlayer" controls autoplay controlsList="nodownload noremoteplayback">
-                Your browser does not support the video tag.
-            </video>
-            <div class="custom-controls" id="customControlsContainer">
-                <button class="button" onclick="seekVideo(-10)">« 10s</button>
-                <button class="button" onclick="seekVideo(10)">10s »</button>
-                <button class="button" id="muteButton" onclick="toggleMute()" aria-pressed="false">Mute</button>
-                <div class="player-control-group">
-                    <label for="volumeSlider">Vol:</label>
-                    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" onchange="setVolume(this.value)" aria-label="Volume control">
-                </div>
-                <select id="audioTrackSelect" onchange="changeAudioTrack(this)" title="Select Audio Track" style="display: none;" aria-label="Select audio track"></select>
-                <div class="player-control-group">
-                   <label for="playbackSpeedSelect">Speed:</label>
-                   <select id="playbackSpeedSelect" onchange="setPlaybackSpeed(this.value)" aria-label="Select playback speed">
-                      <option value="0.5">0.5x</option>
-                      <option value="0.75">0.75x</option>
-                      <option value="1" selected>1x</option>
-                      <option value="1.25">1.25x</option>
-                      <option value="1.5">1.5x</option>
-                      <option value="2">2x</option>
-                   </select>
-                </div>
-                <button class="button" onclick="toggleFullscreen()">Fullscreen</button>
-            </div>
-            <div class="vlc-copy-box" id="vlcBox" style="display:none;">
-                <strong>External Player URL:</strong>
-                <code id="vlcText"></code>
-                <span class="copy-feedback" role="status" aria-live="polite">Copied!</span>
-            </div>
-        </div> <!-- End #videoContainer -->
-
-         <!-- Footer Section -->
-        <footer id="page-footer" style="display: flex;">
-            <div class="footer-buttons">
-                <a href="https://t.me/The_Sabhyaplayer_bot" target="_blank" rel="noopener noreferrer" class="button telegram-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" aria-hidden="true" focusable="false">
-                        <path d="M97.9,161.4l-2.8,29.9c3.4,0,4.9-1.7,6.8-3.6l14.1-13.6l29.4,21.7c5.4,3.1,9.3,1.5,10.8-4.9l19.9-93.5c1.8-7.8-2.4-11.5-7.5-9.3L36.4,127.1c-7.6,3-7.6,7.5-1.3,9.6l30.2,9.4l70.4-44.3c3.3-2,6.1-0.9,3.6,1.4L97.9,161.4z"/>
-                    </svg>
-                    <span>Contact The_Sabhyaplayer</span>
-                </a>
-                <a href="https://t.me/Cinemaghar_Lobby" target="_blank" rel="noopener noreferrer" class="button telegram-button">
-                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" aria-hidden="true" focusable="false">
-                         <path d="M97.9,161.4l-2.8,29.9c3.4,0,4.9-1.7,6.8-3.6l14.1-13.6l29.4,21.7c5.4,3.1,9.3,1.5,10.8-4.9l19.9-93.5c1.8-7.8-2.4-11.5-7.5-9.3L36.4,127.1c-7.6,3-7.6,7.5-1.3,9.6l30.2,9.4l70.4-44.3c3.3-2,6.1-0.9,3.6,1.4L97.9,161.4z"/>
-                     </svg>
-                    <span>Join Telegram Channel</span>
-                </a>
-            </div>
-            <p class="footer-text">© 2025 Cinema Ghar Index  |  Maintained by The_SabhyaPlayer  |  We Do not own any data  |  We Just Index it | All Credit goes to Original Rippers.</p>
-        </footer> <!-- End #page-footer -->
-
-        <!-- Main Error Display Area -->
-        <div id="main-error-area" aria-live="assertive"></div>
-    </div> <!-- End #cinemaghar-container -->
-
-    <!-- Link to the external JavaScript file -->
-    <script src="script.js" defer></script>
+  <div id="audioWarning" style="display: none;" role="alert"></div>
+  <div id="videoTitle"></div>
+  <video id="html5VideoPlayer" controls autoplay controlsList="nodownload noremoteplayback">
+      Your browser does not support the video tag.
+  </video>
+  <div class="custom-controls" id="customControlsContainer">
+      <button class="button" onclick="seekVideo(-10)">« 10s</button>
+      <button class="button" onclick="seekVideo(10)">10s »</button>
+      <button class="button" id="muteButton" onclick="toggleMute()" aria-pressed="false">Mute</button>
+      <div class="player-control-group">
+          <label for="volumeSlider">Vol:</label>
+          <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" onchange="setVolume(this.value)" aria-label="Volume control">
+      </div>
+      <select id="audioTrackSelect" onchange="changeAudioTrack(this)" title="Select Audio Track" style="display: none;" aria-label="Select audio track"></select>
+      <div class="player-control-group">
+         <label for="playbackSpeedSelect">Speed:</label>
+         <select id="playbackSpeedSelect" onchange="setPlaybackSpeed(this.value)" aria-label="Select playback speed">
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+         </select>
+      </div>
+      <button class="button" onclick="toggleFullscreen()">Fullscreen</button>
+  </div>
+  <div class="vlc-copy-box" id="vlcBox" style="display:none;">
+      <strong>External Player URL:</strong>
+      <code id="vlcText"></code>
+      <span class="copy-feedback" role="status" aria-live="polite">Copied!</span>
+  </div>
+  </div> <!-- End #videoContainer -->
+   <!-- Footer Section -->
+  <footer id="page-footer" style="display: flex;">
+      <div class="footer-buttons">
+          <a href="https://t.me/The_Sabhyaplayer_bot" target="_blank" rel="noopener noreferrer" class="button telegram-button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" aria-hidden="true" focusable="false">
+                  <path d="M97.9,161.4l-2.8,29.9c3.4,0,4.9-1.7,6.8-3.6l14.1-13.6l29.4,21.7c5.4,3.1,9.3,1.5,10.8-4.9l19.9-93.5c1.8-7.8-2.4-11.5-7.5-9.3L36.4,127.1c-7.6,3-7.6,7.5-1.3,9.6l30.2,9.4l70.4-44.3c3.3-2,6.1-0.9,3.6,1.4L97.9,161.4z"/>
+              </svg>
+              <span>Contact The_Sabhyaplayer</span>
+          </a>
+          <a href="https://t.me/Cinemaghar_Lobby" target="_blank" rel="noopener noreferrer" class="button telegram-button">
+               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" aria-hidden="true" focusable="false">
+                   <path d="M97.9,161.4l-2.8,29.9c3.4,0,4.9-1.7,6.8-3.6l14.1-13.6l29.4,21.7c5.4,3.1,9.3,1.5,10.8-4.9l19.9-93.5c1.8-7.8-2.4-11.5-7.5-9.3L36.4,127.1c-7.6,3-7.6,7.5-1.3,9.6l30.2,9.4l70.4-44.3c3.3-2,6.1-0.9,3.6,1.4L97.9,161.4z"/>
+               </svg>
+              <span>Join Telegram Channel</span>
+          </a>
+      </div>
+      <p class="footer-text">© 2025 Cinema Ghar Index  |  Maintained by The_SabhyaPlayer  |  We Do not own any data  |  We Just Index it | All Credit goes to Original Rippers.</p>
+  </footer> <!-- End #page-footer -->
+  <!-- Main Error Display Area -->
+  <div id="main-error-area" aria-live="assertive"></div>
+</div> <!-- End #cinemaghar-container -->
+<!-- Link to the external JavaScript file -->
+<script src="script.js" defer></script>
 </body>
 </html>
