@@ -375,39 +375,85 @@
         return card;
     }
 
+// --- START OF REPLACEMENT FOR fetchPosterForItem function in script.js ---
     async function fetchPosterForItem(movie, imgElement, spinnerElement, posterContainerElement) {
         if (!imgElement || !posterContainerElement) {
-            console.warn("fetchPosterForItem called with invalid elements for movie:", movie?.extractedTitle);
+            console.warn("fetchPosterForItem called with invalid elements for movie:", movie?.id, movie?.extractedTitle);
             if (spinnerElement) spinnerElement.style.display = 'none';
+            // Try to set up fallback even with incomplete elements if possible
             if (movie && posterContainerElement) setupFallbackDisplay(movie, posterContainerElement);
+            else if (posterContainerElement) { // Generic fallback if movie object is somehow null/undefined
+                const fallbackContent = posterContainerElement.querySelector('.poster-fallback-content');
+                if (fallbackContent) {
+                    const titleEl = fallbackContent.querySelector('.fallback-title');
+                    const yearEl = fallbackContent.querySelector('.fallback-year');
+                    if (titleEl) titleEl.textContent = "Info unavailable";
+                    if (yearEl) yearEl.textContent = "";
+                    fallbackContent.style.display = 'flex';
+                    if(imgElement) imgElement.style.display = 'none';
+                }
+            }
             return;
         }
 
         const fallbackContentElement = posterContainerElement.querySelector('.poster-fallback-content');
 
-        if (!movie || !movie.extractedTitle || movie.tmdbDetails?.posterPathFetched || movie.tmdbDetails?.posterPathFetchFailed) {
+        // CRITICAL CHECK: If extractedTitle is not a non-empty string, or if already fetched/failed, use fallback.
+        const isTitleInvalid = !movie || typeof movie.extractedTitle !== 'string' || !movie.extractedTitle.trim();
+        const alreadyProcessed = movie?.tmdbDetails?.posterPathFetched || movie?.tmdbDetails?.posterPathFetchFailed;
+
+        if (isTitleInvalid || alreadyProcessed) {
             if (spinnerElement) spinnerElement.style.display = 'none';
-            if (movie?.tmdbDetails?.posterPath) {
+
+            if (movie?.tmdbDetails?.posterPath) { // If we have a poster path despite other conditions
                 if (imgElement.src !== movie.tmdbDetails.posterPath) imgElement.src = movie.tmdbDetails.posterPath;
                 imgElement.style.display = 'block';
                 if (fallbackContentElement) fallbackContentElement.style.display = 'none';
             } else {
-                setupFallbackDisplay(movie, posterContainerElement);
+                // Ensure movie object is passed to setupFallbackDisplay
+                if (movie) {
+                    setupFallbackDisplay(movie, posterContainerElement);
+                } else { // Generic fallback if movie object is somehow null/undefined
+                     if (fallbackContentElement) {
+                        const titleEl = fallbackContentElement.querySelector('.fallback-title');
+                        const yearEl = fallbackContentElement.querySelector('.fallback-year');
+                        if (titleEl) titleEl.textContent = "Info unavailable";
+                        if (yearEl) yearEl.textContent = "";
+                        fallbackContentElement.style.display = 'flex';
+                        if(imgElement) imgElement.style.display = 'none';
+                     }
+                }
+            }
+
+            // If title was invalid and we haven't already marked it, do so now.
+            if (movie && isTitleInvalid) {
+                if (!movie.tmdbDetails) movie.tmdbDetails = {};
+                // Mark as fetched/failed to prevent retries if it wasn't already
+                if (!movie.tmdbDetails.posterPathFetched && !movie.tmdbDetails.posterPathFetchFailed) {
+                    movie.tmdbDetails.posterPathFetchFailed = true;
+                    movie.tmdbDetails.posterPathFetched = true; // Treat as "attempted"
+                }
             }
             return;
         }
 
+        // If we reach here, extractedTitle is a non-empty string and poster hasn't been fetched/failed.
         if (spinnerElement) spinnerElement.style.display = 'block';
-        imgElement.style.display = 'block'; // Show placeholder while loading
-        if (fallbackContentElement) fallbackContentElement.style.display = 'none';
+        imgElement.style.display = 'block'; // Show placeholder (or current src) while loading
+        if (fallbackContentElement) fallbackContentElement.style.display = 'none'; // Hide fallback during attempt
 
         try {
             const tmdbQuery = new URLSearchParams();
-            tmdbQuery.set('query', movie.extractedTitle);
+            tmdbQuery.set('query', movie.extractedTitle); // movie.extractedTitle is a non-empty string here
             tmdbQuery.set('type', movie.isSeries ? 'tv' : 'movie');
+
             if (!movie.isSeries && movie.extractedYear) {
-                tmdbQuery.set('year', movie.extractedYear);
+                const yearNum = parseInt(movie.extractedYear, 10);
+                if (!isNaN(yearNum) && yearNum > 1800 && yearNum < 2050) { // Basic sanity check for year
+                     tmdbQuery.set('year', String(yearNum));
+                }
             }
+
             const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
             const tmdbController = new AbortController();
             const tmdbTimeoutId = setTimeout(() => tmdbController.abort(), config.TMDB_FETCH_TIMEOUT);
@@ -424,12 +470,20 @@
                     imgElement.style.display = 'block';
                     if (fallbackContentElement) fallbackContentElement.style.display = 'none';
                     movie.tmdbDetails.posterPath = fetchedTmdbData.posterPath;
-                    movie.tmdbDetails.title = fetchedTmdbData.title; // Use TMDb's title for consistency
+                    // Prefer TMDb title if available and different
+                    if (fetchedTmdbData.title && movie.extractedTitle && fetchedTmdbData.title.toLowerCase() !== movie.extractedTitle.toLowerCase()) {
+                         // You might want to update extractedTitle or store tmdbTitle separately
+                         // For now, we'll just use it for display consistency if needed later
+                         movie.tmdbDetails.title = fetchedTmdbData.title;
+                    } else if (!movie.tmdbDetails.title) {
+                        movie.tmdbDetails.title = movie.extractedTitle;
+                    }
                 } else {
                     setupFallbackDisplay(movie, posterContainerElement); // No poster from TMDb
                     movie.tmdbDetails.posterPathFetchFailed = true;
                 }
             } else {
+                console.warn(`TMDb API non-OK response for "${movie.extractedTitle}": ${tmdbResponse.status}`);
                 setupFallbackDisplay(movie, posterContainerElement); // HTTP error
                 movie.tmdbDetails.posterPathFetchFailed = true;
             }
@@ -446,7 +500,7 @@
             if (spinnerElement) spinnerElement.style.display = 'none';
         }
     }
-
+// --- END OF REPLACEMENT FOR fetchPosterForItem function in script.js ---
     // --- View Control ---
     function setViewMode(mode) {
         console.log(`Setting view mode to: ${mode}`);
