@@ -1,4 +1,4 @@
-// --- START OF script.js (MODIFIED FOR GRID VIEW + ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE + ORIGINAL LINK VISIBILITY FIX + ID FETCH FIX v2 + GRID VIEW v1 + POSTER FALLBACK TEXT) ---
+// --- START OF script.js (MODIFIED FOR GRID VIEW + ITEM DETAIL VIEW NAVIGATION + HUBCLEOUD & GDFLIX BYPASS + URL SPACE ENCODING + TMDB INTEGRATION - CORRECTED BYPASS/TMDB PERSISTENCE + ORIGINAL LINK VISIBILITY FIX + ID FETCH FIX v2 + GRID VIEW v1 + POSTER FALLBACK TEXT + INITIAL LOAD FIX) ---
 (function() {
     'use strict';
 
@@ -9,7 +9,7 @@
         HDR_LOGO_URL: "https://as1.ftcdn.net/v2/jpg/05/32/83/72/1000_F_532837228_v8CGZRU0jy39uCtqFRnJz6xDntrGuLLx.webp",
         FOURK_LOGO_URL: "https://i.pinimg.com/736x/85/c4/b0/85c4b0a2fb8612825d0cd2f53460925f.jpg",
         ITEMS_PER_PAGE: 50,
-        LOCAL_STORAGE_KEY: 'cinemaGharState_v17_grid_fallback', // Incremented version
+        LOCAL_STORAGE_KEY: 'cinemaGharState_v18_grid_init_fix', // Incremented version
         PLAYER_VOLUME_KEY: 'cinemaGharPlayerVolume',
         PLAYER_SPEED_KEY: 'cinemaGharPlayerSpeed',
         SEARCH_DEBOUNCE_DELAY: 300,
@@ -23,7 +23,7 @@
         BYPASS_TIMEOUT: 60000,
         TMDB_API_PROXY_URL: '/api/tmdb',
         TMDB_FETCH_TIMEOUT: 15000,
-        POSTER_PLACEHOLDER_URL: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 3'%3E%3Crect width='2' height='3' fill='%23e9ecef'/%3E%3C/svg%3E" // Minimal SVG placeholder, background set by CSS
+        POSTER_PLACEHOLDER_URL: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 3'%3E%3Crect width='2' height='3' fill='%23e9ecef'/%3E%3C/svg%3E"
     };
 
     // --- DOM Element References ---
@@ -141,7 +141,15 @@
         processed.searchText = normalizeTextForSearch(`${processed.id || ''} ${processed.displayFilename}`);
         processed.isSeries = !!movie.is_series;
         processed.extractedTitle = null; processed.extractedYear = null; processed.extractedSeason = null;
-        processed.tmdbDetails = movie.tmdbDetails || null;
+        
+        // Initialize tmdbDetails structure
+        processed.tmdbDetails = movie.tmdbDetails || {
+            posterPath: null,
+            posterPathFetched: false,
+            posterPathFetchFailed: false,
+            // other TMDB fields can be added here if known from server, otherwise will be populated by client
+        };
+
 
         const filename = processed.displayFilename;
         if (filename) {
@@ -151,10 +159,10 @@
             const seasonMatch = cleanedName.match(/[. (_-](S(\d{1,2}))(?:E\d{1,2}|[. (_-])/i) || cleanedName.match(/[. (_-](Season[. _]?(\d{1,2}))(?:[. (_]|$)/i);
             if (seasonMatch && (seasonMatch[2] || seasonMatch[3])) {
                 processed.extractedSeason = parseInt(seasonMatch[2] || seasonMatch[3], 10);
-                processed.isSeries = true; // Double-confirm based on season extraction
+                processed.isSeries = true; 
                 const titleEndIndex = seasonMatch.index;
                 processed.extractedTitle = cleanedName.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
-                const yearInTitleMatch = processed.extractedTitle.match(/[.(_[](\d{4})[.)_\]]$/); // Year at the end of extracted title
+                const yearInTitleMatch = processed.extractedTitle.match(/[.(_[](\d{4})[.)_\]]$/);
                 if(yearInTitleMatch && yearInTitleMatch[1]) {
                      const potentialYear = parseInt(yearInTitleMatch[1], 10);
                      if (potentialYear > 1900 && potentialYear < 2050) {
@@ -163,8 +171,7 @@
                      }
                 }
             } else {
-                // If not a season match, assume movie
-                processed.isSeries = false; // Override if necessary
+                processed.isSeries = false; 
                 const yearMatch = cleanedName.match(/[.(_[](\d{4})[.)_\]]/);
                 if (yearMatch && yearMatch[1]) {
                     const year = parseInt(yearMatch[1], 10);
@@ -175,19 +182,17 @@
                     }
                 }
             }
-            if (!processed.extractedTitle && cleanedName) { // Fallback if no year/season helped
+            if (!processed.extractedTitle && cleanedName) { 
                 processed.extractedTitle = cleanedName.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
             }
-            if (processed.extractedTitle) { // Final cleanup for title
-                processed.extractedTitle = processed.extractedTitle.replace(/[- ]+$/, '').trim(); // Remove trailing hyphens/spaces
-                 if (/^\d{4}$/.test(processed.extractedTitle) && !processed.extractedYear) { // If title is just a year, and year not already set
+            if (processed.extractedTitle) { 
+                processed.extractedTitle = processed.extractedTitle.replace(/[- ]+$/, '').trim(); 
+                 if (/^\d{4}$/.test(processed.extractedTitle) && !processed.extractedYear) { 
                     processed.extractedYear = parseInt(processed.extractedTitle, 10);
-                    processed.extractedTitle = null; // Or some default like "Unknown Movie"
+                    processed.extractedTitle = null; 
                  } else if (/^\d{4}$/.test(processed.extractedTitle) && processed.extractedYear) {
-                    // If title became just a year AND year was already extracted, means original title was complex.
-                    // Revert to a simpler split if title is just the year.
                     processed.extractedTitle = cleanedName.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
-                    if (/^\d{4}$/.test(processed.extractedTitle)) processed.extractedTitle = null; // If still just a year, nullify
+                    if (/^\d{4}$/.test(processed.extractedTitle)) processed.extractedTitle = null; 
                  }
             }
         }
@@ -195,7 +200,7 @@
     }
 
     // --- HTML Generation (Item Detail) ---
-    function createItemDetailContentHTML(movie, tmdbDetails) {
+    function createItemDetailContentHTML(movie, tmdbDetails) { // tmdbDetails here is movie.tmdbDetails
         const displayFilename = movie.displayFilename;
         const displaySize = movie.sizeData.display;
         const displayQuality = movie.displayQuality;
@@ -229,7 +234,7 @@
             const youtubeIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.267,4,12,4,12,4S5.733,4,4.186,4.418 c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.734,2,12,2,12s0,4.266,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768 C5.733,20,12,20,12,20s6.267,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.266,22,12,22,12S22,7.734,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"></path></svg>`;
             youtubeTrailerButtonHTML = `<a href="${youtubeSearchUrl}" target="_blank" rel="noopener noreferrer" class="button youtube-button">${youtubeIconSVG} Watch Trailer</a>`;
             const infoIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`;
-            if (tmdbDetails && tmdbDetails.tmdbLink) {
+            if (tmdbDetails && tmdbDetails.tmdbLink) { // Use tmdbDetails from movie.tmdbDetails
                  const tmdbLabel = movie.isSeries ? "View on TMDb (TV)" : "View on TMDb (Movie)";
                  externalInfoButtonHTML = `<a href="${sanitize(tmdbDetails.tmdbLink)}" target="_blank" rel="noopener noreferrer" class="button tmdb-link-button">${infoIconSVG} ${tmdbLabel}</a>`;
             } else {
@@ -243,7 +248,7 @@
         }
 
         let tmdbSectionHTML = '';
-        if (tmdbDetails && tmdbDetails.id) {
+        if (tmdbDetails && tmdbDetails.id) { // Use tmdbDetails from movie.tmdbDetails
             const posterHTML = tmdbDetails.posterPath ? `<img src="${sanitize(tmdbDetails.posterPath)}" alt="Poster for ${sanitize(tmdbDetails.title)}" class="tmdb-poster" loading="lazy">` : '<div class="tmdb-poster-placeholder">No Poster</div>';
             const ratingHTML = tmdbDetails.voteAverage && tmdbDetails.voteCount ? `<span class="tmdb-rating" title="${tmdbDetails.voteCount} votes">⭐ ${sanitize(tmdbDetails.voteAverage)}/10</span>` : '';
             const genresHTML = tmdbDetails.genres && tmdbDetails.genres.length > 0 ? `<div class="tmdb-genres"><strong>Genres:</strong> ${tmdbDetails.genres.map(g => `<span class="genre-tag">${sanitize(g)}</span>`).join(' ')}</div>` : '';
@@ -253,9 +258,12 @@
             const taglineHTML = tmdbDetails.tagline ? `<div class="tmdb-tagline"><em>${sanitize(tmdbDetails.tagline)}</em></div>` : '';
             const actorsHTML = tmdbDetails.actors && tmdbDetails.actors.length > 0 ? `<div class="tmdb-actors"><strong>Starring:</strong><ul>${tmdbDetails.actors.map(actor => `<li>${sanitize(actor.name)} (${sanitize(actor.character)})</li>`).join('')}</ul></div>` : '';
             tmdbSectionHTML = `<div class="tmdb-details-container"><div class="tmdb-poster-column">${posterHTML}</div><div class="tmdb-info-column">${tmdbDetails.title ? `<h3 class="tmdb-title">${sanitize(tmdbDetails.title)}</h3>` : ''}${taglineHTML}<div class="tmdb-meta">${ratingHTML}${releaseDateHTML}${runtimeHTML}</div>${genresHTML}${overviewHTML}${actorsHTML}</div></div>`;
-        } else if (movie.extractedTitle && !tmdbDetails) {
+        } else if (movie.extractedTitle && (!tmdbDetails || !tmdbDetails.id) && movie.tmdbDetails?.posterPathFetchFailed) { // Check fetchFailed status
              tmdbSectionHTML = `<div class="tmdb-fetch-failed">Could not fetch additional details from TMDb.</div>`;
+        } else if (movie.extractedTitle && (!tmdbDetails || !tmdbDetails.id) && !movie.tmdbDetails?.posterPathFetched) {
+            tmdbSectionHTML = `<div class="tmdb-fetch-failed">Fetching TMDb details...</div>`; // Or a spinner
         }
+
 
         let urlDependentButtonsHTML = '';
         let bypassButtonsHTML = '';
@@ -288,38 +296,65 @@
 
     // --- Grid Item HTML Generation & Fallback Logic ---
     function setupFallbackDisplay(movie, posterContainer) {
-        if (!movie || !posterContainer) return;
+        if (!posterContainer) {
+            console.error("setupFallbackDisplay: posterContainer is null/undefined.", movie);
+            return;
+        }
+        // Ensure movie is at least an empty object if null/undefined to prevent errors accessing its properties
+        const safeMovie = movie || {};
+
         const img = posterContainer.querySelector('.poster-image');
         const fallbackContent = posterContainer.querySelector('.poster-fallback-content');
-        if (!fallbackContent) return; // Should not happen if HTML structure is correct
+
+        if (img) {
+            img.style.display = 'none';
+            // Reset src to prevent further load attempts on a broken URL or to clear it
+            img.src = config.POSTER_PLACEHOLDER_URL;
+        } else {
+            // console.warn("setupFallbackDisplay: .poster-image not found in", posterContainer);
+        }
+
+        if (!fallbackContent) {
+            console.error("setupFallbackDisplay: .poster-fallback-content not found in", posterContainer);
+            return;
+        }
 
         const titleEl = fallbackContent.querySelector('.fallback-title');
         const yearEl = fallbackContent.querySelector('.fallback-year');
 
-        if (img) img.style.display = 'none';
-
-        if (titleEl) titleEl.textContent = movie.extractedTitle || movie.displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim() || 'Unknown Title';
+        if (titleEl) {
+            titleEl.textContent = safeMovie.extractedTitle || 
+                                  (safeMovie.displayFilename && typeof safeMovie.displayFilename === 'string' ? safeMovie.displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim() : '') || 
+                                  'No Title';
+        } else {
+            // console.warn("setupFallbackDisplay: .fallback-title not found in", fallbackContent);
+        }
         
         let yearTextContent = '';
-        if (movie.extractedYear) {
-            yearTextContent = String(movie.extractedYear);
-        } else if (movie.isSeries && movie.extractedSeason) {
-            yearTextContent = `Season ${movie.extractedSeason}`;
+        if (safeMovie.extractedYear) {
+            yearTextContent = String(safeMovie.extractedYear);
+        } else if (safeMovie.isSeries && safeMovie.extractedSeason) {
+            yearTextContent = `Season ${safeMovie.extractedSeason}`;
         }
-        if (yearEl) yearEl.textContent = yearTextContent;
+
+        if (yearEl) {
+            yearEl.textContent = yearTextContent;
+        } else {
+            // console.warn("setupFallbackDisplay: .fallback-year not found in", fallbackContent);
+        }
         
         fallbackContent.style.display = 'flex';
     }
 
+
     function createMovieGridItemHTML(movie) {
         const card = document.createElement('div');
-        // Use 'update-item' class if this function is also used for updates preview to share styles
         card.className = (updatesPreviewList && updatesPreviewList.contains(event?.target?.closest('.update-item'))) ? 'update-item' : 'grid-item';
         
         card.dataset.itemId = sanitize(movie.id);
         card.setAttribute('role', 'button');
         card.setAttribute('tabindex', '0');
-        const baseTitleForAria = movie.extractedTitle || movie.displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim();
+        const baseTitleForAria = movie.extractedTitle || (movie.displayFilename && typeof movie.displayFilename === 'string' ? movie.displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim() : 'Item');
         card.setAttribute('aria-label', `View details for ${sanitize(baseTitleForAria)}`);
 
         let fourkLogoHtml = '';
@@ -333,7 +368,11 @@
         }
 
         const canAttemptPosterFetch = !!movie.extractedTitle;
-        const initialSpinnerDisplay = (canAttemptPosterFetch && !movie.tmdbDetails?.posterPathFetched && !movie.tmdbDetails?.posterPathFetchFailed) ? 'block' : 'none';
+        // Determine initial spinner display based on TMDB state
+        let initialSpinnerDisplay = 'none';
+        if (canAttemptPosterFetch && !movie.tmdbDetails.posterPath && !movie.tmdbDetails.posterPathFetched && !movie.tmdbDetails.posterPathFetchFailed) {
+            initialSpinnerDisplay = 'block'; // Show spinner only if we are going to fetch
+        }
 
         card.innerHTML = `
             <div class="poster-container">
@@ -346,29 +385,36 @@
                 <div class="quality-badges-overlay">${fourkLogoHtml}${hdrLogoHtml}</div>
             </div>
         `;
-        // Note: The .item-info div that was previously below the poster is intentionally removed.
 
         const posterContainer = card.querySelector('.poster-container');
         const imgElement = posterContainer.querySelector('.poster-image');
         const spinnerElement = posterContainer.querySelector('.poster-spinner');
 
-        // Assign onerror handler dynamically to correctly closure 'movie' data
         imgElement.onerror = function() {
-            this.style.display = 'none'; // Hide broken image
+            this.style.display = 'none'; 
             const parentPosterContainer = this.closest('.poster-container');
-            if (movie && parentPosterContainer) { // 'movie' is from the outer scope of createMovieGridItemHTML
+            if (parentPosterContainer) { // Ensure parentPosterContainer is valid
+                 // movie object comes from the closure of createMovieGridItemHTML
                 setupFallbackDisplay(movie, parentPosterContainer);
+                const localSpinner = parentPosterContainer.querySelector('.poster-spinner');
+                if (localSpinner) localSpinner.style.display = 'none';
             }
-            const localSpinner = parentPosterContainer ? parentPosterContainer.querySelector('.poster-spinner') : null;
-            if (localSpinner) localSpinner.style.display = 'none';
+            // Also mark the movie object so we don't try to load this specific bad poster URL again if the view is refreshed
+            if (movie && movie.tmdbDetails) {
+                movie.tmdbDetails.posterPathFetchFailed = true; // Or a new flag like posterImageLoadFailed
+            }
         };
-
-        if (movie.tmdbDetails?.posterPath) {
+        
+        if (movie.tmdbDetails.posterPath) {
             imgElement.src = movie.tmdbDetails.posterPath;
+            imgElement.style.display = 'block'; // Ensure image is visible
+            posterContainer.querySelector('.poster-fallback-content').style.display = 'none'; // Hide fallback
             if (spinnerElement) spinnerElement.style.display = 'none';
-        } else if (canAttemptPosterFetch && !movie.tmdbDetails?.posterPathFetched && !movie.tmdbDetails?.posterPathFetchFailed) {
+        } else if (canAttemptPosterFetch && !movie.tmdbDetails.posterPathFetched && !movie.tmdbDetails.posterPathFetchFailed) {
+            // Only fetch if it's possible and hasn't been fetched or failed before
             fetchPosterForItem(movie, imgElement, spinnerElement, posterContainer);
         } else {
+            // Already failed, or cannot attempt: show fallback text
             setupFallbackDisplay(movie, posterContainer);
             if (spinnerElement) spinnerElement.style.display = 'none';
         }
@@ -377,7 +423,6 @@
 
     async function fetchPosterForItem(movie, imgElement, spinnerElement, posterContainerElement) {
         if (!imgElement || !posterContainerElement) {
-            console.warn("fetchPosterForItem called with invalid elements for movie:", movie?.extractedTitle);
             if (spinnerElement) spinnerElement.style.display = 'none';
             if (movie && posterContainerElement) setupFallbackDisplay(movie, posterContainerElement);
             return;
@@ -385,21 +430,17 @@
 
         const fallbackContentElement = posterContainerElement.querySelector('.poster-fallback-content');
 
-        if (!movie || !movie.extractedTitle || movie.tmdbDetails?.posterPathFetched || movie.tmdbDetails?.posterPathFetchFailed) {
-            if (spinnerElement) spinnerElement.style.display = 'none';
-            if (movie?.tmdbDetails?.posterPath) {
-                if (imgElement.src !== movie.tmdbDetails.posterPath) imgElement.src = movie.tmdbDetails.posterPath;
-                imgElement.style.display = 'block';
-                if (fallbackContentElement) fallbackContentElement.style.display = 'none';
-            } else {
-                setupFallbackDisplay(movie, posterContainerElement);
-            }
-            return;
-        }
+        // This function should only be called if a fetch is truly needed.
+        // The calling logic in createMovieGridItemHTML should ensure this.
+        // if (!movie || !movie.extractedTitle || movie.tmdbDetails.posterPathFetched || movie.tmdbDetails.posterPathFetchFailed) { ... }
 
         if (spinnerElement) spinnerElement.style.display = 'block';
-        imgElement.style.display = 'block'; // Show placeholder while loading
+        imgElement.style.display = 'block'; // Keep placeholder visible
         if (fallbackContentElement) fallbackContentElement.style.display = 'none';
+
+        // Ensure movie.tmdbDetails exists (should be done by preprocessMovieData already)
+        if (!movie.tmdbDetails) movie.tmdbDetails = { posterPathFetched: false, posterPathFetchFailed: false, posterPath: null };
+
 
         try {
             const tmdbQuery = new URLSearchParams();
@@ -415,37 +456,34 @@
             const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
             clearTimeout(tmdbTimeoutId);
 
-            if (!movie.tmdbDetails) movie.tmdbDetails = {};
-
             if (tmdbResponse.ok) {
                 const fetchedTmdbData = await tmdbResponse.json();
                 if (fetchedTmdbData && fetchedTmdbData.posterPath) {
-                    imgElement.src = fetchedTmdbData.posterPath;
+                    imgElement.src = fetchedTmdbData.posterPath; // This might trigger onerror if fetchedTmdbData.posterPath is bad
                     imgElement.style.display = 'block';
                     if (fallbackContentElement) fallbackContentElement.style.display = 'none';
                     movie.tmdbDetails.posterPath = fetchedTmdbData.posterPath;
                     movie.tmdbDetails.title = fetchedTmdbData.title; // Use TMDb's title for consistency
-                } else {
-                    setupFallbackDisplay(movie, posterContainerElement); // No poster from TMDb
+                } else { // TMDB API success, but no poster in response
+                    setupFallbackDisplay(movie, posterContainerElement);
                     movie.tmdbDetails.posterPathFetchFailed = true;
                 }
-            } else {
-                setupFallbackDisplay(movie, posterContainerElement); // HTTP error
+            } else { // TMDB API returned an error (4xx, 5xx)
+                setupFallbackDisplay(movie, posterContainerElement);
                 movie.tmdbDetails.posterPathFetchFailed = true;
             }
-            movie.tmdbDetails.posterPathFetched = true;
-        } catch (tmdbError) {
+        } catch (tmdbError) { // Network error, abort, or JSON parse error
             if (tmdbError.name !== 'AbortError') {
                 console.error(`Error fetching TMDb poster for "${movie.extractedTitle}":`, tmdbError);
             }
-            setupFallbackDisplay(movie, posterContainerElement); // Exception during fetch
-            if (!movie.tmdbDetails) movie.tmdbDetails = {};
+            setupFallbackDisplay(movie, posterContainerElement);
             movie.tmdbDetails.posterPathFetchFailed = true;
-            movie.tmdbDetails.posterPathFetched = true;
         } finally {
+            movie.tmdbDetails.posterPathFetched = true; // Mark as attempted
             if (spinnerElement) spinnerElement.style.display = 'none';
         }
     }
+
 
     // --- View Control ---
     function setViewMode(mode) {
@@ -470,10 +508,10 @@
             if (suggestionsContainer) suggestionsContainer.style.display = 'none';
             activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = '';
             if (weeklyUpdatesData.length > 0) { displayInitialUpdates(); }
-            else if (localSuggestionData.length > 0) {
+            else if (localSuggestionData.length > 0) { // This implies suggestion data loaded but weeklyUpdatesData wasn't set or empty
                  if (updatesPreviewList) updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
                  if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none';
-            } else {
+            } else { // No data loaded yet
                 if (updatesPreviewList) updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
             }
             document.title = "Cinema Ghar Index";
@@ -496,7 +534,7 @@
     window.goBackToResults = function() {
         currentItemDetailData = null; isShareMode = false;
          if (itemDetailAbortController) { itemDetailAbortController.abort(); itemDetailAbortController = null; }
-        history.back(); // This should trigger popstate and handleUrlChange
+        history.back(); 
     }
     window.addEventListener('popstate', (event) => { handleUrlChange(true); });
     function handleUrlChange(isPopState = false) {
@@ -507,8 +545,8 @@
         if (shareId) {
             if (currentViewMode !== 'itemDetail' || !currentItemDetailData || currentItemDetailData.id !== shareId) {
                  displayItemDetail(shareId, true);
-            } else { // Already on the correct item detail page (e.g. navigated back to it)
-                 setViewMode('itemDetail'); // Ensure correct classes are set
+            } else { 
+                 setViewMode('itemDetail'); 
                  if (backToHomeButtonShared) backToHomeButtonShared.style.display = 'inline-flex';
                  if (backToResultsButton) backToResultsButton.style.display = 'none';
             }
@@ -520,33 +558,28 @@
                  if (backToHomeButtonShared) backToHomeButtonShared.style.display = 'none';
                  if (backToResultsButton) backToResultsButton.style.display = 'inline-flex';
             }
-        } else { // No shareId or viewId
-            if (currentViewMode === 'itemDetail') { // Was on item detail, now going back
+        } else { 
+            if (currentViewMode === 'itemDetail') { 
                 currentItemDetailData = null;
                 isShareMode = false;
-                // If coming from a popstate (back button) and was search, go to search. Otherwise, homepage.
                 if (isPopState && currentState.searchTerm && previousStateBeforeDetailWasSearch()) {
                     setViewMode('search');
-                    fetchAndRenderResults(); // Re-render search results
+                    fetchAndRenderResults(); 
                 } else {
                     setViewMode('homepage');
                 }
             } else if (currentViewMode === 'search' && !currentState.searchTerm && isPopState) {
-                 setViewMode('homepage'); // If search was cleared and went back
+                 setViewMode('homepage'); 
             } else if (currentViewMode !== 'homepage' && (isInitialLoad || !isPopState || !currentState.searchTerm) ) {
-                 setViewMode('homepage'); // Default to homepage if not a specific back action to search
+                 setViewMode('homepage'); 
             } else if (currentViewMode === 'search' && currentState.searchTerm) {
-                // If already in search view and params are removed (e.g. manual URL edit), re-render search
                 setViewMode('search');
                 fetchAndRenderResults();
             }
-            // If isInitialLoad and currentViewMode is already 'search' (from saved state or direct URL), let it be.
         }
     }
 
     function previousStateBeforeDetailWasSearch() {
-        // This is a heuristic. A more robust way would be to store previous view mode.
-        // For now, if there's a search term, assume we came from search.
         return !!currentState.searchTerm;
     }
 
@@ -580,7 +613,7 @@
     }
 
     // --- Updates Preview Logic ---
-    async function loadUpdatesPreview() { if (currentViewMode !== 'homepage' || !updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; showMoreUpdatesButton.style.display = 'none'; updatesPreviewShownCount = 0; weeklyUpdatesData = []; try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_INITIAL_COUNT + config.UPDATES_PREVIEW_LOAD_MORE_COUNT, page: 1 }; /* Fetch a bit more initially */ const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { weeklyUpdatesData = data.items.map(preprocessMovieData); displayInitialUpdates(); } else { updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; } } catch (error) { if (error.name !== 'AbortError') { updatesPreviewList.innerHTML = `<div class="error-message grid-status-message">Could not load updates. ${error.message}</div>`; } showMoreUpdatesButton.style.display = 'none'; } }
+    async function loadUpdatesPreview() { if (currentViewMode !== 'homepage' || !updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; showMoreUpdatesButton.style.display = 'none'; updatesPreviewShownCount = 0; weeklyUpdatesData = []; try { const params = { sort: 'lastUpdated', sortDir: 'desc', limit: config.UPDATES_PREVIEW_INITIAL_COUNT + config.UPDATES_PREVIEW_LOAD_MORE_COUNT, page: 1 }; const data = await fetchApiData(params); if (data && data.items && data.items.length > 0) { weeklyUpdatesData = data.items.map(preprocessMovieData); displayInitialUpdates(); } else { updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; } } catch (error) { if (error.name !== 'AbortError') { updatesPreviewList.innerHTML = `<div class="error-message grid-status-message">Could not load updates. ${error.message}</div>`; } showMoreUpdatesButton.style.display = 'none'; } }
     function displayInitialUpdates() { if (!updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = ''; updatesPreviewShownCount = 0; if (weeklyUpdatesData.length === 0) { updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; return; } const initialCount = Math.min(weeklyUpdatesData.length, config.UPDATES_PREVIEW_INITIAL_COUNT); appendUpdatesToPreview(0, initialCount); updatesPreviewShownCount = initialCount; const potentiallyMore = weeklyUpdatesData.length > initialCount; if (potentiallyMore) { showMoreUpdatesButton.style.display = 'block'; showMoreUpdatesButton.disabled = false; showMoreUpdatesButton.textContent = "Show More"; } else { showMoreUpdatesButton.style.display = 'none'; } }
     window.appendMoreUpdates = async function() { if (!updatesPreviewList || !showMoreUpdatesButton) return; showMoreUpdatesButton.disabled = true; showMoreUpdatesButton.textContent = "Loading..."; const itemsToLoad = weeklyUpdatesData.slice(updatesPreviewShownCount, updatesPreviewShownCount + config.UPDATES_PREVIEW_LOAD_MORE_COUNT); if (itemsToLoad.length > 0) { appendUpdatesToPreview(updatesPreviewShownCount, updatesPreviewShownCount + itemsToLoad.length); updatesPreviewShownCount += itemsToLoad.length; const hasMoreAfterThis = weeklyUpdatesData.length > updatesPreviewShownCount; if (hasMoreAfterThis) { showMoreUpdatesButton.disabled = false; showMoreUpdatesButton.textContent = "Show More"; } else { showMoreUpdatesButton.textContent = "All Updates Shown"; showMoreUpdatesButton.disabled = true; } } else { showMoreUpdatesButton.textContent = "No More Updates"; showMoreUpdatesButton.disabled = true; } }
     function appendUpdatesToPreview(startIndex, endIndex) {
@@ -674,19 +707,35 @@
     async function handleShareClick(buttonElement) { const itemId = buttonElement.dataset.id; const itemTitle = buttonElement.dataset.title || "Cinema Ghar Item"; const itemFilename = buttonElement.dataset.filename || ""; if (!itemId) { alert("Cannot share: Item ID missing."); return; } const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${encodeURIComponent(itemId)}`; const shareText = `Check out: ${itemTitle}\n${itemFilename ? `(${itemFilename})\n` : ''}`; const feedbackSpan = buttonElement.nextElementSibling; if (navigator.share) { try { await navigator.share({ title: itemTitle, text: shareText, url: shareUrl, }); } catch (error) { if (error.name !== 'AbortError') { if (feedbackSpan) showCopyFeedback(feedbackSpan, 'Share failed!', true); else alert(`Share failed: ${error.message}`); } } } else { await copyToClipboard(shareUrl, feedbackSpan); } }
 
     // --- Item Detail Display Logic ---
-    async function displayItemDetail(itemId, isFromShareLink) { if (!itemId || !itemDetailView || !itemDetailContent) return; if (itemDetailAbortController) { itemDetailAbortController.abort(); itemDetailAbortController = null; } itemDetailAbortController = new AbortController(); const signal = itemDetailAbortController.signal; isShareMode = isFromShareLink; setViewMode('itemDetail'); itemDetailContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading item details (ID: ${sanitize(itemId)})...</span></div>`; currentItemDetailData = null; if (backToHomeButtonShared) backToHomeButtonShared.style.display = isShareMode ? 'inline-flex' : 'none'; if (backToResultsButton) backToResultsButton.style.display = isShareMode ? 'none' : 'inline-flex'; try { const params = { id: itemId }; const internalData = await fetchApiData(params, signal); if (signal.aborted) return; if (internalData && internalData.items && internalData.items.length > 0) { const itemRaw = internalData.items[0]; currentItemDetailData = preprocessMovieData(itemRaw); document.title = `${currentItemDetailData.extractedTitle || currentItemDetailData.displayFilename || 'Item Detail'} - Cinema Ghar`; if (currentItemDetailData.extractedTitle && !currentItemDetailData.tmdbDetails) { // Fetch TMDb details only if not already present
+    async function displayItemDetail(itemId, isFromShareLink) { if (!itemId || !itemDetailView || !itemDetailContent) return; if (itemDetailAbortController) { itemDetailAbortController.abort(); itemDetailAbortController = null; } itemDetailAbortController = new AbortController(); const signal = itemDetailAbortController.signal; isShareMode = isFromShareLink; setViewMode('itemDetail'); itemDetailContent.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading item details (ID: ${sanitize(itemId)})...</span></div>`; currentItemDetailData = null; if (backToHomeButtonShared) backToHomeButtonShared.style.display = isShareMode ? 'inline-flex' : 'none'; if (backToResultsButton) backToResultsButton.style.display = isShareMode ? 'none' : 'inline-flex'; try { const params = { id: itemId }; const internalData = await fetchApiData(params, signal); if (signal.aborted) return; if (internalData && internalData.items && internalData.items.length > 0) { const itemRaw = internalData.items[0]; currentItemDetailData = preprocessMovieData(itemRaw); document.title = `${currentItemDetailData.extractedTitle || currentItemDetailData.displayFilename || 'Item Detail'} - Cinema Ghar`;
+            // Fetch full TMDb details for item detail view
+            if (currentItemDetailData.extractedTitle) {
                 const tmdbQuery = new URLSearchParams();
                 tmdbQuery.set('query', currentItemDetailData.extractedTitle);
                 tmdbQuery.set('type', currentItemDetailData.isSeries ? 'tv' : 'movie');
                 if (!currentItemDetailData.isSeries && currentItemDetailData.extractedYear) { tmdbQuery.set('year', currentItemDetailData.extractedYear); }
+                tmdbQuery.set('fetchFullDetails', 'true'); // Request full details
+
                 const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
                 const tmdbController = new AbortController();
                 const tmdbTimeoutId = setTimeout(() => tmdbController.abort(), config.TMDB_FETCH_TIMEOUT);
                 try {
                     const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
                     clearTimeout(tmdbTimeoutId);
-                    if (tmdbResponse.ok) { currentItemDetailData.tmdbDetails = await tmdbResponse.json(); }
-                } catch (tmdbError) { clearTimeout(tmdbTimeoutId); if (tmdbError.name !== 'AbortError') console.error("Error fetching TMDb details for detail view:", tmdbError); }
+                    if (tmdbResponse.ok) {
+                         // Merge with existing tmdbDetails, preferring new full data
+                        const fullTmdbData = await tmdbResponse.json();
+                        currentItemDetailData.tmdbDetails = { ...currentItemDetailData.tmdbDetails, ...fullTmdbData };
+                    } else {
+                        currentItemDetailData.tmdbDetails.posterPathFetchFailed = true; // Mark as failed if full fetch also fails
+                    }
+                } catch (tmdbError) {
+                    clearTimeout(tmdbTimeoutId);
+                    if (tmdbError.name !== 'AbortError') console.error("Error fetching full TMDb details for detail view:", tmdbError);
+                    currentItemDetailData.tmdbDetails.posterPathFetchFailed = true;
+                } finally {
+                    currentItemDetailData.tmdbDetails.posterPathFetched = true;
+                }
             }
             if (signal.aborted) return;
             const contentHTML = createItemDetailContentHTML(currentItemDetailData, currentItemDetailData.tmdbDetails); itemDetailContent.innerHTML = contentHTML; if (videoContainer) videoContainer.style.display = 'none';
@@ -695,7 +744,7 @@
 
     // --- Player Logic ---
     function streamVideo(title, url, filenameForAudioCheck, isFromCustom = false) { let currentActionContainer = null; if (isGlobalCustomUrlMode) {} else if (currentViewMode === 'itemDetail' && itemDetailContent) { currentActionContainer = itemDetailContent; } else { if (itemDetailContent) { currentActionContainer = itemDetailContent; } else { return; } } if (!videoContainer || !videoElement) return; if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if (videoElement) videoElement.style.display = 'block'; if (customControlsContainer) customControlsContainer.style.display = 'flex'; if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); if (!isGlobalCustomUrlMode && currentActionContainer && videoContainer.parentElement !== currentActionContainer) { const separator = currentActionContainer.querySelector('hr.detail-separator'); const targetElement = separator ? separator.nextElementSibling : currentActionContainer.firstChild; if (videoContainer.parentElement) { videoContainer.parentElement.removeChild(videoContainer); } if (targetElement && targetElement.nextSibling) { currentActionContainer.insertBefore(videoContainer, targetElement.nextSibling); } else { currentActionContainer.appendChild(videoContainer); } if (videoElement.hasAttribute('src')) { videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); } if (vlcBox) vlcBox.style.display = 'none'; } const savedVolume = localStorage.getItem(config.PLAYER_VOLUME_KEY); const savedSpeed = localStorage.getItem(config.PLAYER_SPEED_KEY); videoElement.volume = (savedVolume !== null) ? Math.max(0, Math.min(1, parseFloat(savedVolume))) : 1; if (volumeSlider) volumeSlider.value = videoElement.volume; videoElement.muted = (videoElement.volume === 0); videoElement.playbackRate = (savedSpeed !== null) ? parseFloat(savedSpeed) : 1; if(playbackSpeedSelect) playbackSpeedSelect.value = String(videoElement.playbackRate); updateMuteButton(); videoElement.currentTime = 0; const ddp51Regex = /\bDDP?([ ._-]?5\.1)?\b/i; const advancedAudioRegex = /\b(DTS|ATMOS|TrueHD)\b/i; const multiAudioHintRegex = /\b(Multi|Dual)[ ._-]?Audio\b/i; let warningText = ""; if (filenameForAudioCheck && !isFromCustom) { const lowerFilename = (filenameForAudioCheck || '').toLowerCase(); if (ddp51Regex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DDP audio might not work. Use external player."; } else if (advancedAudioRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DTS/Atmos/TrueHD audio likely unsupported. Use external player."; } else if (multiAudioHintRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> May contain multiple audio tracks. Use selector below or external player."; } } if (warningText && audioWarningDiv) { audioWarningDiv.innerHTML = warningText; audioWarningDiv.style.display = 'block'; } if (videoTitle) videoTitle.innerText = title || "Video"; if (vlcText) vlcText.innerText = url; if (vlcBox) vlcBox.style.display = 'block'; videoElement.src = url; videoElement.load(); videoElement.play().catch(e => { console.warn("Video play failed:", e); }); if (videoContainer.style.display === 'none') { videoContainer.style.display = 'flex'; } if (!isGlobalCustomUrlMode) { const closeButton = videoContainer.querySelector('.close-btn'); if (closeButton) { setTimeout(() => closeButton.focus(), 100); } setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150); } }
-    window.closePlayer = function(elementToFocusAfter = null) { if (elementToFocusAfter instanceof Event) { elementToFocusAfter = elementToFocusAfter?.target; } if (!videoContainer || !videoElement) return; const parentContainer = videoContainer.parentElement; const wasGlobalMode = isGlobalCustomUrlMode; try { const fsElement = document.fullscreenElement || document.webkitFullscreenElement; if (fsElement && (fsElement === videoElement || fsElement === videoContainer)) { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch(err) {} videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); videoContainer.style.display = 'none'; videoContainer.classList.remove('global-custom-url-mode', 'is-fullscreen'); isGlobalCustomUrlMode = false; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if (playerCustomUrlInput) playerCustomUrlInput.value = ''; if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = ''; clearCopyFeedback(); clearBypassFeedback(); if (videoTitle) videoTitle.innerText = ''; if (parentContainer && parentContainer.contains(videoContainer)) { parentContainer.removeChild(videoContainer); } if (wasGlobalMode) { resetToHomepage(); lastFocusedElement = null; return; } let finalFocusTarget = elementToFocusAfter || lastFocusedElement; if (!wasGlobalMode && currentViewMode === 'itemDetail' && itemDetailContent) { const playButton = itemDetailContent.querySelector('.play-button'); if (playButton) { finalFocusTarget = playButton; } else { const firstButton = itemDetailContent.querySelector('.button'); if (firstButton) finalFocusTarget = firstButton; else finalFocusTarget = itemDetailContent; } } if (finalFocusTarget && typeof finalFocusTarget.focus === 'function') { setTimeout(() => { try { finalFocusTarget.focus({preventScroll: true}); } catch(e) {} }, 50); } lastFocusedElement = null; }
+    window.closePlayer = function(elementToFocusAfter = null) { if (elementToFocusAfter instanceof Event) { elementToFocusAfter = elementToFocusAfter?.target; } if (!videoContainer || !videoElement) return; const parentContainer = videoContainer.parentElement; const wasGlobalMode = isGlobalCustomUrlMode; try { const fsElement = document.fullscreenElement || document.webkitFullscreenElement; if (fsElement && (fsElement === videoElement || fsElement === videoContainer)) { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch(err) {} videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); videoContainer.style.display = 'none'; videoContainer.classList.remove('global-custom-url-mode', 'is-fullscreen'); isGlobalCustomUrlMode = false; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if (playerCustomUrlInput) playerCustomUrlInput.value = ''; if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = ''; clearCopyFeedback(); clearBypassFeedback(); if (videoTitle) videoTitle.innerText = ''; if (parentContainer && parentContainer.contains(videoContainer)) { parentContainer.removeChild(videoContainer); } if (wasGlobalMode) { resetToHomepage(); lastFocusedElement = null; return; } let finalFocusTarget = elementToFocusAfter || lastFocusedElement; if (!wasGlobalMode && currentViewMode === 'itemDetail' && itemDetailContent) { const playButton = itemDetailContent.querySelector('.play-button'); if (playButton) { finalFocusTarget = playButton; } else { const firstButton = itemDetailContent.querySelector('.button'); if (firstButton) finalFocusTarget = firstButton; else finalFocusTarget = itemDetailContent; } } if (finalFocusTarget && typeof finalFocusTarget.focus === 'function') { setTimeout(() => { try { finalFocusTarget.focus({preventScroll: true}); } catch(e) {} }, 50); } lastFocusedElement = null; }
     function closePlayerIfNeeded(elementToFocusAfter = null) { if (videoContainer?.style.display !== 'none') { closePlayer(elementToFocusAfter); } }
     window.seekVideo = function(seconds) { if (videoElement) videoElement.currentTime += seconds; }
     window.toggleMute = function() { if (videoElement) videoElement.muted = !videoElement.muted; }
@@ -716,12 +765,12 @@
     function handlePlayerKeyboardShortcuts(event) { if (!videoContainer || videoContainer.style.display === 'none' || !videoElement) return; const targetTagName = event.target.tagName.toLowerCase(); if (targetTagName === 'input' || targetTagName === 'select' || targetTagName === 'textarea') return; const key = event.key; let prevented = false; switch (key) { case ' ': case 'k': togglePlayPause(); prevented = true; break; case 'ArrowLeft': seekVideo(-10); prevented = true; break; case 'ArrowRight': seekVideo(10); prevented = true; break; case 'ArrowUp': setVolume(Math.min(videoElement.volume + 0.05, 1)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'ArrowDown': setVolume(Math.max(videoElement.volume - 0.05, 0)); if(volumeSlider) volumeSlider.value = videoElement.volume; prevented = true; break; case 'm': toggleMute(); prevented = true; break; case 'f': toggleFullscreen(); prevented = true; break; } if (prevented) event.preventDefault(); }
 
     // --- State Persistence ---
-    function saveStateToLocalStorage() { try { const stateToSave = {}; if (currentState.sortColumn !== 'lastUpdated') stateToSave.sortColumn = currentState.sortColumn; if (currentState.sortDirection !== 'desc') stateToSave.sortDirection = currentState.sortDirection; if (currentState.qualityFilter !== '') stateToSave.qualityFilter = currentState.qualityFilter; if (currentState.searchTerm !== '') stateToSave.searchTerm = currentState.searchTerm; // Save search term
-            if (currentViewMode === 'search') { stateToSave.viewMode = 'search'; stateToSave.activeTab = activeResultsTab; stateToSave.currentPage = currentState.currentPage; } else { // Don't save tab/page if not in search mode
-                 stateToSave.viewMode = 'homepage'; // Or whatever the current non-search mode is
+    function saveStateToLocalStorage() { try { const stateToSave = {}; if (currentState.sortColumn !== 'lastUpdated') stateToSave.sortColumn = currentState.sortColumn; if (currentState.sortDirection !== 'desc') stateToSave.sortDirection = currentState.sortDirection; if (currentState.qualityFilter !== '') stateToSave.qualityFilter = currentState.qualityFilter; if (currentState.searchTerm !== '') stateToSave.searchTerm = currentState.searchTerm; 
+            if (currentViewMode === 'search') { stateToSave.viewMode = 'search'; stateToSave.activeTab = activeResultsTab; stateToSave.currentPage = currentState.currentPage; } else { 
+                 stateToSave.viewMode = 'homepage'; 
             }
             if (Object.keys(stateToSave).length > 0) { localStorage.setItem(config.LOCAL_STORAGE_KEY, JSON.stringify(stateToSave)); } else { localStorage.removeItem(config.LOCAL_STORAGE_KEY); } } catch (e) {} }
-    function loadStateFromLocalStorage() { try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; currentState.searchTerm = typeof parsedState.searchTerm === 'string' ? parsedState.searchTerm : ''; if (parsedState.viewMode === 'search' && currentState.searchTerm) { currentViewMode = 'search'; activeResultsTab = typeof parsedState.activeTab === 'string' ? parsedState.activeTab : 'allFiles'; currentState.currentPage = typeof parsedState.currentPage === 'number' ? parsedState.currentPage : 1; currentState.typeFilter = tabMappings[activeResultsTab]?.typeFilter || ''; if(searchInput) searchInput.value = currentState.searchTerm; } else { currentViewMode = 'homepage'; activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = ''; currentState.searchTerm = ''; // Clear search term if not loading into search view
+    function loadStateFromLocalStorage() { try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; currentState.searchTerm = typeof parsedState.searchTerm === 'string' ? parsedState.searchTerm : ''; if (parsedState.viewMode === 'search' && currentState.searchTerm) { currentViewMode = 'search'; activeResultsTab = typeof parsedState.activeTab === 'string' ? parsedState.activeTab : 'allFiles'; currentState.currentPage = typeof parsedState.currentPage === 'number' ? parsedState.currentPage : 1; currentState.typeFilter = tabMappings[activeResultsTab]?.typeFilter || ''; if(searchInput) searchInput.value = currentState.searchTerm; } else { currentViewMode = 'homepage'; activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = ''; currentState.searchTerm = ''; 
                 }
             } else { resetToDefaultState(); } } catch (e) { localStorage.removeItem(config.LOCAL_STORAGE_KEY); resetToDefaultState(); } currentItemDetailData = null; isShareMode = false; lastFocusedElement = null; }
     function resetToDefaultState() { currentState.sortColumn = 'lastUpdated'; currentState.sortDirection = 'desc'; currentState.qualityFilter = ''; currentState.searchTerm = ''; currentState.currentPage = 1; currentState.typeFilter = ''; currentViewMode = 'homepage'; activeResultsTab = 'allFiles'; }
@@ -732,23 +781,25 @@
     async function fetchAndRenderResults() { if (currentViewMode !== 'search') return; try { const apiResponse = await fetchApiData(); if (apiResponse === null) return; renderActiveResultsView(apiResponse); saveStateToLocalStorage(); } catch (error) { if (error.name !== 'AbortError') { const { gridContainer } = tabMappings[activeResultsTab]; if (gridContainer) { gridContainer.innerHTML = `<div class="error-message grid-status-message">Error loading results: ${error.message}. Please try again.</div>`; } Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; }); } } }
     function populateQualityFilter(items = []) { if (!qualityFilterSelect) return; const currentSelectedValue = qualityFilterSelect.value; items.forEach(item => { if (item.displayQuality && item.displayQuality !== 'N/A') { uniqueQualities.add(item.displayQuality); } }); const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); }); while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); } sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } }); qualityFilterSelect.value = [...qualityFilterSelect.options].some(opt => opt.value === currentSelectedValue) ? currentSelectedValue : ""; updateFilterIndicator(); }
     function displayLoadError(message) { const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (itemDetailContent) itemDetailContent.innerHTML = ''; if (itemDetailView) itemDetailView.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'item-detail-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
-    async function initializeApp() { isInitialLoad = true; if (pageLoader) pageLoader.style.display = 'flex'; loadStateFromLocalStorage(); if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); } handleUrlChange(); // This will set the view mode based on URL or saved state
-        if (currentViewMode === 'search' && currentState.searchTerm) { // If starting in search mode
-            if(searchInput) searchInput.value = currentState.searchTerm; // Populate search bar
+    async function initializeApp() { isInitialLoad = true; if (pageLoader) pageLoader.style.display = 'flex'; loadStateFromLocalStorage(); if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); } handleUrlChange(); 
+        if (currentViewMode === 'search' && currentState.searchTerm) { 
+            if(searchInput) searchInput.value = currentState.searchTerm; 
             showLoadingStateInGrids(`Loading search results for "${sanitize(currentState.searchTerm)}"...`);
-            fetchAndRenderResults(); // Fetch results for the saved search
+            fetchAndRenderResults(); 
         }
-        // Fetch suggestion data and populate updates if on homepage or no search term
+        
         if (currentViewMode === 'homepage' || !currentState.searchTerm) {
              try {
-                // Fetch a larger set for suggestions and initial updates preview
-                const suggestionData = await fetchApiData({ limit: 5000, sort: 'lastUpdated', sortDir: 'desc' });
-                if (suggestionData === null) return; // Aborted
-                if (suggestionData && suggestionData.items) {
+                const suggestionDataLimit = currentViewMode === 'homepage' ? (config.UPDATES_PREVIEW_INITIAL_COUNT + config.UPDATES_PREVIEW_LOAD_MORE_COUNT + 50) : 5000; // Fetch enough for updates + more for suggestions
+                const suggestionData = await fetchApiData({ limit: suggestionDataLimit, sort: 'lastUpdated', sortDir: 'desc' });
+                
+                if (suggestionData === null && searchAbortController?.signal.aborted) {
+                     // Aborted, do nothing further for this block
+                } else if (suggestionData && suggestionData.items) {
                     localSuggestionData = suggestionData.items.map(preprocessMovieData);
                     populateQualityFilter(localSuggestionData);
-                    if (currentViewMode === 'homepage') { // Only populate updates if truly on homepage
-                        weeklyUpdatesData = localSuggestionData; // Use the already fetched data
+                    if (currentViewMode === 'homepage') { 
+                        weeklyUpdatesData = localSuggestionData.slice(0, config.UPDATES_PREVIEW_INITIAL_COUNT + config.UPDATES_PREVIEW_LOAD_MORE_COUNT); 
                         displayInitialUpdates();
                     }
                 } else {
@@ -781,7 +832,7 @@
     // --- Event Delegation Setup ---
      function handleContentClick(event) {
          const target = event.target;
-         const gridItemTrigger = target.closest('.grid-item, .update-item'); // Target entire card for both types
+         const gridItemTrigger = target.closest('.grid-item, .update-item'); 
 
          if (gridItemTrigger) {
              event.preventDefault();
@@ -796,7 +847,7 @@
 
          if (target.closest('#item-detail-content')) {
              handleActionClick(event);
-             return; // Ensure other handlers don't fire for detail content clicks
+             return; 
          }
 
           if (target.matches('.close-btn') && target.closest('#videoContainer')) {
@@ -815,7 +866,6 @@
          if (searchInput) { searchInput.addEventListener('input', handleSearchInput); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); handleSearchSubmit(); } else if (event.key === 'Escape') { suggestionsContainer.style.display = 'none'; } }); searchInput.addEventListener('search', handleSearchClear); searchInput.addEventListener('blur', () => { setTimeout(() => { const searchButton = document.getElementById('searchSubmitButton'); if (document.activeElement !== searchInput && !suggestionsContainer.contains(document.activeElement) && document.activeElement !== searchButton) { suggestionsContainer.style.display = 'none'; } }, 150); }); }
          if (qualityFilterSelect) { qualityFilterSelect.addEventListener('change', triggerFilterChange); }
 
-         // Consolidated click listener using the container for better delegation
          if (container) {
              container.addEventListener('click', handleContentClick);
          }
