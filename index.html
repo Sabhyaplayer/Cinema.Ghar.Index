@@ -105,6 +105,7 @@
       </div>
   </div> <!-- End .tab-content -->
   </main> <!-- End #results-area -->
+
   <!-- Item Detail View Area (Replaces Shared Item View for both Share and View clicks) -->
   <main id="item-detail-view">
       <!-- Back button: JS determines which one to show -->
@@ -114,14 +115,25 @@
       <button id="backToResultsButton" class="button back-button" onclick="goBackToResults()">
           ← Back to Results
       </button>
-<div id="item-detail-content">
-      <!-- JS populates this -->
-      <div class="loading-inline-spinner" role="status" aria-live="polite">
-          <div class="spinner"></div>
-          <span>Loading item details...</span>
+      <div id="item-detail-content">
+          <!-- General Movie/Series Info (TMDb, Poster, etc.) will be populated here by JS -->
+          <div id="item-general-info-container">
+              <div class="loading-inline-spinner" role="status" aria-live="polite">
+                  <div class="spinner"></div>
+                  <span>Loading item details...</span>
+              </div>
+          </div>
+
+          <!-- File List Section -->
+          <div id="item-file-list-header" style="display: none;"> <!-- JS will show this when files are loaded -->
+              <!-- This header can be styled or populated by JS, e.g., <h3>Available Files:</h3> -->
+          </div>
+          <div id="item-file-list-container">
+              <!-- List of individual files for this movie/series will be populated here by JS -->
+          </div>
       </div>
-  </div>
   </main> <!-- End #item-detail-view -->
+
   <!-- Video Player Container - Initially hidden, moved dynamically by JS -->
   <div class="video-container" id="videoContainer">
       <button class="close-btn" onclick="closePlayer(event)" aria-label="Close video player">✖ Close</button>
