@@ -283,51 +283,61 @@
 
 
     // --- NEW: Grid Item HTML Generation ---
-    function createMovieGridItemHTML(movie) {
-        const card = document.createElement('div');
-        card.className = 'grid-item';
-        card.dataset.itemId = sanitize(movie.id);
-        card.setAttribute('role', 'button');
-        card.setAttribute('tabindex', '0'); // Make it focusable
-        card.setAttribute('aria-label', `View details for ${movie.displayFilename}`);
+function createMovieGridItemHTML(movie) {
+    const card = document.createElement('div');
+    card.className = 'grid-item';
+    card.dataset.itemId = sanitize(movie.id);
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0'); // Make it focusable
+    card.setAttribute('aria-label', `View details for ${movie.displayFilename}`);
 
-        const posterUrl = movie.tmdbDetails?.posterPath || config.POSTER_PLACEHOLDER_URL;
-        const title = movie.extractedTitle || movie.displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim();
-        const year = movie.extractedYear || '';
+    // Determine the initial poster source
+    // If tmdbDetails and posterPath exist, use it, otherwise use the placeholder
+    const initialPosterSrc = movie.tmdbDetails?.posterPath || config.POSTER_PLACEHOLDER_URL;
+    const title = movie.extractedTitle || movie.displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim();
+    const year = movie.extractedYear || '';
 
-        let fourkLogoHtml = '';
-        let hdrLogoHtml = '';
-        const lowerFilename = (movie.displayFilename || '').toLowerCase();
-        if (movie.displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-badge fourk-badge" title="4K Ultra HD" />`; }
-        if ((movie.displayQuality || '').includes('HDR') || (movie.displayQuality || '').includes('DOLBY VISION') || movie.displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-badge hdr-badge" title="HDR / Dolby Vision Content" />`; }
+    let fourkLogoHtml = '';
+    let hdrLogoHtml = '';
+    const lowerFilename = (movie.displayFilename || '').toLowerCase();
+    if (movie.displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-badge fourk-badge" title="4K Ultra HD" />`; }
+    if ((movie.displayQuality || '').includes('HDR') || (movie.displayQuality || '').includes('DOLBY VISION') || movie.displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-badge hdr-badge" title="HDR / Dolby Vision Content" />`; }
 
+    card.innerHTML = `
+        <div class="poster-container">
+            <img src="${initialPosterSrc}" alt="Poster for ${sanitize(title)}" class="poster-image" loading="lazy" onerror="this.onerror=null; this.src='${config.POSTER_PLACEHOLDER_URL}'; this.classList.add('load-error');">
+            <div class="poster-spinner spinner" style="display: ${initialPosterSrc === config.POSTER_PLACEHOLDER_URL && !movie.tmdbDetails?.posterPathFetched && !movie.tmdbDetails?.posterPathFetchFailed && movie.extractedTitle ? 'block' : 'none'};"></div>
+             <div class="quality-badges-overlay">${fourkLogoHtml}${hdrLogoHtml}</div>
+        </div>
+        <div class="item-info">
+            <h3 class="item-title" title="${sanitize(movie.displayFilename)}">${sanitize(title)}</h3>
+            ${year ? `<p class="item-year">${year}</p>` : ''}
+        </div>
+    `;
 
-        card.innerHTML = `
-            <div class="poster-container">
-                <img src="${config.POSTER_PLACEHOLDER_URL}" data-src="${posterUrl}" alt="Poster for ${sanitize(title)}" class="poster-image lazyload-poster" loading="lazy" onerror="this.onerror=null; this.src='${config.POSTER_PLACEHOLDER_URL}'; this.classList.add('load-error');">
-                <div class="poster-spinner spinner" style="display: ${posterUrl === config.POSTER_PLACEHOLDER_URL && !movie.tmdbDetails ? 'block' : 'none'};"></div>
-                 <div class="quality-badges-overlay">${fourkLogoHtml}${hdrLogoHtml}</div>
-            </div>
-            <div class="item-info">
-                <h3 class="item-title" title="${sanitize(movie.displayFilename)}">${sanitize(title)}</h3>
-                ${year ? `<p class="item-year">${year}</p>` : ''}
-            </div>
-        `;
-
-        // If poster isn't immediately available (and not already fetched/failed), try to fetch it
-        // This is a simplified fetch on render; IntersectionObserver is better for many items.
-        if (!movie.tmdbDetails?.posterPathFetched && !movie.tmdbDetails?.posterPathFetchFailed && movie.extractedTitle) {
-            fetchPosterForItem(movie, card.querySelector('.poster-image'), card.querySelector('.poster-spinner'));
-        } else if (movie.tmdbDetails?.posterPath) {
-            // If already fetched (e.g. from previous detail view or cached), set it directly
-            const img = card.querySelector('.poster-image');
-            if(img) img.src = movie.tmdbDetails.posterPath;
-            const spinner = card.querySelector('.poster-spinner');
-            if(spinner) spinner.style.display = 'none';
-        }
-
-        return card;
+    // If the poster isn't the placeholder AND we haven't tried fetching it yet for this specific 'movie' object instance
+    // (and it's not a known failure), then attempt to fetch it.
+    // This is primarily for cases where `movie.tmdbDetails` might exist from a previous general fetch,
+    // but `posterPath` specifically wasn't part of that or needs refreshing.
+    // However, if initialPosterSrc IS already a valid TMDb path, this fetch might be redundant but should be harmless.
+    if (initialPosterSrc === config.POSTER_PLACEHOLDER_URL &&
+        !movie.tmdbDetails?.posterPathFetched &&
+        !movie.tmdbDetails?.posterPathFetchFailed &&
+        movie.extractedTitle) {
+        fetchPosterForItem(movie, card.querySelector('.poster-image'), card.querySelector('.poster-spinner'));
+    } else if (movie.tmdbDetails?.posterPath && card.querySelector('.poster-image').src !== movie.tmdbDetails.posterPath) {
+        // This case ensures if tmdbDetails.posterPath was populated *after* initial render (e.g. from a more detailed fetch elsewhere)
+        // but before fetchPosterForItem ran for this specific card instance, we update it.
+        // Or if initialPosterSrc was already set but we want to ensure the spinner logic is handled.
+        const img = card.querySelector('.poster-image');
+        if (img) img.src = movie.tmdbDetails.posterPath;
+        const spinner = card.querySelector('.poster-spinner');
+        if (spinner) spinner.style.display = 'none';
     }
+
+
+    return card;
+}
 
     async function fetchPosterForItem(movie, imgElement, spinnerElement) {
         if (!movie || !movie.extractedTitle || !imgElement || movie.tmdbDetails?.posterPathFetched || movie.tmdbDetails?.posterPathFetchFailed) {
