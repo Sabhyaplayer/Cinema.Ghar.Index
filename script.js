@@ -1109,21 +1109,35 @@
     }
 
     function renderGroupDetailContent(groupData, fileIdToHighlight = null) {
-        if (!groupDetailContentEl || !groupData) return;
+    if (!groupDetailContentEl || !groupData) return;
 
-        let tmdbSectionHTML = '';
-        if (groupData.tmdbDetails && groupData.tmdbDetails.id) {
-            const tmdb = groupData.tmdbDetails;
-            const posterHTML = tmdb.posterPath ? `<img src="${sanitize(tmdb.posterPath)}" alt="Poster for ${sanitize(tmdb.title)}" class="tmdb-poster" loading="lazy">` : '<div class="tmdb-poster-placeholder">No Poster</div>';
-            const ratingHTML = tmdb.voteAverage && tmdb.voteCount ? `<span class="tmdb-rating" title="${tmdb.voteCount} votes">⭐ ${sanitize(tmdb.voteAverage)}/10</span>` : '';
-            const genresHTML = tmdb.genres && tmdb.genres.length > 0 ? `<div class="tmdb-genres"><strong>Genres:</strong> ${tmdb.genres.map(g => `<span class="genre-tag">${sanitize(g)}</span>`).join(' ')}</div>` : '';
-            const overviewHTML = tmdb.overview ? `<div class="tmdb-overview"><strong>Overview:</strong><p>${sanitize(tmdb.overview)}</p></div>` : '';
-            const releaseDateText = tmdb.releaseDate ? TimeAgo.formatFullDate(new Date(tmdb.releaseDate), true) : 'N/A';
-            const releaseDateHTML = `<div><strong>Released:</strong> ${sanitize(releaseDateText)}</div>`;
-            const runtimeHTML = tmdb.runtime ? `<div><strong>Runtime:</strong> ${sanitize(tmdb.runtime)} min</div>` : '';
-            const taglineHTML = tmdb.tagline ? `<div class="tmdb-tagline"><em>${sanitize(tmdb.tagline)}</em></div>` : '';
-            const actorsHTML = tmdb.actors && tmdb.actors.length > 0 ? `<div class="tmdb-actors"><strong>Starring:</strong><ul>${tmdb.actors.map(actor => `<li>${sanitize(actor.name)} ${actor.character ? `(${sanitize(actor.character)})` : ''}</li>`).join('')}</ul></div>` : '';
-            
+    let tmdbSectionHTML = '';
+    if (groupData.tmdbDetails && groupData.tmdbDetails.id) {
+        const tmdb = groupData.tmdbDetails;
+        const posterHTML = tmdb.posterPath ? `<img src="${sanitize(tmdb.posterPath)}" alt="Poster for ${sanitize(tmdb.title)}" class="tmdb-poster" loading="lazy">` : '<div class="tmdb-poster-placeholder">No Poster</div>';
+        const ratingHTML = tmdb.voteAverage && tmdb.voteCount ? `<span class="tmdb-rating" title="${tmdb.voteCount} votes">⭐ ${sanitize(tmdb.voteAverage)}/10</span>` : '';
+        const genresHTML = tmdb.genres && tmdb.genres.length > 0 ? `<div class="tmdb-genres"><strong>Genres:</strong> ${tmdb.genres.map(g => `<span class="genre-tag">${sanitize(g)}</span>`).join(' ')}</div>` : '';
+        const overviewHTML = tmdb.overview ? `<div class="tmdb-overview"><strong>Overview:</strong><p>${sanitize(tmdb.overview)}</p></div>` : '';
+        const releaseDateText = tmdb.releaseDate ? TimeAgo.formatFullDate(new Date(tmdb.releaseDate), true) : 'N/A';
+        const releaseDateHTML = `<div><strong>Released:</strong> ${sanitize(releaseDateText)}</div>`;
+        const runtimeHTML = tmdb.runtime ? `<div><strong>Runtime:</strong> ${sanitize(tmdb.runtime)} min</div>` : '';
+        const taglineHTML = tmdb.tagline ? `<div class="tmdb-tagline"><em>${sanitize(tmdb.tagline)}</em></div>` : '';
+        const actorsHTML = tmdb.actors && tmdb.actors.length > 0 ? `<div class="tmdb-actors"><strong>Starring:</strong><ul>${tmdb.actors.map(actor => `<li>${sanitize(actor.name)} ${actor.character ? `(${sanitize(actor.character)})` : ''}</li>`).join('')}</ul></div>` : '';
+
+        let trailerContentHTML = '';
+        if (tmdb.trailerKey) {
+            trailerContentHTML = `
+                <div class="trailer-embed-container">
+                    <iframe
+                        src="https://www.youtube.com/embed/${sanitize(tmdb.trailerKey)}"
+                        title="YouTube video player for ${sanitize(tmdb.title || groupData.displayTitle)}"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen>
+                    </iframe>
+                </div>`;
+        } else {
+            // Fallback to YouTube search button
             let ytSearchTerms = [groupData.displayTitle];
             if (groupData.isSeries && groupData.season) ytSearchTerms.push(`Season ${groupData.season}`);
             else if (!groupData.isSeries && groupData.year) ytSearchTerms.push(String(groupData.year));
@@ -1131,64 +1145,59 @@
             const youtubeSearchQuery = encodeURIComponent(ytSearchTerms.join(' '));
             const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${youtubeSearchQuery}`;
             const youtubeIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.267,4,12,4,12,4S5.733,4,4.186,4.418 c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.734,2,12,2,12s0,4.266,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768 C5.733,20,12,20,12,20s6.267,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.266,22,12,22,12S22,7.734,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"></path></svg>`;
-            const youtubeTrailerButtonHTML = `<a href="${youtubeSearchUrl}" target="_blank" rel="noopener noreferrer" class="button youtube-button">${youtubeIconSVG} Watch Trailer</a>`;
-            
-            const infoIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`;
-            const tmdbLinkButtonHTML = `<a href="${sanitize(tmdb.tmdbLink)}" target="_blank" rel="noopener noreferrer" class="button tmdb-link-button">${infoIconSVG} View on TMDb</a>`;
-
-
-            tmdbSectionHTML = `
-                <div class="tmdb-details-container">
-                    <div class="tmdb-poster-column">${posterHTML}</div>
-                    <div class="tmdb-info-column">
-                        <h3 class="tmdb-title">${sanitize(tmdb.title || groupData.displayTitle)}</h3>
-                        ${taglineHTML}
-                        <div class="tmdb-meta">${ratingHTML}${releaseDateHTML}${runtimeHTML}</div>
-                        ${genresHTML}
-                        ${overviewHTML}
-                        <div class="action-buttons-container group-meta-actions">${youtubeTrailerButtonHTML}${tmdbLinkButtonHTML}</div>
-                        ${actorsHTML}
-                    </div>
-                </div>`;
-        } else if (groupData.displayTitle && !groupData.tmdbDetails) {
-             tmdbSectionHTML = `<div class="tmdb-fetch-failed">Could not fetch additional details from TMDb for ${sanitize(groupData.displayTitle)}.</div>`;
+            trailerContentHTML = `<a href="${youtubeSearchUrl}" target="_blank" rel="noopener noreferrer" class="button youtube-button">${youtubeIconSVG} Watch Trailer on YouTube</a>`;
         }
 
-        let filesListHTML = '<div class="files-list-container"><h4>Available Files:</h4><ul>';
-        if (groupData.files && groupData.files.length > 0) {
-            groupData.files.forEach(file => {
-                filesListHTML += createGroupDetailFileListItemHTML(file, groupData);
-            });
-        } else {
-            filesListHTML += '<li>No individual files found for this group.</li>';
-        }
-        filesListHTML += '</ul></div>';
+        const infoIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>`;
+        const tmdbLinkButtonHTML = `<a href="${sanitize(tmdb.tmdbLink)}" target="_blank" rel="noopener noreferrer" class="button tmdb-link-button">${infoIconSVG} View on TMDb</a>`;
 
-        // Placeholder for player related custom URL input, which is now inside the player itself
-        // We still need a button to *trigger* showing the player with the custom URL input section
-        const playerCustomUrlTriggerHTML = `<button class="button custom-url-toggle-button" data-action="toggle-custom-url-player" aria-expanded="false" style="display: inline-flex; margin-top: 15px;"><span aria-hidden="true">🔗</span> Play Custom URL in Player</button>`;
+        tmdbSectionHTML = `
+            <div class="tmdb-details-container">
+                <div class="tmdb-poster-column">${posterHTML}</div>
+                <div class="tmdb-info-column">
+                    <h3 class="tmdb-title">${sanitize(tmdb.title || groupData.displayTitle)}</h3>
+                    ${taglineHTML}
+                    <div class="tmdb-meta">${ratingHTML}${releaseDateHTML}${runtimeHTML}</div>
+                    ${genresHTML}
+                    ${overviewHTML}
+                    ${trailerContentHTML} <!-- TRAILER EMBED OR BUTTON HERE -->
+                    <div class="action-buttons-container group-meta-actions">${tmdbLinkButtonHTML}</div>
+                    ${actorsHTML}
+                </div>
+            </div>`;
+    } else if (groupData.displayTitle && !groupData.tmdbDetails) { // No TMDb details fetched
+         tmdbSectionHTML = `<div class="tmdb-fetch-failed">Could not fetch additional details from TMDb for ${sanitize(groupData.displayTitle)}.</div>`;
+    }
 
+    let filesListHTML = '<div class="files-list-container"><h4>Available Files:</h4><ul>';
+    if (groupData.files && groupData.files.length > 0) {
+        groupData.files.forEach(file => {
+            filesListHTML += createGroupDetailFileListItemHTML(file, groupData);
+        });
+    } else {
+        filesListHTML += '<li>No individual files found for this group.</li>';
+    }
+    filesListHTML += '</ul></div>';
 
-        groupDetailContentEl.innerHTML = `${tmdbSectionHTML}<hr class="detail-separator">${filesListHTML}${playerCustomUrlTriggerHTML}`;
-        
-        // Add the video container at the end of groupDetailContentEl (or a specific place)
-        // It will be hidden until a video is played.
-        if (videoContainer.parentElement !== groupDetailContentEl) {
-            groupDetailContentEl.appendChild(videoContainer);
-        }
+    const playerCustomUrlTriggerHTML = `<button class="button custom-url-toggle-button" data-action="toggle-custom-url-player" aria-expanded="false" style="display: inline-flex; margin-top: 15px;"><span aria-hidden="true">🔗</span> Play Custom URL in Player</button>`;
 
+    groupDetailContentEl.innerHTML = `${tmdbSectionHTML}<hr class="detail-separator">${filesListHTML}${playerCustomUrlTriggerHTML}`;
+    
+    if (videoContainer.parentElement !== groupDetailContentEl) {
+        groupDetailContentEl.appendChild(videoContainer);
+    }
 
-        if (fileIdToHighlight) {
-            const fileElement = groupDetailContentEl.querySelector(`.file-item[data-file-id="${sanitize(fileIdToHighlight)}"]`);
-            if (fileElement) {
-                setTimeout(() => {
-                    fileElement.scrollIntoView({ behavior: 'auto', block: 'center' });
-                    fileElement.classList.add('highlighted-file'); // Add a class for styling
-                    setTimeout(() => fileElement.classList.remove('highlighted-file'), 2500);
-                }, 200);
-            }
+    if (fileIdToHighlight) {
+        const fileElement = groupDetailContentEl.querySelector(`.file-item[data-file-id="${sanitize(fileIdToHighlight)}"]`);
+        if (fileElement) {
+            setTimeout(() => {
+                fileElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+                fileElement.classList.add('highlighted-file');
+                setTimeout(() => fileElement.classList.remove('highlighted-file'), 2500);
+            }, 200);
         }
     }
+}
 
     function createGroupDetailFileListItemHTML(file, groupData) {
         const displayFilename = file.displayFilename;
