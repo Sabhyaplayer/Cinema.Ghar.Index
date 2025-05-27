@@ -68,7 +68,6 @@
 
     /* Grid Card Dimensions (approx 2:3 aspect ratio for posters) */
     --grid-card-min-width: 150px;
-    /* --grid-card-min-height: calc(var(--grid-card-min-width) * 1.5); Removed as aspect-ratio handles this */
     --grid-card-gap: 20px;
 
     --transition-speed: 0.3s;
@@ -411,7 +410,7 @@ body {
     color: inherit;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
-    aspect-ratio: 2 / 3.2; /* Slightly more height for title below */
+    aspect-ratio: 2 / 3.4; /* MODIFIED - More height */
 }
 .update-item:hover {
     transform: translateY(-3px) scale(1.02);
@@ -692,7 +691,7 @@ body {
     color: inherit;
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     cursor: pointer;
-    aspect-ratio: 2 / 3.2; /* Slightly taller to accommodate title below poster */
+    aspect-ratio: 2 / 3.4; /* MODIFIED - More height */
     border: 1px solid var(--border-color);
 }
 
@@ -718,7 +717,7 @@ body {
     height: 100%;
     object-fit: cover; /* Scale image to cover, might crop */
     display: block; /* Remove extra space below img */
-    opacity: 1; 
+    opacity: 1;
     transition: opacity 0.4s ease;
 }
 .grid-item .poster-image.loaded {
@@ -750,14 +749,14 @@ body {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: center; 
-    min-height: 50px; /* Approx for 2 lines of 13px text + padding */
+    justify-content: center;
+    min-height: 56px; /* MODIFIED - Increased base height */
     background-color: var(--card-bg);
     border-top: 1px solid var(--border-color);
-    flex-shrink: 0; 
+    flex-shrink: 0;
 }
 
-.item-title { 
+.item-title {
     font-size: 13px;
     font-weight: 500;
     color: var(--text-color);
@@ -766,17 +765,17 @@ body {
 
     /* Multi-line truncation (e.g., up to 2 lines) */
     display: -webkit-box;
-    -webkit-line-clamp: 2; 
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: normal; 
+    white-space: normal;
 }
 
 .item-year { /* Optional, if you add year data */
     font-size: 11px;
     color: var(--text-muted);
-    margin-top: 2px; 
+    margin-top: 2px;
     line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
@@ -1486,24 +1485,24 @@ hr.detail-separator {
       grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); /* Smaller cards for preview */
       gap: 10px;
   }
-  .update-item { 
-      aspect-ratio: 2 / 3.1; 
+  .update-item {
+      aspect-ratio: 2 / 3.4; /* MODIFIED - More height (consistent with base) */
   }
   #showMoreUpdatesButton { font-size: 13px; padding: 8px 18px; }
 
   #results-area { margin: 0; padding: 15px; border-radius: 0;}
   .grid-view-container { /* Main results grid */
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 15px;
   }
   .grid-item {
-      aspect-ratio: 2 / 3.2; 
+      aspect-ratio: 2 / 3.4; /* MODIFIED - More height (consistent with base) */
   }
 
   /* Responsive Card Info */
   .item-info { /* For both .update-item and .grid-item */
       padding: 6px 8px;
-      min-height: 42px; /* Approx for 2 lines of 12px text + padding */
+      min-height: 48px; /* MODIFIED - Increased height for 12px font */
   }
   .item-title { /* For both .update-item and .grid-item */
       font-size: 12px;
@@ -1577,22 +1576,22 @@ hr.detail-separator {
 
 @media screen and (max-width: 480px) { /* Even smaller screens */
     #updates-preview-list {
-        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); 
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
         gap: 8px;
     }
     .update-item .update-date-overlay {
         font-size: 9px;
         padding: 1px 3px;
     }
-    .grid-view-container { 
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
+    .grid-view-container {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 10px;
     }
 
     /* Responsive Card Info for smallest screens */
     .item-info { /* For both .update-item and .grid-item */
       padding: 5px 6px;
-      min-height: 38px; /* Approx for 2 lines of 11px text + padding */
+      min-height: 42px; /* MODIFIED - Increased height for 11px font */
     }
     .item-title { /* For both .update-item and .grid-item */
         font-size: 11px;
@@ -1601,17 +1600,3 @@ hr.detail-separator {
         font-size: 9px;
     }
 }
-
-/* 
-  REMOVED the user-appended CSS snippet from here as it's integrated above.
-  Example of how HTML structure should be for items:
-  <div class="grid-item"> or <a class="update-item">
-      <div class="poster-image-container">
-          <img src="..." class="poster-image">
-      </div>
-      <div class="item-info">
-          <div class="item-title">Movie Title Potentially Long Enough for Two Lines</div>
-          <div class="item-year">2023</div> OPTIONAL
-      </div>
-  </div>
-*/
