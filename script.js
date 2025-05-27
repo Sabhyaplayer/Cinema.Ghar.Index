@@ -530,7 +530,7 @@ function createGroupDetailHeaderHTML(group) {
                 ${genresHTML}
                 ${overviewHTML}
                 ${actorsHTML}
-                ${externalLinksHTML} {/* Inserted here */}
+                ${externalLinksHTML}
             </div>
         </div>
     `;
