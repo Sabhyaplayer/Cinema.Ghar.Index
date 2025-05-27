@@ -1,4 +1,4 @@
-/* --- START OF style.css (MODIFIED FOR GRID VIEW + ITEM DETAIL VIEW NAVIGATION + TMDb Integration) --- */
+/* --- START OF style.css (MODIFIED FOR GRID VIEW + ITEM DETAIL VIEW NAVIGATION + TMDb Integration + POSTER FALLBACK TEXT) --- */
 :root {
     --primary-color: #0d6efd; /* Bootstrap blue */
     --primary-hover: #0b5ed7;
@@ -12,7 +12,7 @@
     --header-bg: #ffffff; /* Used for results-active search bar background */
     --table-header-bg: #e9ecef; /* Light grey for table header (may be less used now) */
     --card-bg: var(--container-bg); /* Background for grid cards */
-    --card-hover-bg: #f1f3f5;
+    --card-hover-bg: #f1f3f5; /* Not directly used if card bg is white, but kept */
     --error-color: #dc3545; /* Bootstrap danger */
     --error-bg: #f8d7da; /* Background for error messages */
     --error-border: #f5c6cb;
@@ -67,7 +67,7 @@
     --shadow-lg: 0 8px 25px rgba(0,0,0,0.1);
 
     /* Grid Card Dimensions (approx 2:3 aspect ratio for posters) */
-    --grid-card-min-width: 150px;
+    --grid-card-min-width: 150px; /* Base width, might need adjustment with new 2:3 ratio */
     --grid-card-gap: 20px;
 
     --transition-speed: 0.3s;
@@ -404,38 +404,20 @@ body {
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-color);
     overflow: hidden;
-    display: flex;
+    display: flex; /* Will contain only the poster-container now */
     flex-direction: column;
     text-decoration: none;
     color: inherit;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
-    aspect-ratio: 2 / 3.2; /* Slightly more height for title below */
+    aspect-ratio: 2 / 3; /* Standard poster aspect ratio */
 }
 .update-item:hover {
     transform: translateY(-3px) scale(1.02);
     box-shadow: var(--shadow-md);
     z-index: 5;
 }
-.update-item .poster-image-container { /* For poster and its placeholder/spinner */
-    width: 100%;
-    flex-grow: 1; /* Takes up most space */
-    background-color: var(--light-bg); /* Placeholder bg */
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-.update-item .poster-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: opacity 0.3s ease;
-}
-
-/* Optional: Small date overlay for updates */
+/* Optional: Small date overlay for updates (can be kept or removed) */
 .update-item .update-date-overlay {
     position: absolute;
     top: 5px;
@@ -445,16 +427,15 @@ body {
     font-size: 10px;
     padding: 2px 5px;
     border-radius: var(--border-radius-sm);
-    z-index: 1;
+    z-index: 1; /* Ensure it's above fallback text if it's part of .poster-container */
 }
-/* Remove old .preview-col-* styles as .update-item is now a card */
+/* Old .preview-col-* styles are no longer used with card format */
 .update-item .preview-col-id,
 .update-item .preview-col-filename,
 .update-item .preview-col-date,
 .update-item .preview-col-view {
-    display: none; /* No longer used in card format */
+    display: none;
 }
-
 
 #showMoreUpdatesButton {
     display: block;
@@ -680,18 +661,18 @@ body {
     padding: 5px 0; /* Minimal padding, gap handles spacing */
 }
 
-.grid-item {
+.grid-item { /* Also applies to .update-item implicitly through shared structure */
     background-color: var(--card-bg);
     border-radius: var(--border-radius-sm);
     box-shadow: var(--shadow-sm);
-    overflow: hidden; /* Important for poster image rounding */
-    display: flex;
+    overflow: hidden;
+    display: flex; /* Contains only .poster-container */
     flex-direction: column;
     text-decoration: none;
     color: inherit;
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     cursor: pointer;
-    aspect-ratio: 2 / 3.2; /* Slightly taller to accommodate title below poster */
+    aspect-ratio: 2 / 3; /* Standard poster aspect ratio */
     border: 1px solid var(--border-color);
 }
 
@@ -701,92 +682,104 @@ body {
     z-index: 5; /* Bring to front on hover */
 }
 
-.grid-item .poster-image-container {
+.poster-container { /* Replaces .grid-item .poster-image-container & .update-item .poster-image-container */
     width: 100%;
-    flex-grow: 1; /* Poster area takes most space */
-    position: relative; /* For spinner or placeholder absolutely positioned */
-    background-color: var(--light-bg); /* Fallback/loading background */
-    display: flex;
+    height: 100%; /* Fill the parent card */
+    position: relative; /* For absolute positioning of children */
+    background-color: var(--light-bg); /* Fallback bg, visible if image fails and before fallback text */
+    display: flex; /* Centering for spinner if nothing else is absolute */
     align-items: center;
     justify-content: center;
-    overflow: hidden; /* Clip image if not perfectly aspect ratio */
+    overflow: hidden;
 }
 
-.grid-item .poster-image {
+.poster-image, .poster-fallback-content {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Scale image to cover, might crop */
-    display: block; /* Remove extra space below img */
+}
+
+.poster-image {
+    object-fit: cover;
+    display: block;
     opacity: 1;
     transition: opacity 0.4s ease;
+    z-index: 1; /* Image below badges/spinner */
 }
-.grid-item .poster-image.loaded {
+.poster-image.loaded { /* Not strictly needed with current JS, but can be useful */
     opacity: 1;
 }
 
-/* Placeholder for when poster is loading or missing */
-.grid-item .poster-image-container .poster-placeholder-icon {
-    font-size: 3em; /* Example size */
-    color: var(--text-muted);
-    opacity: 0.5;
-}
-.grid-item .poster-image-container .spinner { /* Spinner inside card */
-    width: 30px;
-    height: 30px;
-    border-width: 3px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-/* --- Card Info Styling (Title, Year, etc.) --- */
-/* Common for .grid-item and .update-item */
-.item-info {
-    padding: 8px 10px;
-    text-align: left;
-    width: 100%;
-    box-sizing: border-box;
-    display: flex;
+.poster-fallback-content {
+    display: none; /* Shown by JS */
     flex-direction: column;
+    align-items: center;
     justify-content: center;
-    min-height: 67px; /* Approx for 3 lines of 13px text + padding. Will grow if needed. */
-    background-color: var(--card-bg);
-    border-top: 1px solid var(--border-color);
-    flex-shrink: 0;
-}
-
-.item-title {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-color);
+    text-align: center;
+    padding: 12px 8px;
+    box-sizing: border-box;
     line-height: 1.3;
-    margin: 0;
-    white-space: normal; /* Allow text to wrap to new lines */
-    word-break: break-word; /* Break words if necessary to prevent overflow */
-    /* Removed line-clamp and related properties to show full title */
+    color: var(--text-color);
+    overflow: hidden;
+    z-index: 2; /* Above potential placeholder image, but image usually hidden if fallback active */
 }
 
-.item-year { /* Optional, if you add year data */
+.poster-fallback-content .fallback-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* Max 4 lines for title */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: calc(1.3em * 4); /* line-height * number of lines */
+    word-break: break-word;
+}
+
+.poster-fallback-content .fallback-year {
     font-size: 11px;
     color: var(--text-muted);
-    margin-top: 2px;
-    line-height: 1.2;
+    margin: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* Quality logos (4K, HDR) within item titles - OPTIONAL */
-.item-title .quality-logo { /* If you place logos within the title div itself */
-    height: 0.9em;
-    width: auto;
-    vertical-align: middle;
-    margin-left: 5px;
-    display: inline-block;
-    line-height: 1;
-    opacity: 0.7;
+.poster-spinner { /* Spinner inside card, was .grid-item .poster-image-container .spinner */
+    width: 30px;
+    height: 30px;
+    border-width: 3px;
+    position: absolute; /* Centered by parent flex or explicit transform */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4; /* Above everything */
 }
+
+.quality-badges-overlay {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    display: flex;
+    flex-direction: column; /* Stack badges vertically */
+    gap: 3px;
+    z-index: 3; /* Above image/fallback text, below spinner */
+}
+
+.quality-logo-badge { /* Was .item-title .quality-logo, now specific for overlay */
+    height: 16px; /* Adjust size */
+    width: auto;
+    opacity: 0.9;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 3px;
+    padding: 1px 3px;
+    display: block; /* Each badge on its own line in the column */
+}
+/* REMOVED: .item-info, .item-title, .item-year (styles for div below poster) */
+/* These are no longer generated by createMovieGridItemHTML */
 
 
 /* Status/Error messages within grid containers */
@@ -826,7 +819,7 @@ body {
 #cinemaghar-container #item-detail-content .action-info strong {
     color: var(--text-color); font-weight: 600; margin-right: 8px; display: inline-block; min-width: 90px;
 }
-#cinemaghar-container #item-detail-content .action-info .quality-logo {
+#cinemaghar-container #item-detail-content .action-info .quality-logo { /* This is for Detail View, distinct from .quality-logo-badge */
     height: 1.1em; width: auto; vertical-align: text-bottom; margin-left: 4px; display: inline-block;
 }
 #cinemaghar-container #item-detail-content .action-buttons-container {
@@ -1453,8 +1446,8 @@ hr.detail-separator {
       grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); /* Smaller cards for preview */
       gap: 10px;
   }
-  .update-item {
-      aspect-ratio: 2 / 3.1;
+  .update-item { /* Ensure aspect ratio is consistent */
+      aspect-ratio: 2 / 3;
   }
   #showMoreUpdatesButton { font-size: 13px; padding: 8px 18px; }
 
@@ -1463,22 +1456,22 @@ hr.detail-separator {
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 15px;
   }
-  .grid-item {
-      aspect-ratio: 2 / 3.2;
+  .grid-item { /* Ensure aspect ratio is consistent */
+      aspect-ratio: 2 / 3;
   }
 
-  /* Responsive Card Info */
-  .item-info { /* For both .update-item and .grid-item */
-      padding: 6px 8px;
-      min-height: 59px; /* Approx for 3 lines of 12px text + padding. Will grow. */
+  /* Responsive Card Fallback Text */
+  .poster-fallback-content .fallback-title {
+      font-size: 12px; /* Slightly smaller for mobile */
+      -webkit-line-clamp: 3;
+      max-height: calc(1.3em * 3);
   }
-  .item-title { /* For both .update-item and .grid-item */
-      font-size: 12px;
+  .poster-fallback-content .fallback-year {
+      font-size: 10px; /* Slightly smaller for mobile */
   }
-  .item-year {
-      font-size: 10px;
+  .quality-logo-badge {
+      height: 14px; /* Smaller badges on mobile */
   }
-
 
   #item-detail-view { padding: 15px; margin-top: 10px; max-width: 95%; border-radius: var(--border-radius-sm); }
   #item-detail-view .back-button { margin-bottom: 20px; padding: 7px 12px; font-size: 13px; }
@@ -1547,24 +1540,27 @@ hr.detail-separator {
         grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
         gap: 8px;
     }
-    .update-item .update-date-overlay {
+    .update-item .update-date-overlay { /* This overlay might need repositioning if it clashes with quality badges */
         font-size: 9px;
         padding: 1px 3px;
+        /* Example: move to top right if quality badges are bottom left */
+        /* top: 5px; right: 5px; left: auto; bottom: auto; */
     }
     .grid-view-container {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         gap: 10px;
     }
 
-    /* Responsive Card Info for smallest screens */
-    .item-info { /* For both .update-item and .grid-item */
-      padding: 5px 6px;
-      min-height: 53px; /* Approx for 3 lines of 11px text + padding. Will grow. */
-    }
-    .item-title { /* For both .update-item and .grid-item */
+    /* Responsive Card Fallback Text for smallest screens */
+    .poster-fallback-content .fallback-title {
         font-size: 11px;
+        -webkit-line-clamp: 3; /* Adjust if needed for very small cards */
+         max-height: calc(1.3em * 3);
     }
-    .item-year {
+    .poster-fallback-content .fallback-year {
         font-size: 9px;
+    }
+    .quality-logo-badge {
+      height: 12px; /* Even smaller badges */
     }
 }
