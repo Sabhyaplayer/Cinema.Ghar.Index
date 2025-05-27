@@ -1597,4 +1597,72 @@ hr.detail-separator {
         min-height: 36px;
     }
 }
-/* --- END OF style.css --- */
+
+
+.grid-item .item-info {
+    padding: 8px 10px; /* Add some padding around the text. Adjust as needed. */
+    text-align: left;   /* Or 'center' if you prefer titles centered */
+    width: 100%;        /* Ensure it uses the full width of its container */
+    box-sizing: border-box; /* Includes padding and border in the element's total width and height */
+    display: flex;      /* Use flexbox for better control over title and year */
+    flex-direction: column;
+    justify-content: center; /* Vertically center if there's extra space (less likely with truncation) */
+    min-height: 40px;   /* Give it a minimum height to ensure some space even if title is short. Adjust. */
+                          /* Avoid a fixed 'height' if you want it to adapt slightly. */
+}
+
+.grid-item .item-title {
+    font-size: 0.9rem;  /* Adjust font size to your preference */
+    font-weight: 600;   /* Make it a bit bold */
+    color: var(--text-color, #333333); /* Use your CSS variable or a default color */
+    margin: 0 0 4px 0;  /* Margin: top right bottom left (space below title, before year) */
+    line-height: 1.3;   /* Improve readability */
+
+    /* --- Single-line truncation with ellipsis --- */
+    white-space: nowrap;         /* Prevent text from wrapping to the next line */
+    overflow: hidden;            /* Hide the overflowing text */
+    text-overflow: ellipsis;     /* Display "..." for hidden overflow */
+    display: block;              /* Needed for overflow and text-overflow to work correctly */
+    /* width: 100%; (often implied by block, but can be explicit) */
+    
+    /* --- OR: For Multi-line truncation with ellipsis (CHOOSE ONE METHOD) --- */
+    /* If you want to show, for example, up to 2 lines of text before "..."
+       Comment out the single-line truncation above and uncomment this block.
+       Note: Browser support for -webkit-line-clamp is good but not 100% universal.
+    */
+    /*
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal; // Allow wrapping up to the line clamp limit
+    */
+}
+
+.grid-item .item-year {
+    font-size: 0.8rem;  /* Adjust font size */
+    color: var(--text-muted, #757575); /* Use your CSS variable or a default color */
+    margin: 0;          /* Remove default margins if any */
+    line-height: 1.2;
+    /* You can also apply truncation to the year if needed, but it's usually short enough */
+    /* white-space: nowrap; */
+    /* overflow: hidden; */
+    /* text-overflow: ellipsis; */
+}
+
+/* Optional: Ensure poster container doesn't get too much space if item-info is small */
+.grid-item .poster-container {
+    flex-shrink: 0; /* Prevent the poster container from shrinking if item-info wants more space */
+                    /* You might not need this depending on overall flex behavior of .grid-item */
+}
+
+/*
+   REMEMBER: The .grid-item itself still has 'overflow: hidden;'
+   and 'aspect-ratio: 2 / 3.2;'. This means the total height of the
+   .poster-container + .item-info (with its padding and content)
+   must fit within the aspect ratio. If .item-info (with the text)
+   becomes too tall, it will still be clipped by .grid-item.
+   The truncation on .item-title helps prevent the text itself from
+   causing excessive height in .item-info.
+*/
