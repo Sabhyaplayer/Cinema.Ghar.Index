@@ -140,9 +140,9 @@
         processed.extractedTitle = null; processed.extractedYear = null; processed.extractedSeason = null;
         processed.tmdbDetails = movie.tmdbDetails || null; // Individual file's TMDb attempt (mostly for poster in old grid)
 
-        const filename = processed.displayFilename;
+        const filename = processed.displayFilename; // displayFilename is already sanitized
         if (filename) {
-            let cleanedName = filename;
+            let cleanedName = filename; // Use the sanitized version for extraction
             const qualityTagsRegex = /(\b(4k|2160p|1080p|720p|480p|web-?dl|webrip|bluray|bdrip|brrip|hdtv|hdrip|dvdrip|dvdscr|hdcam|hc|tc|ts|cam|hdr|dv|dolby.?vision|hevc|x265)\b)/gi;
             cleanedName = cleanedName.replace(qualityTagsRegex, '');
             const seasonMatch = cleanedName.match(/[. (_-](S(\d{1,2}))(?:E\d{1,2}|[. (_-])/i) || cleanedName.match(/[. (_-](Season[. _]?(\d{1,2}))(?:[. (_]|$)/i);
@@ -172,16 +172,19 @@
                 }
             }
             if (!processed.extractedTitle && cleanedName) {
+                 // Fallback: take content before first bracket/dot if other methods fail
                 processed.extractedTitle = cleanedName.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
             }
+
             if (processed.extractedTitle) {
-                processed.extractedTitle = processed.extractedTitle.replace(/[- ]+$/, '').trim();
-                 if (/^\d{4}$/.test(processed.extractedTitle) && !processed.extractedYear) {
+                processed.extractedTitle = processed.extractedTitle.replace(/[- ]+$/, '').trim(); // Clean trailing hyphens/spaces
+                 if (/^\d{4}$/.test(processed.extractedTitle) && !processed.extractedYear) { // If title is just a year
                     processed.extractedYear = parseInt(processed.extractedTitle, 10);
-                    processed.extractedTitle = null;
+                    processed.extractedTitle = null; // Clear title if it was just the year
                  } else if (/^\d{4}$/.test(processed.extractedTitle) && processed.extractedYear) {
+                    // If title is a year but year is already extracted, try to re-extract title from cleanedName
                     processed.extractedTitle = cleanedName.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
-                    if (/^\d{4}$/.test(processed.extractedTitle)) processed.extractedTitle = null;
+                    if (/^\d{4}$/.test(processed.extractedTitle)) processed.extractedTitle = null; // If still just a year, nullify
                  }
             }
         }
@@ -282,9 +285,6 @@
             if (groupedItem.isSeries && groupedItem.seasonNumber) { ytSearchTerms.push(`Season ${groupedItem.seasonNumber}`); }
             else if (!groupedItem.isSeries && groupDisplayYear) { ytSearchTerms.push(String(groupDisplayYear)); }
             ytSearchTerms.push("Official Trailer");
-            // Consider adding a dominant language from files if available
-            // const includesHindi = (groupedItem.files[0]?.languages || '').toLowerCase().includes('hindi');
-            // if (includesHindi) { ytSearchTerms.push("Hindi"); }
             const youtubeSearchQuery = encodeURIComponent(ytSearchTerms.join(' '));
             const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${youtubeSearchQuery}`;
             const youtubeIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.267,4,12,4,12,4S5.733,4,4.186,4.418 c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.734,2,12,2,12s0,4.266,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768 C5.733,20,12,20,12,20s6.267,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.266,22,12,22,12S22,7.734,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"></path></svg>`;
@@ -303,9 +303,9 @@
                 generalButtonsHTML += `<a href="${imdbSearchUrl}" target="_blank" rel="noopener noreferrer" class="button imdb-button">${infoIconSVG} Find on IMDb</a>`;
             }
         }
-        const escapedGroupKey = groupedItem.groupKey.replace(/'/g, "\\'");
-        const escapedGroupTitle = (mainTitleForPage || 'Cinema Ghar Item').replace(/'/g, "\\'");
-        generalButtonsHTML += `<button class="button share-button" data-action="share-group" data-group-key="${escapedGroupKey}" data-group-title="${escapedGroupTitle}"><span aria-hidden="true">🔗</span> Share This Page</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`;
+        const groupKeyForAttr = sanitize(groupedItem.groupKey); // Sanitize for HTML attribute
+        const groupTitleForAttr = sanitize(mainTitleForPage || 'Cinema Ghar Item'); // CORRECTED: Sanitize for HTML attribute
+        generalButtonsHTML += `<button class="button share-button" data-action="share-group" data-group-key="${groupKeyForAttr}" data-group-title="${groupTitleForAttr}"><span aria-hidden="true">🔗</span> Share This Page</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`;
         generalButtonsHTML += `<button class="button custom-url-toggle-button" data-action="toggle-custom-url" aria-expanded="false" style="display: none;"><span aria-hidden="true">🔗</span> Play Custom URL from Input</button>`;
         generalButtonsHTML += '</div>'; // End group-actions
 
@@ -314,33 +314,33 @@
         if (groupedItem.files && groupedItem.files.length > 0) {
             fileListHTML += '<ul class="file-list">';
             groupedItem.files.forEach(file => {
-                const displayFilename = file.displayFilename;
+                const displayFilename = file.displayFilename; // Already sanitized in preprocessMovieData
                 const displaySize = file.sizeData.display;
-                const displayQuality = file.displayQuality;
+                const displayQuality = file.displayQuality; // Already sanitized in preprocessMovieData
+
+                // For data-title attribute, ensure streamTitle is sanitized
                 const streamTitle = (file.extractedTitle || displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim()) + (displayQuality !== 'N/A' ? ` (${displayQuality})` : '');
-                const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
-                const escapedFilename = displayFilename.replace(/'/g, "\\'");
-                const escapedUrl = file.url ? file.url.replace(/'/g, "\\'") : '';
+                const streamTitleForAttr = sanitize(streamTitle); // CORRECTED: Sanitize for HTML attribute
+
+                const escapedUrl = file.url ? file.url.replace(/'/g, "\\'") : ''; // URLs are usually fine with " but this escapes ' for JS context (though not used here)
                 const escapedFileId = file.id ? String(file.id).replace(/[^a-zA-Z0-9-_]/g, '') : ''; // File's original_id
                 const escapedHubcloudUrl = file.hubcloud_link ? file.hubcloud_link.replace(/'/g, "\\'") : '';
                 const escapedGdflixUrl = file.gdflix_link ? file.gdflix_link.replace(/'/g, "\\'") : '';
 
                 let fileActionsHTML = '<div class="action-buttons-container file-actions">';
                 if (file.url) {
-                    fileActionsHTML += `<button class="button play-button" data-action="play-file" data-file-id="${escapedFileId}" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play</button>`;
+                    // Use sanitized displayFilename for download attribute, and streamTitleForAttr for data-title
+                    fileActionsHTML += `<button class="button play-button" data-action="play-file" data-file-id="${escapedFileId}" data-title="${streamTitleForAttr}" data-url="${escapedUrl}" data-filename="${displayFilename}"><span aria-hidden="true">▶️</span> Play</button>`;
                     fileActionsHTML += `<a class="button download-button" href="${file.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Download</a>`;
                     fileActionsHTML += `<button class="button vlc-button" data-action="copy-vlc-file" data-file-id="${escapedFileId}" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL</button><span class="copy-feedback" role="status" aria-live="polite">Copied!</span>`;
                     if (navigator.userAgent.toLowerCase().includes("android")) {
                         fileActionsHTML += `<button class="button intent-button" data-action="open-intent-file" data-file-id="${escapedFileId}" data-url="${escapedUrl}"><span aria-hidden="true">📱</span> Play External</button>`;
                     }
                 }
-                // For bypass, use data-file-id to know which file to update after bypass
                 if (file.hubcloud_link) { fileActionsHTML += `<button class="button hubcloud-bypass-button" data-action="bypass-hubcloud-file" data-file-id="${escapedFileId}" data-hubcloud-url="${escapedHubcloudUrl}"><span aria-hidden="true" class="button-icon">☁️</span><span class="button-spinner spinner"></span><span class="button-text">Bypass HubCloud</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`; }
                 if (file.gdflix_link) { fileActionsHTML += `<button class="button gdflix-bypass-button" data-action="bypass-gdflix-file" data-file-id="${escapedFileId}" data-gdflix-url="${escapedGdflixUrl}"><span aria-hidden="true" class="button-icon">🎬</span><span class="button-spinner spinner"></span><span class="button-text">Bypass GDFLIX</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`; }
 
-                // Other direct links for this specific file
                 if (file.telegram_link) { fileActionsHTML += `<a class="button telegram-button" href="${sanitize(file.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`; }
-                // Show direct GDFLIX/HubCloud links if bypass button isn't already there for them
                 if (file.gdflix_link && !fileActionsHTML.includes('bypass-gdflix-file')) { fileActionsHTML += `<a class="button gdflix-button" href="${sanitize(file.gdflix_link)}" target="_blank" rel="noopener noreferrer">GDFLIX Link</a>`; }
                 if (file.hubcloud_link && !fileActionsHTML.includes('bypass-hubcloud-file')) { fileActionsHTML += `<a class="button hubcloud-button" href="${sanitize(file.hubcloud_link)}" target="_blank" rel="noopener noreferrer">HubCloud Link</a>`; }
                 if (file.filepress_link) fileActionsHTML += `<a class="button filepress-button" href="${sanitize(file.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
@@ -488,7 +488,7 @@
         }
 
         if (spinnerElement) spinnerElement.style.display = 'block';
-        imgElement.style.display = 'block';
+        imgElement.style.display = 'block'; // Keep img visible, it has placeholder
         if (fallbackContentElement) fallbackContentElement.style.display = 'none';
 
         try {
@@ -498,8 +498,6 @@
             if (!groupedItem.isSeries && groupedItem.displayYear) {
                 tmdbQuery.set('year', groupedItem.displayYear);
             }
-            // For grid, we only need poster. For detail view, we might fetch more.
-            // tmdbQuery.set('fetchFullDetails', 'false'); // Or remove if not used by proxy for simple poster fetch
 
             const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
             const tmdbController = new AbortController();
@@ -508,7 +506,7 @@
             const tmdbResponse = await fetch(tmdbUrl, { signal: tmdbController.signal });
             clearTimeout(tmdbTimeoutId);
 
-            if (!groupedItem.tmdbDetails) groupedItem.tmdbDetails = {}; // Ensure tmdbDetails object exists on the group
+            if (!groupedItem.tmdbDetails) groupedItem.tmdbDetails = {}; 
 
             if (tmdbResponse.ok) {
                 const fetchedTmdbData = await tmdbResponse.json();
@@ -517,7 +515,6 @@
                     imgElement.style.display = 'block';
                     if (fallbackContentElement) fallbackContentElement.style.display = 'none';
                     groupedItem.posterPathToUse = fetchedTmdbData.posterPath;
-                    // Store minimal TMDb data with the group for consistency if needed later
                     groupedItem.tmdbDetails.id = fetchedTmdbData.id;
                     groupedItem.tmdbDetails.title = fetchedTmdbData.title;
                     groupedItem.tmdbDetails.posterPath = fetchedTmdbData.posterPath;
@@ -529,10 +526,10 @@
                 setupFallbackDisplay(groupedItem, posterContainerElement);
                 groupedItem.tmdbDetails.posterPathFetchFailed = true;
             }
-            groupedItem.tmdbDetails.posterPathFetched = true; // Mark attempt
+            groupedItem.tmdbDetails.posterPathFetched = true; 
         } catch (tmdbError) {
             if (tmdbError.name !== 'AbortError') {
-                console.error(`Error fetching TMDb poster for group "${groupedItem.displayTitle}":`, tmdbError);
+                console.error(`Error fetching TMDb poster for group "${sanitize(groupedItem.displayTitle)}":`, tmdbError);
             }
             setupFallbackDisplay(groupedItem, posterContainerElement);
             if (!groupedItem.tmdbDetails) groupedItem.tmdbDetails = {};
@@ -565,8 +562,8 @@
             currentState.searchTerm = '';
             if (suggestionsContainer) suggestionsContainer.style.display = 'none';
             activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = '';
-            if (localGroupedData.length > 0) { displayInitialUpdates(); } // Now uses grouped data
-            else if (rawFileSuggestionData.length > 0) { // Fallback if grouping failed but raw data exists
+            if (localGroupedData.length > 0) { displayInitialUpdates(); } 
+            else if (rawFileSuggestionData.length > 0) { 
                  if (updatesPreviewList) updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
                  if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none';
             } else {
@@ -592,21 +589,21 @@
     window.goBackToResults = function() {
         currentItemDetailGroup = null; isShareMode = false;
          if (itemDetailAbortController) { itemDetailAbortController.abort(); itemDetailAbortController = null; }
-        history.back();
+        history.back(); 
     }
     window.addEventListener('popstate', (event) => { handleUrlChange(true); });
 
     function handleUrlChange(isPopState = false) {
         if (itemDetailAbortController) { itemDetailAbortController.abort(); itemDetailAbortController = null; }
         const urlParams = new URLSearchParams(window.location.search);
-        const shareGroupKey = urlParams.get('shareId'); // This is now a groupKey
-        const viewGroupKey = urlParams.get('viewId');   // This is now a groupKey
+        const shareGroupKey = urlParams.get('shareId'); 
+        const viewGroupKey = urlParams.get('viewId');   
 
         if (shareGroupKey) {
             if (currentViewMode !== 'itemDetail' || !currentItemDetailGroup || currentItemDetailGroup.groupKey !== shareGroupKey) {
                  displayItemDetail(shareGroupKey, true);
             } else {
-                 setViewMode('itemDetail');
+                 setViewMode('itemDetail'); 
                  if (backToHomeButtonShared) backToHomeButtonShared.style.display = 'inline-flex';
                  if (backToResultsButton) backToResultsButton.style.display = 'none';
             }
@@ -624,7 +621,7 @@
                 isShareMode = false;
                 if (isPopState && currentState.searchTerm && previousStateBeforeDetailWasSearch()) {
                     setViewMode('search');
-                    fetchAndRenderResults();
+                    fetchAndRenderResults(); 
                 } else {
                     setViewMode('homepage');
                 }
@@ -633,6 +630,8 @@
             } else if (currentViewMode !== 'homepage' && (isInitialLoad || !isPopState || !currentState.searchTerm) ) {
                  setViewMode('homepage');
             } else if (currentViewMode === 'search' && currentState.searchTerm) {
+                // If already in search mode and popstate occurs (e.g. from item detail back to search)
+                // ensure results are consistent with currentState.searchTerm
                 setViewMode('search');
                 fetchAndRenderResults();
             }
@@ -640,14 +639,15 @@
     }
 
     function previousStateBeforeDetailWasSearch() {
+        // This function checks if the state *before* navigating to item detail was 'search' with a term.
+        // It relies on currentState.searchTerm still being populated from that search.
         return !!currentState.searchTerm;
     }
 
 
     // --- Search and Suggestions Logic ---
     function handleSearchInput() { clearTimeout(suggestionDebounceTimeout); const searchTerm = searchInput.value.trim(); if (searchTerm.length < 2) { suggestionsContainer.style.display = 'none'; return; } suggestionDebounceTimeout = setTimeout(() => { fetchAndDisplaySuggestions(searchTerm); }, config.SUGGESTIONS_DEBOUNCE_DELAY); }
-    function fetchAndDisplaySuggestions(term) { // Suggestions are still based on individual filenames
-        const normalizedTerm = normalizeTextForSearch(term); if (!normalizedTerm) { suggestionsContainer.style.display = 'none'; return; }
+    function fetchAndDisplaySuggestions(term) { const normalizedTerm = normalizeTextForSearch(term); if (!normalizedTerm) { suggestionsContainer.style.display = 'none'; return; }
         const matchingItems = rawFileSuggestionData.filter(file => file.searchText.includes(normalizedTerm)).slice(0, config.MAX_SUGGESTIONS);
         suggestionsContainer.innerHTML = ''; if (matchingItems.length > 0) { const fragment = document.createDocumentFragment(); matchingItems.forEach(item => { const div = document.createElement('div'); let displayText = item.displayFilename; let highlighted = false; if (term.length > 0) { try { const safeTerm = escapeRegExp(term); const regex = new RegExp(`(${safeTerm})`, 'i'); if ((item.displayFilename || '').match(regex)) { div.innerHTML = (item.displayFilename || '').replace(regex, '<strong>$1</strong>'); highlighted = true; } } catch (e) { console.warn("Regex error for highlight:", e); } } if (!highlighted) { div.textContent = item.displayFilename; } div.title = item.displayFilename; div.onclick = () => selectSuggestion(item.displayFilename); fragment.appendChild(div); }); suggestionsContainer.appendChild(fragment); suggestionsContainer.style.display = 'block'; } else { suggestionsContainer.style.display = 'none'; } }
     function selectSuggestion(selectedValue) { searchInput.value = selectedValue; suggestionsContainer.style.display = 'none'; handleSearchSubmit(); }
@@ -657,7 +657,7 @@
             currentItemDetailGroup = null; isShareMode = false;
             const cleanUrl = window.location.origin + window.location.pathname; if (window.location.search !== '') { history.pushState({ path: cleanUrl }, '', cleanUrl); }
         }
-        setViewMode('search'); activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.searchTerm = searchTerm; currentState.qualityFilter = qualityFilterSelect.value || ''; currentState.typeFilter = tabMappings[activeResultsTab].typeFilter; // Set based on active tab
+        setViewMode('search'); activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.searchTerm = searchTerm; currentState.qualityFilter = qualityFilterSelect.value || ''; currentState.typeFilter = tabMappings[activeResultsTab].typeFilter; 
         updateActiveTabAndPanel();
         showLoadingStateInGrids(`Searching for "${sanitize(searchTerm)}"...`);
         fetchAndRenderResults();
@@ -676,21 +676,20 @@
     }
 
     // --- Updates Preview Logic ---
-    async function loadUpdatesPreview() { if (currentViewMode !== 'homepage' || !updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; showMoreUpdatesButton.style.display = 'none'; updatesPreviewShownCount = 0; // localGroupedData is already populated by initializeApp if successful
+    async function loadUpdatesPreview() { if (currentViewMode !== 'homepage' || !updatesPreviewList || !showMoreUpdatesButton) return; updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`; showMoreUpdatesButton.style.display = 'none'; updatesPreviewShownCount = 0; 
         if (localGroupedData.length > 0) {
             displayInitialUpdates();
-        } else if (rawFileSuggestionData.length > 0) { // Fallback if grouping failed
+        } else if (rawFileSuggestionData.length > 0) { 
             updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found (grouping issue).</div>';
-        } else { // No data at all
+        } else { 
             updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
         }
     }
-    function displayInitialUpdates() { // Uses localGroupedData
+    function displayInitialUpdates() { 
         if (!updatesPreviewList || !showMoreUpdatesButton) return;
         updatesPreviewList.innerHTML = ''; updatesPreviewShownCount = 0;
         if (localGroupedData.length === 0) { updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>'; showMoreUpdatesButton.style.display = 'none'; return; }
 
-        // Sort groups by their latest file's timestamp for "Recently Added"
         const sortedGroupsForPreview = [...localGroupedData].sort((a,b) => b.latestTimestamp - a.latestTimestamp);
 
         const initialCount = Math.min(sortedGroupsForPreview.length, config.UPDATES_PREVIEW_INITIAL_COUNT);
@@ -700,7 +699,7 @@
         if (potentiallyMore) { showMoreUpdatesButton.style.display = 'block'; showMoreUpdatesButton.disabled = false; showMoreUpdatesButton.textContent = "Show More"; }
         else { showMoreUpdatesButton.style.display = 'none'; }
     }
-    window.appendMoreUpdates = async function() { // Uses localGroupedData
+    window.appendMoreUpdates = async function() { 
         if (!updatesPreviewList || !showMoreUpdatesButton) return;
         showMoreUpdatesButton.disabled = true; showMoreUpdatesButton.textContent = "Loading...";
 
@@ -715,31 +714,27 @@
             else { showMoreUpdatesButton.textContent = "All Updates Shown"; showMoreUpdatesButton.disabled = true; }
         } else { showMoreUpdatesButton.textContent = "No More Updates"; showMoreUpdatesButton.disabled = true; }
     }
-    function appendUpdatesToPreview(dataSource, startIndex, endIndex) { // dataSource is an array of groupedItems
+    function appendUpdatesToPreview(dataSource, startIndex, endIndex) { 
         if (!updatesPreviewList) return;
         const fragment = document.createDocumentFragment();
         const groupsToAppend = dataSource.slice(startIndex, endIndex);
 
         groupsToAppend.forEach((groupedItem) => {
             if (!groupedItem || !groupedItem.groupKey) return;
-            const gridItemElement = createMovieGridItemHTML(groupedItem); // Expects groupedItem
+            const gridItemElement = createMovieGridItemHTML(groupedItem); 
             fragment.appendChild(gridItemElement);
         });
         if (updatesPreviewList.querySelector('.loading-inline-spinner') && startIndex === 0) {
-            updatesPreviewList.innerHTML = ''; // Clear loader
+            updatesPreviewList.innerHTML = ''; 
         }
         updatesPreviewList.appendChild(fragment);
     }
 
     // --- Filtering, Sorting ---
     function triggerFilterChange() { if (!qualityFilterSelect || currentViewMode !== 'search') return; const newQualityFilter = qualityFilterSelect.value; if (newQualityFilter !== currentState.qualityFilter) { currentState.qualityFilter = newQualityFilter; currentState.currentPage = 1; closePlayerIfNeeded(null); showLoadingStateInGrids(`Applying filter: ${sanitize(newQualityFilter || 'All Qualities')}...`); fetchAndRenderResults(); } }
-    // Sorting is more complex with grouping. Currently API sorts individual files.
-    // Frontend sorting of groups would require fetching all, then grouping, then sorting groups.
-    // For now, handleSort is removed as it's not directly applicable to grouped view in a simple way.
-    // function handleSort(event) { ... }
-
+    
     // --- Rendering Logic ---
-    function renderActiveResultsView(apiResponse) { // apiResponse.items are now GROUPED items
+    function renderActiveResultsView(apiResponse) { 
          if (currentViewMode !== 'search' || !tabMappings[activeResultsTab]) {
              if (currentViewMode === 'search') { showLoadingStateInGrids('Enter search term above.'); }
              return;
@@ -747,12 +742,8 @@
          const { gridContainer, pagination } = tabMappings[activeResultsTab];
          if (!gridContainer || !pagination) { console.error("Missing grid container or pagination for tab:", activeResultsTab); return; }
 
-         const groupedItemsToRender = apiResponse.items || []; // These are already grouped by fetchAndRenderResults
-         // totalItems, currentPage, totalPages in apiResponse refer to the pagination of *individual files* from API
-         // We need to manage pagination of *groups* on the frontend if we want to display e.g., "50 groups per page"
-         // For now, pagination controls the API fetch, and we display all groups formed from that fetch.
-
-         currentGroupedSearchResults = groupedItemsToRender; // Store the currently displayed groups
+         const groupedItemsToRender = apiResponse.items || []; 
+         currentGroupedSearchResults = groupedItemsToRender; 
 
          gridContainer.innerHTML = '';
          const fragment = document.createDocumentFragment();
@@ -770,20 +761,16 @@
              });
              gridContainer.appendChild(fragment);
          }
-         // Pagination still reflects the API's pagination of individual files.
-         // This might be confusing: "Page 1 of 10 (files)" might result in varying numbers of groups shown.
          renderPaginationControls(pagination, apiResponse.totalItems, apiResponse.page, apiResponse.totalPages);
          updateActiveTabAndPanel();
-         // updateSortIndicators(tableHead); // Removed as sorting groups is complex
          updateFilterIndicator();
      }
     function renderPaginationControls(targetContainer, totalItems, currentPage, totalPages) { if (!targetContainer) return; if (totalItems === 0 || totalPages <= 1) { targetContainer.innerHTML = ''; targetContainer.style.display = 'none'; return; } targetContainer.dataset.totalPages = totalPages; targetContainer.innerHTML = ''; let paginationHTML = ''; const maxPagesToShow = 5; const halfPages = Math.floor(maxPagesToShow / 2); paginationHTML += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled title="First page"' : 'title="Previous page"'}>« Prev</button>`; let startPage, endPage; if (totalPages <= maxPagesToShow + 2) { startPage = 1; endPage = totalPages; } else { startPage = Math.max(2, currentPage - halfPages); endPage = Math.min(totalPages - 1, currentPage + halfPages); if (currentPage - halfPages < 2) { endPage = Math.min(totalPages - 1, maxPagesToShow); } if (currentPage + halfPages > totalPages - 1) { startPage = Math.max(2, totalPages - maxPagesToShow + 1); } } if (startPage > 1) { paginationHTML += `<button onclick="changePage(1)" title="Page 1">1</button>`; if (startPage > 2) { paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`; } } for (let i = startPage; i <= endPage; i++) { paginationHTML += (i === currentPage) ? `<span class="current-page">${i}</span>` : `<button onclick="changePage(${i})" title="Page ${i}">${i}</button>`; } if (endPage < totalPages) { if (endPage < totalPages - 1) { paginationHTML += `<span class="page-info" title="Skipped pages">...</span>`; } paginationHTML += `<button onclick="changePage(${totalPages})" title="Page ${totalPages}">${totalPages}</button>`; } paginationHTML += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled title="Last page"' : 'title="Next page"'}>Next »</button>`; targetContainer.innerHTML = paginationHTML; targetContainer.style.display = 'block'; }
-    // function updateSortIndicators(tableHeadElement) { ... } // Removed for now
     function updateFilterIndicator() { if(qualityFilterSelect) { qualityFilterSelect.classList.toggle('filter-active', !!currentState.qualityFilter); } }
     function updateActiveTabAndPanel() { Object.keys(tabMappings).forEach(tabId => { const mapping = tabMappings[tabId]; const isActive = tabId === activeResultsTab; if (mapping?.button) mapping.button.classList.toggle('active', isActive); if (mapping?.panel) mapping.panel.classList.toggle('active', isActive); }); }
 
     // --- Pagination and Tab Switching ---
-    window.changePage = function(newPage) { // This changes page for API fetch of individual files
+    window.changePage = function(newPage) { 
         if (currentViewMode !== 'search' || newPage < 1 || newPage === currentState.currentPage) { return; }
         const currentPagination = tabMappings[activeResultsTab]?.pagination;
         if(currentPagination && currentPagination.dataset.totalPages) {
@@ -813,23 +800,23 @@
                                  (tabNavElem?.offsetHeight || 0);
         }
         const elementTop = gridContainerElement.getBoundingClientRect().top + window.pageYOffset;
-        const scrollPosition = elementTop - stickyHeaderHeight - 20; // 20px buffer
+        const scrollPosition = elementTop - stickyHeaderHeight - 20; 
         window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
     }
     window.switchTab = function(tabId) {
         if (currentViewMode !== 'search' || tabId === activeResultsTab || !tabMappings[tabId]) { return; }
         activeResultsTab = tabId;
-        currentState.currentPage = 1; // Reset page for new tab
-        currentState.typeFilter = tabMappings[tabId].typeFilter; // Update type filter
+        currentState.currentPage = 1; 
+        currentState.typeFilter = tabMappings[tabId].typeFilter; 
         closePlayerIfNeeded(null);
         updateActiveTabAndPanel();
         showLoadingStateInGrids(`Loading ${tabMappings[tabId].typeFilter || 'all files'}...`);
-        fetchAndRenderResults(); // This will use the new currentState.typeFilter
+        fetchAndRenderResults(); 
         saveStateToLocalStorage();
     }
 
     // --- Navigation to Item Detail View ---
-    function navigateToItemView(groupKey) { // groupKey is like "title_year_type_season"
+    function navigateToItemView(groupKey) { 
         if (!groupKey) return;
         lastFocusedElement = document.activeElement;
         if (itemDetailAbortController) { itemDetailAbortController.abort(); itemDetailAbortController = null; }
@@ -845,7 +832,7 @@
     }
 
     // --- Share Logic ---
-    async function handleShareGroupClick(buttonElement) { // For sharing the group page
+    async function handleShareGroupClick(buttonElement) { 
         const groupKey = buttonElement.dataset.groupKey;
         const groupTitle = buttonElement.dataset.groupTitle || "Cinema Ghar Item";
         if (!groupKey) { alert("Cannot share: Group key missing."); return; }
@@ -877,26 +864,24 @@
         if (backToHomeButtonShared) backToHomeButtonShared.style.display = isShareMode ? 'inline-flex' : 'none';
         if (backToResultsButton) backToResultsButton.style.display = isShareMode ? 'none' : 'inline-flex';
 
-        try { // ****** CORRECTED: Added try { here ******
-            // Try to find the group in existing data (search results or initial load data)
+        try {
             let groupToDisplay = currentGroupedSearchResults.find(g => g.groupKey === groupKey);
             if (!groupToDisplay) {
                 groupToDisplay = localGroupedData.find(g => g.groupKey === groupKey);
             }
 
             if (groupToDisplay) {
-                currentItemDetailGroup = { ...groupToDisplay }; // Make a copy to avoid modifying shared state directly for TMDb
-                document.title = `${currentItemDetailGroup.displayTitle || 'Item Detail'} - Cinema Ghar`;
+                currentItemDetailGroup = { ...groupToDisplay }; 
+                document.title = `${sanitize(currentItemDetailGroup.displayTitle || 'Item Detail')} - Cinema Ghar`;
 
-                // Fetch full TMDb details for the group if not already present or only partial
-                if (!currentItemDetailGroup.tmdbDetails || !currentItemDetailGroup.tmdbDetails.genres) { // Check for a field like genres to see if full details were fetched
+                if (!currentItemDetailGroup.tmdbDetails || !currentItemDetailGroup.tmdbDetails.genres) { 
                     const tmdbQuery = new URLSearchParams();
                     tmdbQuery.set('query', currentItemDetailGroup.displayTitle);
                     tmdbQuery.set('type', currentItemDetailGroup.isSeries ? 'tv' : 'movie');
                     if (!currentItemDetailGroup.isSeries && currentItemDetailGroup.displayYear) {
                         tmdbQuery.set('year', currentItemDetailGroup.displayYear);
                     }
-                    tmdbQuery.set('fetchFullDetails', 'true'); // Request full details
+                    tmdbQuery.set('fetchFullDetails', 'true'); 
 
                     const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
                     const tmdbController = new AbortController();
@@ -907,36 +892,27 @@
                         clearTimeout(tmdbTimeoutId);
                         if (tmdbResponse.ok) {
                             const fetchedTmdbData = await tmdbResponse.json();
-                            // Merge fetched TMDb details into the group's tmdbDetails
                             currentItemDetailGroup.tmdbDetails = { ...(currentItemDetailGroup.tmdbDetails || {}), ...fetchedTmdbData };
-                            currentItemDetailGroup.posterPathToUse = fetchedTmdbData.posterPath || currentItemDetailGroup.posterPathToUse; // Update poster if better one found
+                            currentItemDetailGroup.posterPathToUse = fetchedTmdbData.posterPath || currentItemDetailGroup.posterPathToUse; 
                         } else { console.warn("TMDb full fetch failed for detail view:", tmdbResponse.status); }
                     } catch (tmdbError) {
                         clearTimeout(tmdbTimeoutId);
                         if (tmdbError.name !== 'AbortError') console.error("Error fetching TMDb full details for detail view:", tmdbError);
                     }
-                } 
-                // The closing brace for the above 'if' block is crucial. 
-                // If it was missing in the code that produced the screenshot, 
-                // the following 'if' would cause a syntax error.
-                // The code pasted here HAS this brace.
-
-                if (signal.aborted) return; // This is line 1001 in the screenshot.
+                }
+                if (signal.aborted) return;
                 const contentHTML = createItemDetailContentHTML(currentItemDetailGroup, currentItemDetailGroup.tmdbDetails);
                 itemDetailContent.innerHTML = contentHTML;
                 if (videoContainer) videoContainer.style.display = 'none';
 
             } else {
-                // Group not found in existing data. This is where API would ideally fetch by group.
-                // For now, show an error or try a fallback search.
-                console.error(`Group with key ${groupKey} not found in currentGroupedSearchResults or localGroupedData.`);
+                console.error(`Group with key ${sanitize(groupKey)} not found in currentGroupedSearchResults or localGroupedData.`);
                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error: Details for <strong>${sanitize(groupKey)}</strong> could not be loaded. It might be an old item or link. Try searching.</div>`;
                 document.title = "Item Not Found - Cinema Ghar";
             }
-        // ****** CORRECTED: The try block closes here, before the catch ******
         } catch (error) { 
             if (signal.aborted || error.name === 'AbortError') {
-                console.log(`Item detail fetch aborted for groupKey: ${groupKey} (caught).`);
+                console.log(`Item detail fetch aborted for groupKey: ${sanitize(groupKey)} (caught).`);
             } else {
                 itemDetailContent.innerHTML = `<div class="error-message" role="alert">Error loading item details for <strong>${sanitize(groupKey)}</strong>: ${sanitize(error.message)}.</div>`;
                 document.title = "Error Loading Item - Cinema Ghar";
@@ -960,12 +936,11 @@
         if (!currentItemDetailGroup || !itemDetailContent || !bypassedFileId) return;
 
         let fileUpdated = false;
-        // Find the specific file in the group and update its URL
         currentItemDetailGroup.files = currentItemDetailGroup.files.map(file => {
-            if (String(file.id) === String(bypassedFileId)) { // file.id is original_id
-                file.url = encodedFinalUrl; // Update the direct URL for this file
-                file.hubcloud_link = null; // Clear the bypass link as it's now resolved (optional)
-                file.gdflix_link = null;   // Clear the bypass link
+            if (String(file.id) === String(bypassedFileId)) { 
+                file.url = encodedFinalUrl; 
+                file.hubcloud_link = null; 
+                file.gdflix_link = null;   
                 fileUpdated = true;
                 return file;
             }
@@ -973,45 +948,41 @@
         });
 
         if (fileUpdated) {
-            // Re-render the item detail content with the updated file information
             const contentHTML = createItemDetailContentHTML(currentItemDetailGroup, currentItemDetailGroup.tmdbDetails);
             itemDetailContent.innerHTML = contentHTML;
 
-            // Optional: focus the play button of the updated file
-            const playButtonForBypassed = itemDetailContent.querySelector(`.file-item[data-file-id="${bypassedFileId}"] .play-button`);
+            const playButtonForBypassed = itemDetailContent.querySelector(`.file-item[data-file-id="${bypassedFileId.replace(/[^a-zA-Z0-9-_]/g, '')}"] .play-button`);
             if(playButtonForBypassed) {
                 setTimeout(() => playButtonForBypassed.focus(), 50);
             }
         }
-
-        // If video player was already open for this file (unlikely with current flow, but for robustness)
-        // and its src matches the old bypass link, update it.
-        // This part is complex and might not be needed if player always closes/reopens.
     }
 
 
     // --- Player Logic ---
-    function streamVideo(title, url, filenameForAudioCheck, isFromCustom = false) { let currentActionContainer = null; if (isGlobalCustomUrlMode) {} else if (currentViewMode === 'itemDetail' && itemDetailContent) { currentActionContainer = itemDetailContent; } else { if (itemDetailContent) { currentActionContainer = itemDetailContent; } else { return; } } if (!videoContainer || !videoElement) return; if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if (videoElement) videoElement.style.display = 'block'; if (customControlsContainer) customControlsContainer.style.display = 'flex'; if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); if (!isGlobalCustomUrlMode && currentActionContainer && videoContainer.parentElement !== currentActionContainer) {
-        // Move video player into the item detail content, near the file list or general actions
+    function streamVideo(title, url, filenameForAudioCheck, isFromCustom = false) { let currentActionContainer = null; if (isGlobalCustomUrlMode) {} else if (currentViewMode === 'itemDetail' && itemDetailContent) { currentActionContainer = itemDetailContent; } else { if (itemDetailContent) { currentActionContainer = itemDetailContent; } else { console.warn("StreamVideo called in unexpected context for player placement."); return; } } if (!videoContainer || !videoElement) return; if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if (videoElement) videoElement.style.display = 'block'; if (customControlsContainer) customControlsContainer.style.display = 'flex'; if (audioWarningDiv) { audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } clearCopyFeedback(); if (!isGlobalCustomUrlMode && currentActionContainer && videoContainer.parentElement !== currentActionContainer) {
         const fileListContainer = currentActionContainer.querySelector('.file-list-container');
         const targetElement = fileListContainer || currentActionContainer.querySelector('hr.detail-separator') || currentActionContainer.firstChild;
 
         if (videoContainer.parentElement) { videoContainer.parentElement.removeChild(videoContainer); }
-        if (targetElement) {
-            targetElement.insertAdjacentElement('afterend', videoContainer); // Place it after file list or separator
+        if (targetElement && targetElement.parentNode) { // Ensure targetElement is still in DOM and has parent
+             if (targetElement.nextSibling) {
+                targetElement.parentNode.insertBefore(videoContainer, targetElement.nextSibling);
+            } else {
+                targetElement.parentNode.appendChild(videoContainer);
+            }
         } else {
             currentActionContainer.appendChild(videoContainer);
         }
-        if (videoElement.hasAttribute('src')) { videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); } if (vlcBox) vlcBox.style.display = 'none'; } const savedVolume = localStorage.getItem(config.PLAYER_VOLUME_KEY); const savedSpeed = localStorage.getItem(config.PLAYER_SPEED_KEY); videoElement.volume = (savedVolume !== null) ? Math.max(0, Math.min(1, parseFloat(savedVolume))) : 1; if (volumeSlider) volumeSlider.value = videoElement.volume; videoElement.muted = (videoElement.volume === 0); videoElement.playbackRate = (savedSpeed !== null) ? parseFloat(savedSpeed) : 1; if(playbackSpeedSelect) playbackSpeedSelect.value = String(videoElement.playbackRate); updateMuteButton(); videoElement.currentTime = 0; const ddp51Regex = /\bDDP?([ ._-]?5\.1)?\b/i; const advancedAudioRegex = /\b(DTS|ATMOS|TrueHD)\b/i; const multiAudioHintRegex = /\b(Multi|Dual)[ ._-]?Audio\b/i; let warningText = ""; if (filenameForAudioCheck && !isFromCustom) { const lowerFilename = (filenameForAudioCheck || '').toLowerCase(); if (ddp51Regex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DDP audio might not work. Use external player."; } else if (advancedAudioRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DTS/Atmos/TrueHD audio likely unsupported. Use external player."; } else if (multiAudioHintRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> May contain multiple audio tracks. Use selector below or external player."; } } if (warningText && audioWarningDiv) { audioWarningDiv.innerHTML = warningText; audioWarningDiv.style.display = 'block'; } if (videoTitle) videoTitle.innerText = title || "Video"; if (vlcText) vlcText.innerText = url; if (vlcBox) vlcBox.style.display = 'block'; videoElement.src = url; videoElement.load(); videoElement.play().catch(e => { console.warn("Video play failed:", e); }); if (videoContainer.style.display === 'none') { videoContainer.style.display = 'flex'; } if (!isGlobalCustomUrlMode) { const closeButton = videoContainer.querySelector('.close-btn'); if (closeButton) { setTimeout(() => closeButton.focus(), 100); } setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150); } }
+        if (videoElement.hasAttribute('src')) { videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); } if (vlcBox) vlcBox.style.display = 'none'; } const savedVolume = localStorage.getItem(config.PLAYER_VOLUME_KEY); const savedSpeed = localStorage.getItem(config.PLAYER_SPEED_KEY); videoElement.volume = (savedVolume !== null) ? Math.max(0, Math.min(1, parseFloat(savedVolume))) : 1; if (volumeSlider) volumeSlider.value = videoElement.volume; videoElement.muted = (videoElement.volume === 0); videoElement.playbackRate = (savedSpeed !== null) ? parseFloat(savedSpeed) : 1; if(playbackSpeedSelect) playbackSpeedSelect.value = String(videoElement.playbackRate); updateMuteButton(); videoElement.currentTime = 0; const ddp51Regex = /\bDDP?([ ._-]?5\.1)?\b/i; const advancedAudioRegex = /\b(DTS|ATMOS|TrueHD)\b/i; const multiAudioHintRegex = /\b(Multi|Dual)[ ._-]?Audio\b/i; let warningText = ""; if (filenameForAudioCheck && !isFromCustom) { const lowerFilename = (filenameForAudioCheck || '').toLowerCase(); if (ddp51Regex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DDP audio might not work. Use external player."; } else if (advancedAudioRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> DTS/Atmos/TrueHD audio likely unsupported. Use external player."; } else if (multiAudioHintRegex.test(lowerFilename)) { warningText = "<strong>Audio Note:</strong> May contain multiple audio tracks. Use selector below or external player."; } } if (warningText && audioWarningDiv) { audioWarningDiv.innerHTML = warningText; audioWarningDiv.style.display = 'block'; } if (videoTitle) videoTitle.innerText = title || "Video"; if (vlcText) vlcText.innerText = url; if (vlcBox) vlcBox.style.display = 'block'; videoElement.src = url; videoElement.load(); videoElement.play().catch(e => { console.warn("Video play failed:", e); handleVideoError(e); }); if (videoContainer.style.display === 'none') { videoContainer.style.display = 'flex'; } if (!isGlobalCustomUrlMode) { const closeButton = videoContainer.querySelector('.close-btn'); if (closeButton) { setTimeout(() => closeButton.focus(), 100); } setTimeout(() => { videoContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 150); } }
     window.closePlayer = function(elementToFocusAfter = null) { if (elementToFocusAfter instanceof Event) { elementToFocusAfter = elementToFocusAfter?.target; } if (!videoContainer || !videoElement) return; const parentContainer = videoContainer.parentElement; const wasGlobalMode = isGlobalCustomUrlMode; try { const fsElement = document.fullscreenElement || document.webkitFullscreenElement; if (fsElement && (fsElement === videoElement || fsElement === videoContainer)) { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch(err) {} videoElement.pause(); videoElement.removeAttribute('src'); videoElement.currentTime = 0; videoElement.load(); videoContainer.style.display = 'none'; videoContainer.classList.remove('global-custom-url-mode', 'is-fullscreen'); isGlobalCustomUrlMode = false; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) audioWarningDiv.style.display = 'none'; audioWarningDiv.innerHTML = ''; } if (audioTrackSelect) { audioTrackSelect.innerHTML = ''; audioTrackSelect.style.display = 'none'; } if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if (playerCustomUrlInput) playerCustomUrlInput.value = ''; if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = ''; clearCopyFeedback(); clearBypassFeedback(); if (videoTitle) videoTitle.innerText = ''; if (parentContainer && parentContainer.contains(videoContainer)) { parentContainer.removeChild(videoContainer); } if (wasGlobalMode) { resetToHomepage(); lastFocusedElement = null; return; } let finalFocusTarget = elementToFocusAfter || lastFocusedElement; if (!wasGlobalMode && currentViewMode === 'itemDetail' && itemDetailContent) {
-        // Try to focus the button that opened the player, or a general button if that's gone
         if (!lastFocusedElement || !document.body.contains(lastFocusedElement)) {
              const firstFilePlayButton = itemDetailContent.querySelector('.file-item .play-button');
              if (firstFilePlayButton) finalFocusTarget = firstFilePlayButton;
              else {
                 const firstGroupButton = itemDetailContent.querySelector('.group-actions .button');
                 if (firstGroupButton) finalFocusTarget = firstGroupButton;
-                else finalFocusTarget = itemDetailContent;
+                else finalFocusTarget = itemDetailContent; 
              }
         }
     } if (finalFocusTarget && typeof finalFocusTarget.focus === 'function') { setTimeout(() => { try { finalFocusTarget.focus({preventScroll: true}); } catch(e) {} }, 50); } lastFocusedElement = null; }
@@ -1022,7 +993,7 @@
     window.setPlaybackSpeed = function(value) { if (videoElement) videoElement.playbackRate = parseFloat(value); }
     window.toggleFullscreen = function() { const elementToMakeFullscreen = videoContainer; if (!elementToMakeFullscreen) return; const fsElement = document.fullscreenElement || document.webkitFullscreenElement; try { if (!fsElement) { if (elementToMakeFullscreen.requestFullscreen) elementToMakeFullscreen.requestFullscreen(); else if (elementToMakeFullscreen.webkitRequestFullscreen) elementToMakeFullscreen.webkitRequestFullscreen(); } else { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } } catch (err) { alert("Fullscreen mode failed."); } }
     window.changeAudioTrack = function(selectElement) { if (!videoElement || !videoElement.audioTracks) return; const selectedTrackValue = selectElement.value; const tracks = videoElement.audioTracks; for (let i = 0; i < tracks.length; i++) { const track = tracks[i]; const isSelectedTrack = (track.id && track.id === selectedTrackValue) || String(i) === selectedTrackValue; if (track.enabled !== isSelectedTrack) { try { track.enabled = isSelectedTrack; } catch (e) {} } } }
-    function togglePlayPause() { if (videoElement) { if (videoElement.paused || videoElement.ended) videoElement.play().catch(e => {}); else videoElement.pause(); } }
+    function togglePlayPause() { if (videoElement) { if (videoElement.paused || videoElement.ended) videoElement.play().catch(e => {handleVideoError(e);}); else videoElement.pause(); } }
     function updateMuteButton() { if (!videoElement || !muteButton) return; const isMuted = videoElement.muted || videoElement.volume === 0; muteButton.textContent = isMuted ? "Unmute" : "Mute"; muteButton.setAttribute('aria-pressed', String(isMuted)); if (volumeSlider) { volumeSlider.style.opacity = isMuted ? '0.5' : '1'; volumeSlider.disabled = isMuted; if (!isMuted && videoElement.volume === 0) { const defaultUnmuteVolume = 0.5; videoElement.volume = defaultUnmuteVolume; volumeSlider.value = defaultUnmuteVolume; } } }
     function handleFullscreenChange() { const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement); if (!videoContainer) return; videoContainer.classList.toggle('is-fullscreen', isFullscreen); }
     function populateAudioTrackSelector() { if (!videoElement || typeof videoElement.audioTracks === 'undefined' || !audioTrackSelect) { if(audioTrackSelect) audioTrackSelect.style.display = 'none'; return; } const tracks = videoElement.audioTracks; audioTrackSelect.innerHTML = ''; if (tracks.length <= 1) { audioTrackSelect.style.display = 'none'; return; } let hasEnabledTrack = false; for (let i = 0; i < tracks.length; i++) { if (tracks[i].enabled) hasEnabledTrack = true; } if (!hasEnabledTrack && tracks.length > 0) { try { tracks[0].enabled = true; } catch(e) {} } let preferredTrackIndex = -1; for (let i = 0; i < tracks.length; i++) { const track = tracks[i]; const option = document.createElement('option'); const trackValue = track.id || i; option.value = trackValue; let label = track.label || `Track ${i + 1}`; let languageName = ''; if (track.language) { try { languageName = new Intl.DisplayNames(['en'], { type: 'language' }).of(track.language.split('-')[0]); label += ` (${languageName || track.language})`; } catch (e) { label += ` (${track.language})`; } } option.textContent = label; option.selected = track.enabled; option.disabled = track.readyState === 'ended'; audioTrackSelect.appendChild(option); const lang = track.language?.toLowerCase(); const lbl = label.toLowerCase(); if (preferredTrackIndex === -1 && (lang?.startsWith('hi') || lbl.includes('hindi') || languageName?.toLowerCase() === 'hindi')) { preferredTrackIndex = i; } } if (preferredTrackIndex !== -1) { try { for (let i = 0; i < tracks.length; i++) { tracks[i].enabled = (i === preferredTrackIndex); } audioTrackSelect.value = tracks[preferredTrackIndex].id || preferredTrackIndex; } catch(e) {} } else { for (let i = 0; i < tracks.length; i++) { if (tracks[i].enabled) { audioTrackSelect.value = tracks[i].id || i; break; } } } audioTrackSelect.style.display = 'inline-block'; try { if (tracks.onchange === null) tracks.onchange = populateAudioTrackSelector; } catch(e) {} }
@@ -1037,11 +1008,11 @@
     // --- State Persistence ---
     function saveStateToLocalStorage() { try { const stateToSave = {}; if (currentState.sortColumn !== 'lastUpdated') stateToSave.sortColumn = currentState.sortColumn; if (currentState.sortDirection !== 'desc') stateToSave.sortDirection = currentState.sortDirection; if (currentState.qualityFilter !== '') stateToSave.qualityFilter = currentState.qualityFilter; if (currentState.searchTerm !== '') stateToSave.searchTerm = currentState.searchTerm;
             if (currentViewMode === 'search') { stateToSave.viewMode = 'search'; stateToSave.activeTab = activeResultsTab; stateToSave.currentPage = currentState.currentPage; }
-            else { stateToSave.viewMode = currentViewMode; } // Save itemDetail or homepage
+            else { stateToSave.viewMode = currentViewMode; } 
             if (Object.keys(stateToSave).length > 0) { localStorage.setItem(config.LOCAL_STORAGE_KEY, JSON.stringify(stateToSave)); }
             else { localStorage.removeItem(config.LOCAL_STORAGE_KEY); } } catch (e) {} }
     function loadStateFromLocalStorage() { try { const savedState = localStorage.getItem(config.LOCAL_STORAGE_KEY); if (savedState) { const parsedState = JSON.parse(savedState); currentState.sortColumn = typeof parsedState.sortColumn === 'string' ? parsedState.sortColumn : 'lastUpdated'; currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc'; currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : ''; currentState.searchTerm = typeof parsedState.searchTerm === 'string' ? parsedState.searchTerm : ''; if (parsedState.viewMode === 'search' && currentState.searchTerm) { currentViewMode = 'search'; activeResultsTab = typeof parsedState.activeTab === 'string' ? parsedState.activeTab : 'allFiles'; currentState.currentPage = typeof parsedState.currentPage === 'number' ? parsedState.currentPage : 1; currentState.typeFilter = tabMappings[activeResultsTab]?.typeFilter || ''; if(searchInput) searchInput.value = currentState.searchTerm; }
-            else if (parsedState.viewMode === 'itemDetail') { currentViewMode = 'itemDetail'; /* URL will handle which item */ }
+            else if (parsedState.viewMode === 'itemDetail') { currentViewMode = 'itemDetail'; }
             else { currentViewMode = 'homepage'; activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = ''; currentState.searchTerm = ''; }
             } else { resetToDefaultState(); } } catch (e) { localStorage.removeItem(config.LOCAL_STORAGE_KEY); resetToDefaultState(); }
         currentItemDetailGroup = null; isShareMode = false; lastFocusedElement = null;
@@ -1050,14 +1021,14 @@
 
 
     // --- Initial Data Loading and Setup ---
-    async function fetchApiData(params = {}, signal = null) { // Fetches INDIVIDUAL FILES
+    async function fetchApiData(params = {}, signal = null) { 
         if (!params.id && searchAbortController) { searchAbortController.abort(); }
         let currentSignal = signal;
         if (!currentSignal && !params.id) { searchAbortController = new AbortController(); currentSignal = searchAbortController.signal; }
         else if (signal) {} else { const tempController = new AbortController(); currentSignal = tempController.signal; }
 
         const query = new URLSearchParams();
-        if (!params.id) { // For list fetching
+        if (!params.id) { 
             query.set('page', params.page || currentState.currentPage);
             query.set('limit', params.limit || currentState.limit);
             query.set('sort', params.sort || currentState.sortColumn);
@@ -1068,14 +1039,14 @@
             if (qualityFilter) query.set('quality', qualityFilter);
             const typeFilter = params.type !== undefined ? params.type : currentState.typeFilter;
             if (typeFilter) query.set('type', typeFilter);
-        } else { // For fetching a single file by its original_id (used by old share links if any, or internal needs)
+        } else { 
             query.set('id', params.id);
         }
         const url = `${config.MOVIE_DATA_API_URL}?${query.toString()}`;
         try {
             const response = await fetch(url, { signal: currentSignal });
             if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); }
-            const data = await response.json(); // data.items contains individual files
+            const data = await response.json(); 
             if (!params.id && tabMappings[activeResultsTab]) {
                 const activePagination = tabMappings[activeResultsTab]?.pagination;
                 if (activePagination && data.totalPages !== undefined) {
@@ -1091,11 +1062,11 @@
         }
     }
 
-    async function fetchAndRenderResults() { // Fetches individual files, then groups them
+    async function fetchAndRenderResults() { 
         if (currentViewMode !== 'search') return;
         try {
-            const apiResponse = await fetchApiData(); // Fetches individual files based on currentState
-            if (apiResponse === null || !apiResponse.items) { // Aborted or no items
+            const apiResponse = await fetchApiData(); 
+            if (apiResponse === null || !apiResponse.items) { 
                  if(tabMappings[activeResultsTab]?.gridContainer) {
                      tabMappings[activeResultsTab].gridContainer.innerHTML = `<div class="status-message grid-status-message">No results found.</div>`;
                  }
@@ -1108,29 +1079,24 @@
             const processedFiles = apiResponse.items.map(preprocessMovieData);
             const groupedItems = groupMovieData(processedFiles);
 
-            // The apiResponse still contains pagination details for the *individual files*
-            // We pass this along, but renderActiveResultsView will display the *groupedItems*
             renderActiveResultsView({
-                ...apiResponse, // Spread original response (page, totalPages, totalItems for files)
-                items: groupedItems // Override items with the grouped ones
+                ...apiResponse, 
+                items: groupedItems 
             });
             saveStateToLocalStorage();
         } catch (error) {
             if (error.name !== 'AbortError') {
                 const { gridContainer } = tabMappings[activeResultsTab];
-                if (gridContainer) { gridContainer.innerHTML = `<div class="error-message grid-status-message">Error loading results: ${error.message}. Please try again.</div>`; }
+                if (gridContainer) { gridContainer.innerHTML = `<div class="error-message grid-status-message">Error loading results: ${sanitize(error.message)}. Please try again.</div>`; }
                 Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; });
             }
         }
     }
 
-    function populateQualityFilter(fileItems = []) { // Takes individual file items
+    function populateQualityFilter(fileItems = []) { 
         if (!qualityFilterSelect) return;
         const currentSelectedValue = qualityFilterSelect.value;
-        // uniqueQualities is already populated globally by preprocessMovieData
-        // No need to iterate here again if preprocessMovieData always runs on all fetched items.
-        // If needed: fileItems.forEach(item => { if (item.displayQuality && item.displayQuality !== 'N/A') { uniqueQualities.add(item.displayQuality); } });
-
+        
         const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); });
         while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); }
         sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } });
@@ -1145,39 +1111,37 @@
         loadStateFromLocalStorage();
         if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); }
 
-        // Fetch initial large dataset for suggestions and homepage updates
         try {
             const initialApiData = await fetchApiData({ limit: config.INITIAL_DATA_FETCH_LIMIT, sort: 'lastUpdated', sortDir: 'desc' });
-            if (initialApiData === null) { pageLoader.style.display = 'none'; return; } // Aborted
+            if (initialApiData === null) { if(pageLoader) pageLoader.style.display = 'none'; return; } 
 
             if (initialApiData && initialApiData.items) {
                 rawFileSuggestionData = initialApiData.items.map(preprocessMovieData);
-                localGroupedData = groupMovieData(rawFileSuggestionData); // Group this initial data
-                populateQualityFilter(rawFileSuggestionData); // Quality filter from all raw files
+                localGroupedData = groupMovieData(rawFileSuggestionData); 
+                populateQualityFilter(rawFileSuggestionData); 
             } else {
                 console.warn("Initial data fetch returned no items.");
-                // Handle case where initial data fetch fails but localstorage might have search
             }
         } catch (e) {
             if (e.name !== 'AbortError') {
                 console.error("Error fetching initial data:", e);
-                displayLoadError(`Failed to load initial data: ${e.message}. Please refresh.`);
-                return; // Stop further execution if initial data fails critically
+                displayLoadError(`Failed to load initial data: ${sanitize(e.message)}. Please refresh.`);
+                return; 
             }
         }
 
-        handleUrlChange(); // This will set view mode and potentially call displayItemDetail or fetchAndRenderResults
+        handleUrlChange(); 
 
         if (currentViewMode === 'search' && currentState.searchTerm) {
             if(searchInput) searchInput.value = currentState.searchTerm;
-            if (!currentGroupedSearchResults.length) { // Only fetch if not already populated by URL change
+            if (!currentGroupedSearchResults.length) { 
                 showLoadingStateInGrids(`Loading search results for "${sanitize(currentState.searchTerm)}"...`);
                 fetchAndRenderResults();
             }
         } else if (currentViewMode === 'homepage') {
             if (localGroupedData.length > 0) {
                 displayInitialUpdates();
-            } else if (updatesPreviewList && !updatesPreviewList.hasChildNodes()){
+            } else if (updatesPreviewList && !updatesPreviewList.hasChildNodes()){ 
                  updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
             }
         }
@@ -1197,9 +1161,8 @@
         if (!button) return;
 
         const action = button.dataset.action;
-        lastFocusedElement = button; // Store the clicked button
+        lastFocusedElement = button; 
 
-        // Actions specific to individual files within Item Detail View
         if (action === 'play-file') {
             const url = button.dataset.url;
             const title = button.dataset.title;
@@ -1213,21 +1176,20 @@
             if (url) { event.preventDefault(); openWithIntent(url); }
         } else if (action === 'bypass-hubcloud-file' || action === 'bypass-gdflix-file') {
             event.preventDefault();
-            const fileId = button.dataset.fileId; // Crucial to identify which file
+            const fileId = button.dataset.fileId; 
             if (action === 'bypass-hubcloud-file') triggerHubCloudBypass(button, fileId);
             else triggerGDFLIXBypass(button, fileId);
         }
-        // Actions for the group or general page
         else if (action === 'share-group') {
             event.preventDefault();
             handleShareGroupClick(button);
         } else if (action === 'toggle-custom-url') {
             event.preventDefault();
             toggleCustomUrlInput(button);
-        } else if (action === 'play-custom-url-global' && button.id === 'playerPlayCustomUrlButton') { // Global player custom URL
+        } else if (action === 'play-custom-url-global' && button.id === 'playerPlayCustomUrlButton') { 
              event.preventDefault();
              if (isGlobalCustomUrlMode) { handleGlobalPlayCustomUrl(event); }
-             else { playFromCustomUrlInput(button); } // From item detail player's custom input
+             else { playFromCustomUrlInput(button); } 
         }
     }
 
@@ -1236,19 +1198,20 @@
     function toggleCustomUrlInput(toggleButton, triggeredByError = false) { const contextContainer = toggleButton.closest('#item-detail-content') || toggleButton.closest('#videoContainer'); if (!contextContainer || !videoContainer || !playerCustomUrlSection || !videoElement || !customControlsContainer) return;
         const videoPlayerParent = videoContainer.parentElement;
 
-        // If video player is not already in the itemDetailContent (it might be detached or in global mode)
         if (contextContainer.id === 'item-detail-content' && videoPlayerParent !== contextContainer) {
             const fileListContainer = contextContainer.querySelector('.file-list-container');
             const targetElement = fileListContainer || contextContainer.querySelector('hr.detail-separator') || contextContainer.firstChild;
 
-            if(videoPlayerParent) videoPlayerParent.removeChild(videoContainer); // Detach from previous parent
+            if(videoPlayerParent) videoPlayerParent.removeChild(videoContainer); 
 
-            if (targetElement && targetElement.nextSibling) { // Insert after file list or separator
-                targetElement.parentNode.insertBefore(videoContainer, targetElement.nextSibling);
-            } else if (targetElement) { // Append after target if no next sibling
-                 targetElement.parentNode.appendChild(videoContainer);
+            if (targetElement && targetElement.parentNode) {
+                if (targetElement.nextSibling) { 
+                    targetElement.parentNode.insertBefore(videoContainer, targetElement.nextSibling);
+                } else { 
+                     targetElement.parentNode.appendChild(videoContainer);
+                }
             }
-            else { // Fallback: append to item detail content
+            else { 
                 contextContainer.appendChild(videoContainer);
             }
 
@@ -1261,12 +1224,11 @@
 
         const isHidden = playerCustomUrlSection.style.display === 'none';
         playerCustomUrlSection.style.display = isHidden ? 'flex' : 'none';
-        // When custom URL input is shown, hide the main video element and its controls
         videoElement.style.display = isHidden ? 'none' : 'block';
         customControlsContainer.style.display = isHidden ? 'none' : 'flex';
-        if(vlcBox) vlcBox.style.display = isHidden ? 'none' : 'block'; // Hide VLC box when custom input shown
+        if(vlcBox) vlcBox.style.display = isHidden ? 'none' : 'block'; 
 
-        if(audioWarningDiv) { /* Manage audio warning visibility */ }
+        if(audioWarningDiv) {  }
 
         if (videoContainer.style.display === 'none') { videoContainer.style.display = 'flex'; }
         toggleButton.setAttribute('aria-expanded', String(isHidden));
@@ -1278,7 +1240,7 @@
     function playFromCustomUrlInput(playButton) { const container = playButton.closest('#playerCustomUrlSection'); if (!container) return; const inputField = container.querySelector('#playerCustomUrlInput'); const feedbackSpan = container.querySelector('.player-custom-url-feedback'); const titleRef = "Custom URL Video"; if (!inputField || !feedbackSpan) return; const customUrlRaw = inputField.value.trim(); feedbackSpan.textContent = ''; if (!customUrlRaw) { feedbackSpan.textContent = 'Please enter a URL.'; inputField.focus(); return; } let customUrlEncoded = customUrlRaw; try { new URL(customUrlRaw); customUrlEncoded = customUrlRaw.replace(/ /g, '%20'); } catch (e) { feedbackSpan.textContent = 'Invalid URL format.'; inputField.focus(); return; } isGlobalCustomUrlMode = false; if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if (videoElement) videoElement.style.display = 'block'; if (customControlsContainer) customControlsContainer.style.display = 'flex'; streamVideo(titleRef, customUrlEncoded, null, true); }
 
     // --- HubCloud/GDFLIX Bypass Logic ---
-    async function triggerHubCloudBypass(buttonElement, fileIdToUpdate) { // Added fileIdToUpdate
+    async function triggerHubCloudBypass(buttonElement, fileIdToUpdate) { 
         const hubcloudUrl = buttonElement.dataset.hubcloudUrl;
         if (!hubcloudUrl) { setBypassButtonState(buttonElement, 'error', 'Missing URL'); return; }
         if (!currentItemDetailGroup || !fileIdToUpdate) { setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
@@ -1294,11 +1256,11 @@
             if (result.success && result.finalUrl) {
                 const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20');
                 setBypassButtonState(buttonElement, 'success', 'Success!');
-                updateItemDetailAfterBypass(encodedFinalUrl, fileIdToUpdate); // Pass fileId
+                updateItemDetailAfterBypass(encodedFinalUrl, fileIdToUpdate); 
             } else { throw new Error(result.details || result.error || 'Unknown HubCloud bypass failure'); }
-        } catch (error) { clearTimeout(timeoutId); if (error.name === 'AbortError' && !apiController.signal.aborted) { setBypassButtonState(buttonElement, 'error', 'Timeout'); } else if (error.name === 'AbortError') { setBypassButtonState(buttonElement, 'idle'); } else { setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); } }
+        } catch (error) { clearTimeout(timeoutId); if (error.name === 'AbortError' && !apiController.signal.aborted) { setBypassButtonState(buttonElement, 'error', 'Timeout'); } else if (error.name === 'AbortError') { setBypassButtonState(buttonElement, 'idle'); } else { setBypassButtonState(buttonElement, 'error', `Failed: ${sanitize(error.message).substring(0, 50)}`); } }
     }
-    async function triggerGDFLIXBypass(buttonElement, fileIdToUpdate) { // Added fileIdToUpdate
+    async function triggerGDFLIXBypass(buttonElement, fileIdToUpdate) { 
         const gdflixUrl = buttonElement.dataset.gdflixUrl;
         if (!gdflixUrl) { setBypassButtonState(buttonElement, 'error', 'Missing URL'); return; }
         if (!currentItemDetailGroup || !fileIdToUpdate) { setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
@@ -1313,9 +1275,9 @@
             if (result.success && result.finalUrl) {
                 const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20');
                 setBypassButtonState(buttonElement, 'success', 'Success!');
-                updateItemDetailAfterBypass(encodedFinalUrl, fileIdToUpdate); // Pass fileId
+                updateItemDetailAfterBypass(encodedFinalUrl, fileIdToUpdate); 
             } else { throw new Error(result.error || 'Unknown GDFLIX bypass failure'); }
-        } catch (error) { clearTimeout(timeoutId); if (error.name === 'AbortError' && !apiController.signal.aborted) { setBypassButtonState(buttonElement, 'error', 'Timeout'); } else if (error.name === 'AbortError') { setBypassButtonState(buttonElement, 'idle'); } else { setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); } }
+        } catch (error) { clearTimeout(timeoutId); if (error.name === 'AbortError' && !apiController.signal.aborted) { setBypassButtonState(buttonElement, 'error', 'Timeout'); } else if (error.name === 'AbortError') { setBypassButtonState(buttonElement, 'idle'); } else { setBypassButtonState(buttonElement, 'error', `Failed: ${sanitize(error.message).substring(0, 50)}`); } }
     }
     function setBypassButtonState(buttonElement, state, message = null) { if (!buttonElement) return; const feedbackSpan = buttonElement.nextElementSibling; const iconSpan = buttonElement.querySelector('.button-icon'); const spinnerSpan = buttonElement.querySelector('.button-spinner'); const textSpan = buttonElement.querySelector('.button-text'); const isHubCloud = buttonElement.classList.contains('hubcloud-bypass-button'); const defaultText = isHubCloud ? 'Bypass HubCloud' : 'Bypass GDFLIX'; const defaultIconHTML = isHubCloud ? '☁️' : '🎬'; buttonElement.classList.remove('loading', 'error', 'success'); buttonElement.disabled = false; if (feedbackSpan) { feedbackSpan.style.display = 'none'; feedbackSpan.className = 'bypass-feedback'; } if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; clearTimeout(bypassFeedbackTimeout); switch (state) { case 'loading': buttonElement.classList.add('loading'); buttonElement.disabled = true; if (textSpan) textSpan.textContent = 'Bypassing...'; if (spinnerSpan) spinnerSpan.style.display = 'inline-block'; if (iconSpan) iconSpan.style.display = 'none'; if (feedbackSpan) { feedbackSpan.textContent = 'Please wait...'; feedbackSpan.classList.add('loading', 'show'); feedbackSpan.style.display = 'inline-block'; } break; case 'success': buttonElement.classList.add('success'); buttonElement.disabled = true; if (textSpan) textSpan.textContent = 'Success!'; if (iconSpan) iconSpan.innerHTML = '✅'; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.textContent = message || 'Success!'; feedbackSpan.classList.add('success', 'show'); feedbackSpan.style.display = 'inline-block'; } break; case 'error': buttonElement.classList.add('error'); buttonElement.disabled = false; if (textSpan) textSpan.textContent = defaultText; if (iconSpan) iconSpan.innerHTML = defaultIconHTML; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.textContent = message || 'Failed'; feedbackSpan.classList.add('error', 'show'); feedbackSpan.style.display = 'inline-block'; bypassFeedbackTimeout = setTimeout(() => { if (feedbackSpan.classList.contains('show')) { feedbackSpan.classList.remove('show', 'error', 'loading'); feedbackSpan.style.display = 'none'; feedbackSpan.textContent = ''; } }, 4000); } break; case 'idle': default: buttonElement.disabled = false; if (textSpan) textSpan.textContent = defaultText; if (iconSpan) iconSpan.innerHTML = defaultIconHTML; if (spinnerSpan) spinnerSpan.style.display = 'none'; if (iconSpan) iconSpan.style.display = 'inline-block'; if (feedbackSpan) { feedbackSpan.classList.remove('show', 'error', 'loading'); feedbackSpan.style.display = 'none'; feedbackSpan.textContent = ''; } break; } }
 
@@ -1326,7 +1288,7 @@
 
          if (gridItemTrigger) {
              event.preventDefault();
-             const groupKey = gridItemTrigger.dataset.itemId; // This is now groupKey
+             const groupKey = gridItemTrigger.dataset.itemId; 
              if (groupKey) {
                  navigateToItemView(groupKey);
              } else {
@@ -1335,27 +1297,20 @@
              return;
          }
 
-         // Delegate action clicks within item detail content
          if (target.closest('#item-detail-content')) {
-             handleActionClick(event); // This function now handles more specific actions
+             handleActionClick(event); 
              return;
          }
 
           if (target.matches('.close-btn') && target.closest('#videoContainer')) {
               event.preventDefault(); lastFocusedElement = target; closePlayer(lastFocusedElement); return;
           }
-
-         // Sorting is temporarily disabled for grouped view
-         // if (target.closest('th.sortable')) {
-         //     handleSort(event);
-         //     return;
-         // }
     }
 
     // --- Add Event Listeners ---
     document.addEventListener('DOMContentLoaded', async () => {
          await initializeApp();
-         if (searchInput) { searchInput.addEventListener('input', handleSearchInput); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); handleSearchSubmit(); } else if (event.key === 'Escape') { suggestionsContainer.style.display = 'none'; } }); searchInput.addEventListener('search', handleSearchClear); searchInput.addEventListener('blur', () => { setTimeout(() => { const searchButton = document.getElementById('searchSubmitButton'); if (document.activeElement !== searchInput && !suggestionsContainer.contains(document.activeElement) && document.activeElement !== searchButton) { suggestionsContainer.style.display = 'none'; } }, 150); }); }
+         if (searchInput) { searchInput.addEventListener('input', handleSearchInput); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); handleSearchSubmit(); } else if (event.key === 'Escape') { if(suggestionsContainer) suggestionsContainer.style.display = 'none'; } }); searchInput.addEventListener('search', handleSearchClear); searchInput.addEventListener('blur', () => { setTimeout(() => { const searchButton = document.getElementById('searchSubmitButton'); if (suggestionsContainer && document.activeElement !== searchInput && !suggestionsContainer.contains(document.activeElement) && document.activeElement !== searchButton) { suggestionsContainer.style.display = 'none'; } }, 150); }); }
          if (qualityFilterSelect) { qualityFilterSelect.addEventListener('change', triggerFilterChange); }
 
          if (container) {
@@ -1364,7 +1319,7 @@
 
 
          if (playCustomUrlGlobalButton) { playCustomUrlGlobalButton.addEventListener('click', handleGlobalCustomUrlClick); }
-         if (playerPlayCustomUrlButton && playerCustomUrlSection.contains(playerPlayCustomUrlButton)) { // Button inside player's custom URL section
+         if (playerPlayCustomUrlButton && playerCustomUrlSection && playerCustomUrlSection.contains(playerPlayCustomUrlButton)) { 
             playerPlayCustomUrlButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 lastFocusedElement = playerPlayCustomUrlButton;
