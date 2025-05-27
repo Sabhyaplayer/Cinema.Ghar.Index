@@ -750,7 +750,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 67px; /* Adjusted for up to 3 lines of 13px text + padding */
+    min-height: 67px; /* Approx for 3 lines of 13px text + padding. Will grow if needed. */
     background-color: var(--card-bg);
     border-top: 1px solid var(--border-color);
     flex-shrink: 0;
@@ -762,14 +762,9 @@ body {
     color: var(--text-color);
     line-height: 1.3;
     margin: 0;
-
-    /* Multi-line truncation (e.g., up to 3 lines) */
-    display: -webkit-box;
-    -webkit-line-clamp: 3; /* Increased from 2 to 3 */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
+    white-space: normal; /* Allow text to wrap to new lines */
+    word-break: break-word; /* Break words if necessary to prevent overflow */
+    /* Removed line-clamp and related properties to show full title */
 }
 
 .item-year { /* Optional, if you add year data */
@@ -1475,7 +1470,7 @@ hr.detail-separator {
   /* Responsive Card Info */
   .item-info { /* For both .update-item and .grid-item */
       padding: 6px 8px;
-      min-height: 59px; /* Adjusted for up to 3 lines of 12px text + padding */
+      min-height: 59px; /* Approx for 3 lines of 12px text + padding. Will grow. */
   }
   .item-title { /* For both .update-item and .grid-item */
       font-size: 12px;
@@ -1564,7 +1559,7 @@ hr.detail-separator {
     /* Responsive Card Info for smallest screens */
     .item-info { /* For both .update-item and .grid-item */
       padding: 5px 6px;
-      min-height: 53px; /* Adjusted for up to 3 lines of 11px text + padding */
+      min-height: 53px; /* Approx for 3 lines of 11px text + padding. Will grow. */
     }
     .item-title { /* For both .update-item and .grid-item */
         font-size: 11px;
