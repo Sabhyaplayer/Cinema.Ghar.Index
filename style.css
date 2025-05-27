@@ -68,7 +68,7 @@
 
     /* Grid Card Dimensions (approx 2:3 aspect ratio for posters) */
     --grid-card-min-width: 150px;
-    --grid-card-min-height: calc(var(--grid-card-min-width) * 1.5);
+    /* --grid-card-min-height: calc(var(--grid-card-min-width) * 1.5); Removed as aspect-ratio handles this */
     --grid-card-gap: 20px;
 
     --transition-speed: 0.3s;
@@ -403,6 +403,7 @@ body {
     background-color: var(--card-bg);
     border-radius: var(--border-radius-sm);
     box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -415,6 +416,7 @@ body {
 .update-item:hover {
     transform: translateY(-3px) scale(1.02);
     box-shadow: var(--shadow-md);
+    z-index: 5;
 }
 .update-item .poster-image-container { /* For poster and its placeholder/spinner */
     width: 100%;
@@ -433,20 +435,7 @@ body {
     display: block;
     transition: opacity 0.3s ease;
 }
-.update-item .item-title-preview { /* Renamed to avoid conflict if global .item-title is different */
-    padding: 8px 10px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-color);
-    text-align: center;
-    line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    background-color: rgba(255,255,255,0.9); /* Slight bg for readability */
-    border-top: 1px solid var(--border-color);
-    flex-shrink: 0; /* Prevent shrinking */
-}
+
 /* Optional: Small date overlay for updates */
 .update-item .update-date-overlay {
     position: absolute;
@@ -703,7 +692,6 @@ body {
     color: inherit;
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     cursor: pointer;
-    /* Aspect ratio for the card itself to maintain shape during loading */
     aspect-ratio: 2 / 3.2; /* Slightly taller to accommodate title below poster */
     border: 1px solid var(--border-color);
 }
@@ -753,26 +741,50 @@ body {
     transform: translate(-50%, -50%);
 }
 
-.grid-item .item-title {
-    padding: 10px 12px;
-    font-size: 14px;
+/* --- Card Info Styling (Title, Year, etc.) --- */
+/* Common for .grid-item and .update-item */
+.item-info {
+    padding: 8px 10px;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    min-height: 50px; /* Approx for 2 lines of 13px text + padding */
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0; 
+}
+
+.item-title { 
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-color);
-    text-align: center;
     line-height: 1.3;
+    margin: 0;
+
+    /* Multi-line truncation (e.g., up to 2 lines) */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; 
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal; 
+}
+
+.item-year { /* Optional, if you add year data */
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px; 
+    line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    background-color: var(--container-bg); /* Or a slightly off-white */
-    border-top: 1px solid var(--border-color);
-    flex-shrink: 0; /* Prevent title area from shrinking */
-    min-height: 45px; /* Ensure consistent height */
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
-/* Quality logos (4K, HDR) within grid item titles - OPTIONAL */
-.grid-item .item-title .quality-logo {
+
+/* Quality logos (4K, HDR) within item titles - OPTIONAL */
+.item-title .quality-logo { /* If you place logos within the title div itself */
     height: 0.9em;
     width: auto;
     vertical-align: middle;
@@ -781,6 +793,7 @@ body {
     line-height: 1;
     opacity: 0.7;
 }
+
 
 /* Status/Error messages within grid containers */
 .grid-view-container .status-message,
@@ -806,12 +819,7 @@ body {
 .grid-view-container .loading-message, /* If used directly in grid container */
 #updates-preview-list .loading-inline-spinner { /* For updates preview */
     grid-column: 1 / -1;
-    /* text-align: center; */
-    /* padding: 35px 15px; */
-    /* font-size: 15px; */
-    /* color: var(--text-muted); */
 }
-/* .grid-view-container .loading-message .spinner { margin: 0 auto 10px auto; } */
 
 
 /* Commenting out old table styles */
@@ -1478,29 +1486,32 @@ hr.detail-separator {
       grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); /* Smaller cards for preview */
       gap: 10px;
   }
-  .update-item { /* Card styling from main grid applies, but aspect ratio might differ */
-      aspect-ratio: 2 / 3.1; /* Adjust for potentially smaller titles or less info */
-  }
-  .update-item .item-title-preview {
-      font-size: 12px;
-      padding: 6px 8px;
-      min-height: 38px; /* Adjust for smaller font */
+  .update-item { 
+      aspect-ratio: 2 / 3.1; 
   }
   #showMoreUpdatesButton { font-size: 13px; padding: 8px 18px; }
 
   #results-area { margin: 0; padding: 15px; border-radius: 0;}
   .grid-view-container { /* Main results grid */
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* e.g., 3 cards across */
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
       gap: 15px;
   }
   .grid-item {
-      aspect-ratio: 2 / 3.2; /* Adjust if needed */
+      aspect-ratio: 2 / 3.2; 
   }
-  .grid-item .item-title {
-      font-size: 13px;
-      padding: 8px 10px;
-      min-height: 40px;
+
+  /* Responsive Card Info */
+  .item-info { /* For both .update-item and .grid-item */
+      padding: 6px 8px;
+      min-height: 42px; /* Approx for 2 lines of 12px text + padding */
   }
+  .item-title { /* For both .update-item and .grid-item */
+      font-size: 12px;
+  }
+  .item-year {
+      font-size: 10px;
+  }
+
 
   #item-detail-view { padding: 15px; margin-top: 10px; max-width: 95%; border-radius: var(--border-radius-sm); }
   #item-detail-view .back-button { margin-bottom: 20px; padding: 7px 12px; font-size: 13px; }
@@ -1527,15 +1538,6 @@ hr.detail-separator {
   .tab-navigation { margin-bottom: 20px; }
   .tab-navigation .tab-button { padding: 10px 15px; font-size: 15px; }
 
-  /* Remove table-specific mobile styles, as tables are gone from main view */
-  /*
-  #cinemaghar-container .table-container { ... }
-  #cinemaghar-container table { ... }
-  #cinemaghar-container thead, ... { ... }
-  #cinemaghar-container th, ... { ... }
-  #cinemaghar-container thead tr th.col-size, ... { display: none; }
-  #cinemaghar-container th.col-id, ... (column widths) ... { ... }
-  */
 
   #cinemaghar-container .video-container:not(.global-custom-url-mode) #html5VideoPlayer { max-height: 280px; border-radius: var(--border-radius-sm);}
   #cinemaghar-container .video-container { padding: 45px 10px 15px 10px; max-width: 100%; margin-left: 0; margin-right: 0; border-radius: var(--border-radius-sm); }
@@ -1575,94 +1577,41 @@ hr.detail-separator {
 
 @media screen and (max-width: 480px) { /* Even smaller screens */
     #updates-preview-list {
-        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* Smaller cards for preview */
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); 
         gap: 8px;
-    }
-    .update-item .item-title-preview {
-        font-size: 11px;
-        padding: 5px;
-        min-height: 32px;
     }
     .update-item .update-date-overlay {
         font-size: 9px;
         padding: 1px 3px;
     }
-    .grid-view-container { /* Main results grid */
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* e.g., 2-3 cards */
+    .grid-view-container { 
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
         gap: 10px;
     }
-    .grid-item .item-title {
-        font-size: 12px;
-        padding: 6px 8px;
-        min-height: 36px;
+
+    /* Responsive Card Info for smallest screens */
+    .item-info { /* For both .update-item and .grid-item */
+      padding: 5px 6px;
+      min-height: 38px; /* Approx for 2 lines of 11px text + padding */
+    }
+    .item-title { /* For both .update-item and .grid-item */
+        font-size: 11px;
+    }
+    .item-year {
+        font-size: 9px;
     }
 }
 
-
-.grid-item .item-info {
-    padding: 8px 10px; /* Add some padding around the text. Adjust as needed. */
-    text-align: left;   /* Or 'center' if you prefer titles centered */
-    width: 100%;        /* Ensure it uses the full width of its container */
-    box-sizing: border-box; /* Includes padding and border in the element's total width and height */
-    display: flex;      /* Use flexbox for better control over title and year */
-    flex-direction: column;
-    justify-content: center; /* Vertically center if there's extra space (less likely with truncation) */
-    min-height: 40px;   /* Give it a minimum height to ensure some space even if title is short. Adjust. */
-                          /* Avoid a fixed 'height' if you want it to adapt slightly. */
-}
-
-.grid-item .item-title {
-    font-size: 0.9rem;  /* Adjust font size to your preference */
-    font-weight: 600;   /* Make it a bit bold */
-    color: var(--text-color, #333333); /* Use your CSS variable or a default color */
-    margin: 0 0 4px 0;  /* Margin: top right bottom left (space below title, before year) */
-    line-height: 1.3;   /* Improve readability */
-
-    /* --- Single-line truncation with ellipsis --- */
-    white-space: nowrap;         /* Prevent text from wrapping to the next line */
-    overflow: hidden;            /* Hide the overflowing text */
-    text-overflow: ellipsis;     /* Display "..." for hidden overflow */
-    display: block;              /* Needed for overflow and text-overflow to work correctly */
-    /* width: 100%; (often implied by block, but can be explicit) */
-    
-    /* --- OR: For Multi-line truncation with ellipsis (CHOOSE ONE METHOD) --- */
-    /* If you want to show, for example, up to 2 lines of text before "..."
-       Comment out the single-line truncation above and uncomment this block.
-       Note: Browser support for -webkit-line-clamp is good but not 100% universal.
-    */
-    /*
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal; // Allow wrapping up to the line clamp limit
-    */
-}
-
-.grid-item .item-year {
-    font-size: 0.8rem;  /* Adjust font size */
-    color: var(--text-muted, #757575); /* Use your CSS variable or a default color */
-    margin: 0;          /* Remove default margins if any */
-    line-height: 1.2;
-    /* You can also apply truncation to the year if needed, but it's usually short enough */
-    /* white-space: nowrap; */
-    /* overflow: hidden; */
-    /* text-overflow: ellipsis; */
-}
-
-/* Optional: Ensure poster container doesn't get too much space if item-info is small */
-.grid-item .poster-container {
-    flex-shrink: 0; /* Prevent the poster container from shrinking if item-info wants more space */
-                    /* You might not need this depending on overall flex behavior of .grid-item */
-}
-
-/*
-   REMEMBER: The .grid-item itself still has 'overflow: hidden;'
-   and 'aspect-ratio: 2 / 3.2;'. This means the total height of the
-   .poster-container + .item-info (with its padding and content)
-   must fit within the aspect ratio. If .item-info (with the text)
-   becomes too tall, it will still be clipped by .grid-item.
-   The truncation on .item-title helps prevent the text itself from
-   causing excessive height in .item-info.
+/* 
+  REMOVED the user-appended CSS snippet from here as it's integrated above.
+  Example of how HTML structure should be for items:
+  <div class="grid-item"> or <a class="update-item">
+      <div class="poster-image-container">
+          <img src="..." class="poster-image">
+      </div>
+      <div class="item-info">
+          <div class="item-title">Movie Title Potentially Long Enough for Two Lines</div>
+          <div class="item-year">2023</div> OPTIONAL
+      </div>
+  </div>
 */
