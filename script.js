@@ -915,8 +915,13 @@
                         clearTimeout(tmdbTimeoutId);
                         if (tmdbError.name !== 'AbortError') console.error("Error fetching TMDb full details for detail view:", tmdbError);
                     }
-                }
-                if (signal.aborted) return;
+                } 
+                // The closing brace for the above 'if' block is crucial. 
+                // If it was missing in the code that produced the screenshot, 
+                // the following 'if' would cause a syntax error.
+                // The code pasted here HAS this brace.
+
+                if (signal.aborted) return; // This is line 1001 in the screenshot.
                 const contentHTML = createItemDetailContentHTML(currentItemDetailGroup, currentItemDetailGroup.tmdbDetails);
                 itemDetailContent.innerHTML = contentHTML;
                 if (videoContainer) videoContainer.style.display = 'none';
