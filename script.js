@@ -412,21 +412,33 @@
         if (searchFocusArea) searchFocusArea.style.display = (showHomepage || showSearch) ? 'flex' : 'none';
         if (resultsArea) resultsArea.style.display = showSearch ? 'block' : 'none';
         if (groupDetailViewEl) groupDetailViewEl.style.display = showGroupDetail ? 'block' : 'none';
-        if (updatesPreviewSection) updatesPreviewSection.style.display = showHomepage ? 'block' : 'none';
         if (pageFooter) pageFooter.style.display = (showHomepage || showSearch) ? 'flex' : 'none';
-
+    
         if (showHomepage) {
             if (searchInput) searchInput.value = '';
             currentState.searchTerm = '';
             if (suggestionsContainer) suggestionsContainer.style.display = 'none';
             activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = '';
-            if (weeklyUpdatesGroups.length > 0) { displayInitialUpdates(); }
-            else if (localSuggestionData.length > 0) {
-                 if (updatesPreviewList) updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
-                 if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none';
-            } else {
-                if (updatesPreviewList) updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
+            
+            if (updatesPreviewSection) updatesPreviewSection.style.display = 'block';
+    
+            // Content of updatesPreviewList is primarily handled by the awaited loadUpdatesPreview()
+            // and its call to displayInitialUpdates().
+            // We just need to ensure the "Show More" button state is correct.
+            if (showMoreUpdatesButton && updatesPreviewList) {
+                const hasRenderedItems = updatesPreviewList.querySelector('.grid-item, .update-item');
+                
+                // Show "Show More" if items are rendered and more are available in the fetched group list than currently shown
+                if (hasRenderedItems && weeklyUpdatesGroups.length > updatesPreviewShownCount) {
+                    showMoreUpdatesButton.style.display = 'block';
+                    showMoreUpdatesButton.disabled = false;
+                    showMoreUpdatesButton.textContent = "Show More";
+                } else {
+                    // Hide if no items rendered, or if all available items are already shown/loaded
+                    showMoreUpdatesButton.style.display = 'none';
+                }
             }
+            
             document.title = "Cinema Ghar Index";
             currentGroupData = null;
         } else if (showGroupDetail) {
@@ -436,6 +448,7 @@
             if (pageFooter) pageFooter.style.display = 'none';
         } else if (showSearch) {
             currentGroupData = null;
+            if (updatesPreviewSection) updatesPreviewSection.style.display = 'none';
         }
         if (!isInitialLoad) { saveStateToLocalStorage(); }
     }
@@ -584,38 +597,50 @@
 
     // --- Updates Preview Logic ---
     async function loadUpdatesPreview() {
-        if (currentViewMode !== 'homepage' || !updatesPreviewList || !showMoreUpdatesButton) return;
+        if (currentViewMode !== 'homepage' || !updatesPreviewList || !showMoreUpdatesButton) {
+            if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none'; // Ensure hidden if not applicable
+            return;
+        }
+    
+        // Show loading spinner (overwrites initial HTML spinner or previous content)
         updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
-        showMoreUpdatesButton.style.display = 'none';
+        
+        showMoreUpdatesButton.style.display = 'none'; // Hide button while loading
         updatesPreviewShownCount = 0;
-        weeklyUpdatesGroups = [];
+        weeklyUpdatesGroups = []; // Initialize/clear weekly updates groups
+    
         try {
             const rawItemsToFetch = config.UPDATES_PREVIEW_INITIAL_COUNT + (config.UPDATES_PREVIEW_LOAD_MORE_COUNT * 2);
             const params = { sort: 'lastUpdated', sortDir: 'desc', limit: rawItemsToFetch, page: 1 };
             const data = await fetchApiData(params);
+    
             if (data && data.items && data.items.length > 0) {
                 const preprocessedItems = data.items.map(preprocessMovieData);
-                weeklyUpdatesGroups = groupItems(preprocessedItems);
+                weeklyUpdatesGroups = groupItems(preprocessedItems); // Populate groups
                 weeklyUpdatesGroups.forEach(group => {
                     if (!allKnownGroups.has(group.groupKey) || allKnownGroups.get(group.groupKey).files.length < group.files.length) {
                          allKnownGroups.set(group.groupKey, group);
                     }
                 });
-                displayInitialUpdates();
+                displayInitialUpdates(); // This will clear spinner & populate
             } else {
+                // No items found from API
                 updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
                 showMoreUpdatesButton.style.display = 'none';
+                // weeklyUpdatesGroups is already empty
             }
         } catch (error) {
             if (error.name !== 'AbortError') {
                 updatesPreviewList.innerHTML = `<div class="error-message grid-status-message">Could not load updates. ${error.message}</div>`;
             }
+            // For AbortError, the spinner might remain.
             showMoreUpdatesButton.style.display = 'none';
+            // weeklyUpdatesGroups is already empty
         }
     }
     function displayInitialUpdates() {
         if (!updatesPreviewList || !showMoreUpdatesButton) return;
-        updatesPreviewList.innerHTML = '';
+        updatesPreviewList.innerHTML = ''; // Clear the list (removes spinner or previous message)
         updatesPreviewShownCount = 0;
         if (weeklyUpdatesGroups.length === 0) {
             updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
@@ -665,8 +690,12 @@
             groupGridItemElement.classList.add('update-item');
             fragment.appendChild(groupGridItemElement);
         });
+        // The spinner should have been cleared by displayInitialUpdates if startIndex is 0.
+        // If not (e.g., this is called directly after loadMore), the spinner isn't there anyway.
         const initialLoader = updatesPreviewList.querySelector('.loading-inline-spinner');
-        if (initialLoader && startIndex === 0) { initialLoader.remove(); }
+        if (initialLoader && startIndex === 0 && updatesPreviewList.innerHTML.includes('loading-inline-spinner')) { 
+             initialLoader.remove(); 
+        }
         updatesPreviewList.appendChild(fragment);
     }
 
@@ -1239,7 +1268,7 @@
                     currentState.typeFilter = tabMappings[activeResultsTab]?.typeFilter || '';
                     if(searchInput) searchInput.value = currentState.searchTerm;
                 } else if (parsedState.viewMode === 'groupDetail' && parsedState.currentGroupKey) {
-                    currentViewMode = 'homepage';
+                    currentViewMode = 'homepage'; // Start on homepage, let URL params trigger group detail
                 } else {
                     currentViewMode = 'homepage';
                     activeResultsTab = 'allFiles';
@@ -1291,7 +1320,7 @@
         if (currentViewMode !== 'search') return;
         try {
             const apiResponse = await fetchApiData();
-            if (apiResponse === null) return;
+            if (apiResponse === null) return; // Aborted
             renderActiveResultsView(apiResponse);
             saveStateToLocalStorage();
         } catch (error) {
@@ -1318,34 +1347,51 @@
         if (pageLoader) pageLoader.style.display = 'flex';
         loadStateFromLocalStorage();
         if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); }
+    
         try {
             const initialDataLimit = Math.max(500, config.UPDATES_PREVIEW_INITIAL_COUNT * 5);
+            // Fetch data primarily for suggestions and quality filter population
             const initialApiData = await fetchApiData({ limit: initialDataLimit, sort: 'lastUpdated', sortDir: 'desc' });
-            if (initialApiData === null && !searchAbortController?.signal.aborted) {}
-            else if (initialApiData && initialApiData.items) {
+    
+            if (initialApiData && initialApiData.items && initialApiData.items.length > 0) {
                 const preprocessedInitialItems = initialApiData.items.map(preprocessMovieData);
                 localSuggestionData = preprocessedInitialItems;
                 populateQualityFilter(preprocessedInitialItems);
-                if (currentViewMode === 'homepage' || (isInitialLoad && !currentState.searchTerm && !new URLSearchParams(window.location.search).has('viewGroup'))) {
-                     await loadUpdatesPreview();
-                }
             } else {
-                if (currentViewMode === 'homepage' && updatesPreviewList && !updatesPreviewList.hasChildNodes()) {
-                    updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">Could not load initial data for updates.</div>';
-                }
+                // No initial data or empty items for suggestions
+                localSuggestionData = [];
                 populateQualityFilter([]);
+                console.warn("Initial data fetch for suggestions/qualities yielded no items or failed.");
             }
         } catch (e) {
             if (e.name !== 'AbortError') {
-                console.error("Error during initial data fetch for suggestions/updates:", e);
-                if (currentViewMode === 'homepage' && updatesPreviewList && !updatesPreviewList.hasChildNodes()) {
-                    updatesPreviewList.innerHTML = `<div class="error-message grid-status-message">Error loading initial data: ${e.message}.</div>`;
-                }
-                 populateQualityFilter([]);
+                console.error("Error during initial data fetch for suggestions/qualities:", e);
+                localSuggestionData = [];
+                populateQualityFilter([]);
             }
         }
-        handleUrlChange();
-        if (currentViewMode === 'search' && currentState.searchTerm && allFilesGridContainer.querySelector('.loading-message')) {
+    
+        // Always attempt to load updates if on the homepage path,
+        // regardless of the outcome of the suggestions data fetch.
+        // loadUpdatesPreview has its own error handling for the updates list.
+        if (currentViewMode === 'homepage' || (isInitialLoad && !currentState.searchTerm && !new URLSearchParams(window.location.search).has('viewGroup'))) {
+            try {
+                await loadUpdatesPreview();
+            } catch (updateError) {
+                // This catch is mostly for unexpected errors from loadUpdatesPreview itself,
+                // as its internal try/catch should handle API errors and update the UI.
+                if (updateError.name !== 'AbortError') {
+                    console.error("Error calling loadUpdatesPreview:", updateError);
+                    if (updatesPreviewList && !updatesPreviewList.querySelector('.error-message') && !updatesPreviewList.querySelector('.grid-item') && !updatesPreviewList.querySelector('.update-item')) {
+                         updatesPreviewList.innerHTML = `<div class="error-message grid-status-message">A problem occurred while loading recent updates.</div>`;
+                    }
+                }
+            }
+        }
+        
+        handleUrlChange(); // This will call setViewMode which relies on the state set by loadUpdatesPreview
+    
+        if (currentViewMode === 'search' && currentState.searchTerm && allFilesGridContainer && allFilesGridContainer.querySelector('.loading-message')) {
              if(searchInput) searchInput.value = currentState.searchTerm;
              showLoadingStateInGrids(`Loading search results for "${sanitize(currentState.searchTerm)}"...`);
              fetchAndRenderResults();
