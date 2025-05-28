@@ -86,7 +86,7 @@
     let suggestionDebounceTimeout;
     let searchAbortController = null;
     let groupDetailAbortController = null;
-    let isInitialLoad = true;
+    let isInitialLoad = true; // This will be set to false after the first handleUrlChange completes
     let currentViewMode = 'homepage';
     let activeResultsTab = 'allFiles';
     let lastFocusedElement = null;
@@ -399,7 +399,7 @@
     }
 
     // --- View Control ---
-    function setViewMode(mode) {
+    async function setViewMode(mode) { // Made async
         console.log(`Setting view mode to: ${mode}`);
         const previousMode = currentViewMode;
         currentViewMode = mode;
@@ -421,22 +421,23 @@
             activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = '';
             
             if (updatesPreviewSection) updatesPreviewSection.style.display = 'block';
-    
-            // Content of updatesPreviewList is primarily handled by the awaited loadUpdatesPreview()
-            // and its call to displayInitialUpdates().
-            // We just need to ensure the "Show More" button state is correct.
-            if (showMoreUpdatesButton && updatesPreviewList) {
-                const hasRenderedItems = updatesPreviewList.querySelector('.grid-item, .update-item');
-                
-                // Show "Show More" if items are rendered and more are available in the fetched group list than currently shown
-                if (hasRenderedItems && weeklyUpdatesGroups.length > updatesPreviewShownCount) {
+
+            // Decision to load/display updates:
+            if (weeklyUpdatesGroups.length === 0) {
+                // No data fetched yet, or previous fetch failed. loadUpdatesPreview handles spinner.
+                await loadUpdatesPreview(); // Await this critical load
+            } else if (updatesPreviewList && (!updatesPreviewList.querySelector('.grid-item') && !updatesPreviewList.querySelector('.update-item'))) {
+                // Data exists, but nothing rendered (e.g., navigating back to homepage).
+                displayInitialUpdates();
+            }
+            // "Show More" button state is managed by displayInitialUpdates/appendMoreUpdates.
+            // If no items after load/display, they will hide the button.
+            if (showMoreUpdatesButton) {
+                 if (weeklyUpdatesGroups.length > 0 && weeklyUpdatesGroups.length > updatesPreviewShownCount && updatesPreviewShownCount > 0) {
                     showMoreUpdatesButton.style.display = 'block';
-                    showMoreUpdatesButton.disabled = false;
-                    showMoreUpdatesButton.textContent = "Show More";
-                } else {
-                    // Hide if no items rendered, or if all available items are already shown/loaded
+                 } else {
                     showMoreUpdatesButton.style.display = 'none';
-                }
+                 }
             }
             
             document.title = "Cinema Ghar Index";
@@ -450,17 +451,17 @@
             currentGroupData = null;
             if (updatesPreviewSection) updatesPreviewSection.style.display = 'none';
         }
-        if (!isInitialLoad) { saveStateToLocalStorage(); }
+        if (!isInitialLoad) { saveStateToLocalStorage(); } // isInitialLoad will be false after first full setup
     }
-    window.resetToHomepage = function(event) {
+    window.resetToHomepage = async function(event) { // Made async to align with setViewMode
         if (window.history.pushState) { const cleanUrl = window.location.origin + window.location.pathname; if (window.location.search !== '') { window.history.pushState({ path: cleanUrl }, '', cleanUrl); } }
         currentGroupData = null;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         lastFocusedElement = event?.target;
-        setViewMode('homepage');
+        await setViewMode('homepage');
         if (searchInput) { setTimeout(() => searchInput.focus(), 100); }
     }
-    window.goBackToResults = function() {
+    window.goBackToResults = function() { // No need for async here, it manipulates URL then calls handleUrlChange
         currentGroupData = null;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         if (currentState.searchTerm || lastSearchTermForResults) {
@@ -471,13 +472,14 @@
             const newQuery = urlParams.toString();
             const targetUrl = window.location.pathname + (newQuery ? `?${newQuery}` : '');
             history.pushState({}, '', targetUrl);
-            handleUrlChange(true);
+            handleUrlChange(true); // Let handleUrlChange (now async) manage it
         } else {
-            history.back();
+            history.back(); // This will trigger popstate -> handleUrlChange
         }
     }
-    window.addEventListener('popstate', (event) => { handleUrlChange(true); });
-    function handleUrlChange(isPopState = false) {
+    window.addEventListener('popstate', (event) => { handleUrlChange(true); }); // handleUrlChange is async
+
+    async function handleUrlChange(isPopState = false) { // Made async
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         const urlParams = new URLSearchParams(window.location.search);
         const groupKey = urlParams.get('viewGroup');
@@ -485,54 +487,47 @@
         const legacyShareId = urlParams.get('shareId');
         const legacyViewId = urlParams.get('viewId');
         const queryParam = urlParams.get('q');
-
+    
+        let viewChanged = false;
+    
         if (groupKey) {
-            if (currentViewMode === 'groupDetail' && currentGroupData && currentGroupData.groupKey === groupKey) {
-                 setViewMode('groupDetail');
-                 if (fileIdToOpen && groupDetailContentEl) {
-                    const fileElement = groupDetailContentEl.querySelector(`.file-item[data-file-id="${sanitize(fileIdToOpen)}"]`);
-                    if (fileElement) {
-                        setTimeout(() => fileElement.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
-                    }
-                 }
-            } else {
-                displayGroupDetail(groupKey, fileIdToOpen);
-            }
+            await displayGroupDetail(groupKey, fileIdToOpen); // displayGroupDetail is async
+            viewChanged = true;
         } else if (legacyShareId || legacyViewId) {
             const targetFileId = legacyShareId || legacyViewId;
-            handleLegacyFileLink(targetFileId);
+            await handleLegacyFileLink(targetFileId); // handleLegacyFileLink is async
             urlParams.delete('shareId');
             urlParams.delete('viewId');
             const newQueryString = urlParams.toString();
             history.replaceState(null, '', window.location.pathname + (newQueryString ? `?${newQueryString}` : ''));
+            viewChanged = true;
         } else if (queryParam) {
-            if (currentViewMode !== 'search' || currentState.searchTerm !== queryParam) {
+            if (currentViewMode !== 'search' || currentState.searchTerm !== queryParam || (isInitialLoad && !isPopState)) {
                 searchInput.value = queryParam;
-                handleSearchSubmit(false);
+                // handleSearchSubmit itself is not async, but it calls async setViewMode and fetchAndRenderResults.
+                // For initial load, the await on handleUrlChange in initializeApp will cover this.
+                handleSearchSubmit(false); 
             } else {
-                setViewMode('search');
+                 await setViewMode('search'); // Ensure search view is active
             }
+            viewChanged = true;
         } else {
-            if (currentViewMode === 'groupDetail') {
-                currentGroupData = null;
-                if (isPopState && (currentState.searchTerm || lastSearchTermForResults)) {
-                    setViewMode('search');
-                    if (searchInput && !searchInput.value && (currentState.searchTerm || lastSearchTermForResults)) {
-                        searchInput.value = currentState.searchTerm || lastSearchTermForResults;
-                    }
-                    fetchAndRenderResults();
-                } else {
-                    setViewMode('homepage');
-                }
-            } else if (currentViewMode === 'search' && !queryParam && isPopState) {
-                setViewMode('homepage');
-            } else if (currentViewMode !== 'homepage' && (isInitialLoad || !isPopState)) {
-                 setViewMode('homepage');
+            // Default to homepage if no other conditions met or if explicitly navigating
+            if (currentViewMode !== 'homepage' || isInitialLoad || isPopState ) {
+                await setViewMode('homepage');
             }
+            viewChanged = true;
         }
-        isInitialLoad = false;
+        
+        if (!viewChanged && isInitialLoad) { // Fallback, should not be typically hit with the logic above
+            await setViewMode('homepage');
+        }
+
+        if (isInitialLoad) {
+            isInitialLoad = false; // Set after the first full view determination and setup
+        }
     }
-    async function handleLegacyFileLink(fileId) {
+    async function handleLegacyFileLink(fileId) { // Made async
         if (pageLoader) pageLoader.style.display = 'flex';
         try {
             const fileDataResponse = await fetchApiData({ id: fileId });
@@ -543,16 +538,19 @@
                 newUrlParams.set('viewGroup', groupKey);
                 newUrlParams.set('fileId', fileId);
                 history.replaceState({ viewGroup: groupKey, fileId: fileId }, '', `${window.location.pathname}?${newUrlParams.toString()}`);
-                displayGroupDetail(groupKey, fileId);
+                await displayGroupDetail(groupKey, fileId); // displayGroupDetail is async
             } else {
                 console.warn(`Legacy file ID ${fileId} not found. Redirecting to homepage.`);
-                resetToHomepage();
+                await resetToHomepage();
             }
         } catch (error) {
             console.error(`Error handling legacy file link for ID ${fileId}:`, error);
-            resetToHomepage();
+            await resetToHomepage();
         } finally {
-            if (pageLoader) pageLoader.style.display = 'none';
+            // displayGroupDetail manages its own loader hiding if successful
+            if (pageLoader && pageLoader.style.display !== 'none' && !(currentViewMode === 'groupDetail')) {
+                 pageLoader.style.display = 'none';
+            }
         }
     }
 
@@ -560,18 +558,18 @@
     function handleSearchInput() { clearTimeout(suggestionDebounceTimeout); const searchTerm = searchInput.value.trim(); if (searchTerm.length < 2) { suggestionsContainer.style.display = 'none'; return; } suggestionDebounceTimeout = setTimeout(() => { fetchAndDisplaySuggestions(searchTerm); }, config.SUGGESTIONS_DEBOUNCE_DELAY); }
     function fetchAndDisplaySuggestions(term) { const normalizedTerm = normalizeTextForSearch(term); if (!normalizedTerm) { suggestionsContainer.style.display = 'none'; return; } const matchingItems = localSuggestionData.filter(movie => movie.searchText.includes(normalizedTerm)).slice(0, config.MAX_SUGGESTIONS); suggestionsContainer.innerHTML = ''; if (matchingItems.length > 0) { const fragment = document.createDocumentFragment(); matchingItems.forEach(item => { const div = document.createElement('div'); let displayText = item.displayFilename; let highlighted = false; if (term.length > 0) { try { const safeTerm = escapeRegExp(term); const regex = new RegExp(`(${safeTerm})`, 'i'); if ((item.displayFilename || '').match(regex)) { div.innerHTML = (item.displayFilename || '').replace(regex, '<strong>$1</strong>'); highlighted = true; } } catch (e) { console.warn("Regex error for highlight:", e); } } if (!highlighted) { div.textContent = item.displayFilename; } div.title = item.displayFilename; div.onclick = () => selectSuggestion(item.displayFilename); fragment.appendChild(div); }); suggestionsContainer.appendChild(fragment); suggestionsContainer.style.display = 'block'; } else { suggestionsContainer.style.display = 'none'; } }
     function selectSuggestion(selectedValue) { searchInput.value = selectedValue; suggestionsContainer.style.display = 'none'; handleSearchSubmit(); }
-    window.handleSearchSubmit = function(pushHistory = true) {
+    window.handleSearchSubmit = async function(pushHistory = true) { // Made async due to setViewMode
         if (suggestionsContainer) { suggestionsContainer.style.display = 'none'; }
         const searchTerm = searchInput.value.trim();
         if (searchInput) { searchInput.blur(); }
-        if (searchTerm.length === 0 && currentViewMode !== 'homepage') { resetToHomepage(); return; }
+        if (searchTerm.length === 0 && currentViewMode !== 'homepage') { await resetToHomepage(); return; }
         if (searchTerm.length === 0 && currentViewMode === 'homepage') { return; }
         if (currentViewMode === 'groupDetail') {
             if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
             currentGroupData = null;
         }
         lastSearchTermForResults = searchTerm;
-        setViewMode('search');
+        await setViewMode('search'); // setViewMode is async
         activeResultsTab = 'allFiles';
         currentState.currentPage = 1;
         currentState.searchTerm = searchTerm;
@@ -584,9 +582,9 @@
         }
         updateActiveTabAndPanel();
         showLoadingStateInGrids(`Searching for "${sanitize(searchTerm)}"...`);
-        fetchAndRenderResults();
+        fetchAndRenderResults(); // This is already async and handles its rendering
     }
-    function handleSearchClear() { clearTimeout(suggestionDebounceTimeout); suggestionsContainer.style.display = 'none'; setTimeout(() => { if (searchInput.value.trim() === '') { if (currentViewMode === 'search') { resetToHomepage(); } else { currentState.searchTerm = ''; saveStateToLocalStorage(); } } }, 100); }
+    function handleSearchClear() { clearTimeout(suggestionDebounceTimeout); suggestionsContainer.style.display = 'none'; setTimeout(async () => { if (searchInput.value.trim() === '') { if (currentViewMode === 'search') { await resetToHomepage(); } else { currentState.searchTerm = ''; saveStateToLocalStorage(); } } }, 100); }
     function showLoadingStateInGrids(message = 'Loading...') {
         const loadingHTML = `<div class="loading-message grid-status-message"><div class="spinner"></div>${sanitize(message)}</div>`;
         Object.values(tabMappings).forEach(mapping => {
@@ -597,17 +595,14 @@
 
     // --- Updates Preview Logic ---
     async function loadUpdatesPreview() {
-        if (currentViewMode !== 'homepage' || !updatesPreviewList || !showMoreUpdatesButton) {
-            if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none'; // Ensure hidden if not applicable
+        if (!updatesPreviewList || !showMoreUpdatesButton) { // Removed currentViewMode check, setViewMode handles that
+             if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none';
             return;
         }
-    
-        // Show loading spinner (overwrites initial HTML spinner or previous content)
         updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
-        
-        showMoreUpdatesButton.style.display = 'none'; // Hide button while loading
+        showMoreUpdatesButton.style.display = 'none'; 
         updatesPreviewShownCount = 0;
-        weeklyUpdatesGroups = []; // Initialize/clear weekly updates groups
+        weeklyUpdatesGroups = []; 
     
         try {
             const rawItemsToFetch = config.UPDATES_PREVIEW_INITIAL_COUNT + (config.UPDATES_PREVIEW_LOAD_MORE_COUNT * 2);
@@ -616,31 +611,27 @@
     
             if (data && data.items && data.items.length > 0) {
                 const preprocessedItems = data.items.map(preprocessMovieData);
-                weeklyUpdatesGroups = groupItems(preprocessedItems); // Populate groups
+                weeklyUpdatesGroups = groupItems(preprocessedItems); 
                 weeklyUpdatesGroups.forEach(group => {
                     if (!allKnownGroups.has(group.groupKey) || allKnownGroups.get(group.groupKey).files.length < group.files.length) {
                          allKnownGroups.set(group.groupKey, group);
                     }
                 });
-                displayInitialUpdates(); // This will clear spinner & populate
+                displayInitialUpdates(); 
             } else {
-                // No items found from API
                 updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
                 showMoreUpdatesButton.style.display = 'none';
-                // weeklyUpdatesGroups is already empty
             }
         } catch (error) {
             if (error.name !== 'AbortError') {
                 updatesPreviewList.innerHTML = `<div class="error-message grid-status-message">Could not load updates. ${error.message}</div>`;
             }
-            // For AbortError, the spinner might remain.
             showMoreUpdatesButton.style.display = 'none';
-            // weeklyUpdatesGroups is already empty
         }
     }
     function displayInitialUpdates() {
         if (!updatesPreviewList || !showMoreUpdatesButton) return;
-        updatesPreviewList.innerHTML = ''; // Clear the list (removes spinner or previous message)
+        updatesPreviewList.innerHTML = ''; 
         updatesPreviewShownCount = 0;
         if (weeklyUpdatesGroups.length === 0) {
             updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
@@ -690,8 +681,6 @@
             groupGridItemElement.classList.add('update-item');
             fragment.appendChild(groupGridItemElement);
         });
-        // The spinner should have been cleared by displayInitialUpdates if startIndex is 0.
-        // If not (e.g., this is called directly after loadMore), the spinner isn't there anyway.
         const initialLoader = updatesPreviewList.querySelector('.loading-inline-spinner');
         if (initialLoader && startIndex === 0 && updatesPreviewList.innerHTML.includes('loading-inline-spinner')) { 
              initialLoader.remove(); 
@@ -820,7 +809,7 @@
         const scrollPosition = elementTop - stickyHeaderHeight - 20;
         window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
     }
-    window.switchTab = function(tabId) {
+    window.switchTab = async function(tabId) { // Made async
         if (currentViewMode !== 'search' || tabId === activeResultsTab || !tabMappings[tabId]) { return; }
         activeResultsTab = tabId;
         currentState.currentPage = 1;
@@ -828,12 +817,12 @@
         closePlayerIfNeeded(null);
         updateActiveTabAndPanel();
         showLoadingStateInGrids(`Loading ${tabMappings[tabId].typeFilter || 'all content'}...`);
-        fetchAndRenderResults();
+        await fetchAndRenderResults(); // Await the results
         saveStateToLocalStorage();
     }
 
     // --- Navigation to Group Detail View ---
-    function navigateToGroupView(groupKey) {
+    async function navigateToGroupView(groupKey) { // Made async
         if (!groupKey) return;
         lastFocusedElement = document.activeElement;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
@@ -844,7 +833,7 @@
         const newUrl = `${window.location.pathname}?${newUrlParams.toString()}`;
         try { history.pushState({ viewGroup: groupKey }, '', newUrl); }
         catch (e) { console.error("History pushState failed:", e); }
-        displayGroupDetail(groupKey);
+        await displayGroupDetail(groupKey); // displayGroupDetail is async
     }
 
     // --- Share Logic ---
@@ -867,12 +856,15 @@
     }
 
     // --- Group Detail Display Logic ---
-    async function displayGroupDetail(groupKey, fileIdToHighlight = null) {
+    async function displayGroupDetail(groupKey, fileIdToHighlight = null) { // Made async
         if (!groupKey || !groupDetailViewEl || !groupDetailContentEl) return;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         groupDetailAbortController = new AbortController();
         const signal = groupDetailAbortController.signal;
-        setViewMode('groupDetail');
+        
+        if (pageLoader && pageLoader.style.display === 'none') pageLoader.style.display = 'flex'; // Show page loader for group detail
+
+        await setViewMode('groupDetail'); // Await this to set classes correctly
         groupDetailContentEl.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading group details (ID: ${sanitize(groupKey)})...</span></div>`;
         currentGroupData = null;
         if (backToHomeButtonGroupDetail) backToHomeButtonGroupDetail.style.display = 'inline-flex';
@@ -882,7 +874,7 @@
         try {
             let groupData = allKnownGroups.get(groupKey);
             if (!groupData || groupData.files.length === 0) {
-                const inferredSearchTerm = groupData ? groupData.displayTitle : groupKey.split('_y')[0].replace(/_/g, ' ');
+                const inferredSearchTerm = groupData ? groupData.displayTitle : groupKey.split(/_y|_s/)[0].replace(/_/g, ' ');
                 console.log(`Group ${groupKey} not fully cached. Fetching files for title: "${inferredSearchTerm}"`);
                 const params = { search: inferredSearchTerm, limit: 500 };
                 if (groupData && groupData.isSeries) params.type = 'series';
@@ -897,16 +889,19 @@
                         groupData = foundGroup;
                         allKnownGroups.set(groupKey, groupData);
                     } else {
-                        if (!groupData) throw new Error(`Group ${groupKey} could not be found or constructed.`);
+                        if (!groupData) throw new Error(`Group ${groupKey} could not be found or constructed from search: ${inferredSearchTerm}.`);
                     }
-                } else if (!groupData) {
+                } else if (!groupData) { // If groupData was initially null and API found nothing
                      throw new Error(`No files found for group ${groupKey} (title: ${inferredSearchTerm}).`);
                 }
+                 // If groupData existed (e.g. from updates) but API gave no *new* files, we can still use existing groupData.
             }
             if (signal.aborted) return;
             currentGroupData = groupData;
+            if (!currentGroupData) throw new Error(`Failed to load data for group ${groupKey}.`); // Final check
+
             document.title = `${currentGroupData.displayTitle || 'Group Detail'} - Cinema Ghar`;
-            if (!currentGroupData.tmdbDetails || !currentGroupData.tmdbDetails.genres || !currentGroupData.tmdbDetails.hasOwnProperty('trailerKey')) { // Added trailerKey check
+            if (!currentGroupData.tmdbDetails || !currentGroupData.tmdbDetails.genres || !currentGroupData.tmdbDetails.hasOwnProperty('trailerKey')) { 
                 const tmdbQuery = new URLSearchParams();
                 tmdbQuery.set('query', currentGroupData.displayTitle);
                 tmdbQuery.set('type', currentGroupData.isSeries ? 'tv' : 'movie');
@@ -921,7 +916,7 @@
                     if (tmdbResponse.ok) {
                         const fullTmdbData = await tmdbResponse.json();
                         currentGroupData.tmdbDetails = { ...(currentGroupData.tmdbDetails || {}), ...fullTmdbData };
-                        allKnownGroups.set(groupKey, currentGroupData);
+                        allKnownGroups.set(groupKey, currentGroupData); // Update cache
                     }
                 } catch (tmdbError) {
                     clearTimeout(tmdbTimeoutId);
@@ -946,7 +941,7 @@
             if (groupDetailContentEl.innerHTML && !groupDetailContentEl.querySelector('.loading-inline-spinner')) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
-            if (pageLoader && pageLoader.style.display !== 'none') {
+            if (pageLoader && pageLoader.style.display !== 'none') { // Hide page loader after group detail setup
                 pageLoader.style.display = 'none';
             }
         }
@@ -1200,7 +1195,7 @@
         clearCopyFeedback(); clearBypassFeedback();
         if (videoTitle) videoTitle.innerText = '';
         if (wasGlobalMode) {
-            resetToHomepage();
+            resetToHomepage(); // This is async now, but closePlayer is not awaited by callers
             lastFocusedElement = null;
             return;
         }
@@ -1260,17 +1255,19 @@
                 currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc';
                 currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : '';
                 currentState.searchTerm = typeof parsedState.searchTerm === 'string' ? parsedState.searchTerm : '';
-                lastSearchTermForResults = currentState.searchTerm;
+                lastSearchTermForResults = currentState.searchTerm; // Keep this for back navigation logic
+                
+                // Determine initial currentViewMode based on saved state, but URL params will override in handleUrlChange
                 if (parsedState.viewMode === 'search' && currentState.searchTerm) {
-                    currentViewMode = 'search';
+                    currentViewMode = 'search'; // Tentative, handleUrlChange will confirm
                     activeResultsTab = typeof parsedState.activeTab === 'string' ? parsedState.activeTab : 'allFiles';
                     currentState.currentPage = typeof parsedState.currentPage === 'number' ? parsedState.currentPage : 1;
                     currentState.typeFilter = tabMappings[activeResultsTab]?.typeFilter || '';
                     if(searchInput) searchInput.value = currentState.searchTerm;
                 } else if (parsedState.viewMode === 'groupDetail' && parsedState.currentGroupKey) {
-                    currentViewMode = 'homepage'; // Start on homepage, let URL params trigger group detail
+                    currentViewMode = 'homepage'; // Default to homepage, let URL check in handleUrlChange take over
                 } else {
-                    currentViewMode = 'homepage';
+                    currentViewMode = 'homepage'; // Default
                     activeResultsTab = 'allFiles';
                     currentState.currentPage = 1;
                     currentState.typeFilter = '';
@@ -1306,7 +1303,7 @@
             const response = await fetch(url, { signal: currentSignal });
             if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); }
             const data = await response.json();
-            if (!params.id && tabMappings[activeResultsTab]) {
+            if (!params.id && activeResultsTab && tabMappings[activeResultsTab]) { // Added activeResultsTab check
                 const activePagination = tabMappings[activeResultsTab]?.pagination;
                 if (activePagination && data.totalPages !== undefined) {
                     activePagination.dataset.totalPages = data.totalPages;
@@ -1320,11 +1317,11 @@
         if (currentViewMode !== 'search') return;
         try {
             const apiResponse = await fetchApiData();
-            if (apiResponse === null) return; // Aborted
+            if (apiResponse === null) return; 
             renderActiveResultsView(apiResponse);
             saveStateToLocalStorage();
         } catch (error) {
-            if (error.name !== 'AbortError') {
+            if (error.name !== 'AbortError' && activeResultsTab && tabMappings[activeResultsTab]) { // Added activeResultsTab check
                 const { gridContainer } = tabMappings[activeResultsTab];
                 if (gridContainer) { gridContainer.innerHTML = `<div class="error-message grid-status-message">Error loading results: ${error.message}. Please try again.</div>`; }
                 Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; });
@@ -1342,61 +1339,58 @@
         updateFilterIndicator();
     }
     function displayLoadError(message) { const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (groupDetailContentEl) groupDetailContentEl.innerHTML = ''; if (groupDetailViewEl) groupDetailViewEl.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'item-detail-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
-    async function initializeApp() {
-        isInitialLoad = true;
+    
+    async function initializeApp() { // Made async
+        isInitialLoad = true; // Set true before any view determination
         if (pageLoader) pageLoader.style.display = 'flex';
-        loadStateFromLocalStorage();
+    
+        loadStateFromLocalStorage(); // Sets initial currentState.currentViewMode
         if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); }
     
+        // Fetch suggestion data (does not block critical path for initial view rendering)
         try {
             const initialDataLimit = Math.max(500, config.UPDATES_PREVIEW_INITIAL_COUNT * 5);
-            // Fetch data primarily for suggestions and quality filter population
             const initialApiData = await fetchApiData({ limit: initialDataLimit, sort: 'lastUpdated', sortDir: 'desc' });
-    
             if (initialApiData && initialApiData.items && initialApiData.items.length > 0) {
                 const preprocessedInitialItems = initialApiData.items.map(preprocessMovieData);
                 localSuggestionData = preprocessedInitialItems;
                 populateQualityFilter(preprocessedInitialItems);
             } else {
-                // No initial data or empty items for suggestions
                 localSuggestionData = [];
                 populateQualityFilter([]);
-                console.warn("Initial data fetch for suggestions/qualities yielded no items or failed.");
             }
         } catch (e) {
             if (e.name !== 'AbortError') {
-                console.error("Error during initial data fetch for suggestions/qualities:", e);
+                console.error("Error during initial suggestion/quality data fetch:", e);
                 localSuggestionData = [];
                 populateQualityFilter([]);
             }
         }
     
-        // Always attempt to load updates if on the homepage path,
-        // regardless of the outcome of the suggestions data fetch.
-        // loadUpdatesPreview has its own error handling for the updates list.
-        if (currentViewMode === 'homepage' || (isInitialLoad && !currentState.searchTerm && !new URLSearchParams(window.location.search).has('viewGroup'))) {
-            try {
-                await loadUpdatesPreview();
-            } catch (updateError) {
-                // This catch is mostly for unexpected errors from loadUpdatesPreview itself,
-                // as its internal try/catch should handle API errors and update the UI.
-                if (updateError.name !== 'AbortError') {
-                    console.error("Error calling loadUpdatesPreview:", updateError);
-                    if (updatesPreviewList && !updatesPreviewList.querySelector('.error-message') && !updatesPreviewList.querySelector('.grid-item') && !updatesPreviewList.querySelector('.update-item')) {
-                         updatesPreviewList.innerHTML = `<div class="error-message grid-status-message">A problem occurred while loading recent updates.</div>`;
-                    }
-                }
+        // IMPORTANT: Await handleUrlChange to ensure initial view (especially homepage updates)
+        // is processed before potentially hiding the pageLoader too early.
+        await handleUrlChange(); 
+    
+        // Logic for restoring search results if that was the last view state
+        // (handleUrlChange would have set currentViewMode to 'search' if q param was present)
+        if (currentViewMode === 'search' && currentState.searchTerm) {
+            if (allFilesGridContainer && allFilesGridContainer.querySelector('.loading-message')) { // Check if search results need rendering
+                 if(searchInput) searchInput.value = currentState.searchTerm;
+                 // showLoadingStateInGrids might have been called by handleSearchSubmit inside handleUrlChange
+                 // fetchAndRenderResults is also likely called by handleSearchSubmit.
+                 // This might be redundant if handleUrlChange correctly triggers search.
+                 // However, if restoring from localStorage without 'q' in URL, this ensures search view.
+                 if (!new URLSearchParams(window.location.search).has('q')) {
+                    showLoadingStateInGrids(`Loading search results for "${sanitize(currentState.searchTerm)}"...`);
+                    await fetchAndRenderResults();
+                 }
             }
         }
-        
-        handleUrlChange(); // This will call setViewMode which relies on the state set by loadUpdatesPreview
     
-        if (currentViewMode === 'search' && currentState.searchTerm && allFilesGridContainer && allFilesGridContainer.querySelector('.loading-message')) {
-             if(searchInput) searchInput.value = currentState.searchTerm;
-             showLoadingStateInGrids(`Loading search results for "${sanitize(currentState.searchTerm)}"...`);
-             fetchAndRenderResults();
-        }
-        if (currentViewMode !== 'groupDetail' && pageLoader && pageLoader.style.display !== 'none') {
+        // Hide general page loader if it's still visible and not handled by specific views
+        const urlParams = new URLSearchParams(window.location.search);
+        if (pageLoader && pageLoader.style.display !== 'none' &&
+            !(currentViewMode === 'groupDetail' || urlParams.get('shareId') || urlParams.get('viewId')) ) {
              pageLoader.style.display = 'none';
         }
     }
@@ -1408,7 +1402,7 @@
          if (groupGridItemTrigger) {
              event.preventDefault();
              const groupKey = groupGridItemTrigger.dataset.groupKey;
-             if (groupKey) { navigateToGroupView(groupKey); }
+             if (groupKey) { navigateToGroupView(groupKey); } // navigateToGroupView is async
              else { console.error("Could not find groupKey for grid item navigation."); }
              return;
          }
@@ -1545,7 +1539,7 @@
 
     // --- Add Event Listeners ---
     document.addEventListener('DOMContentLoaded', async () => {
-         await initializeApp();
+         await initializeApp(); // initializeApp is now async
          if (searchInput) { searchInput.addEventListener('input', handleSearchInput); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); handleSearchSubmit(); } else if (event.key === 'Escape') { suggestionsContainer.style.display = 'none'; } }); searchInput.addEventListener('search', handleSearchClear); searchInput.addEventListener('blur', () => { setTimeout(() => { const searchButton = document.getElementById('searchSubmitButton'); if (document.activeElement !== searchInput && !suggestionsContainer.contains(document.activeElement) && document.activeElement !== searchButton) { suggestionsContainer.style.display = 'none'; } }, 150); }); }
          if (qualityFilterSelect) { qualityFilterSelect.addEventListener('change', triggerFilterChange); }
          if (container) { container.addEventListener('click', handleContentClick); }
