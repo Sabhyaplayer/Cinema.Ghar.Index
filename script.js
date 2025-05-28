@@ -409,10 +409,16 @@
         const showHomepage = mode === 'homepage';
         const showSearch = mode === 'search';
         const showGroupDetail = mode === 'groupDetail';
+
         if (searchFocusArea) searchFocusArea.style.display = (showHomepage || showSearch) ? 'flex' : 'none';
         if (resultsArea) resultsArea.style.display = showSearch ? 'block' : 'none';
         if (groupDetailViewEl) groupDetailViewEl.style.display = showGroupDetail ? 'block' : 'none';
-        if (updatesPreviewSection) updatesPreviewSection.style.display = showHomepage ? 'block' : 'none';
+        
+        // Manage visibility of updatesPreviewSection based on current view
+        if (updatesPreviewSection) {
+            updatesPreviewSection.style.display = showHomepage ? 'block' : 'none';
+        }
+        
         if (pageFooter) pageFooter.style.display = (showHomepage || showSearch) ? 'flex' : 'none';
 
         if (showHomepage) {
@@ -420,25 +426,36 @@
             currentState.searchTerm = '';
             if (suggestionsContainer) suggestionsContainer.style.display = 'none';
             activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = '';
-            if (weeklyUpdatesGroups.length > 0) { displayInitialUpdates(); }
-            else if (localSuggestionData.length > 0) {
-                 if (updatesPreviewList) updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
-                 if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none';
-            } else {
-                if (updatesPreviewList) updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
+            
+            // If we are on the homepage and updates have been loaded into weeklyUpdatesGroups,
+            // ensure they are displayed. loadUpdatesPreview() (called by initializeApp)
+            // handles the initial spinner and then populating with items or a "no updates" message.
+            // This check ensures that if loadUpdatesPreview was slow and populated items later,
+            // or if the user navigates back to homepage after items were loaded, they are re-rendered.
+            if (weeklyUpdatesGroups.length > 0) {
+                displayInitialUpdates(); // This will clear and re-render items from weeklyUpdatesGroups
             }
+            // If weeklyUpdatesGroups is still empty at this point, the state set by loadUpdatesPreview
+            // (e.g., "No recent updates found" or a spinner if it's somehow still running) will persist.
+            // We don't need to explicitly set "No updates" or spinner messages here for updatesPreviewList,
+            // as loadUpdatesPreview is the primary controller for its initial content.
+
             document.title = "Cinema Ghar Index";
             currentGroupData = null;
         } else if (showGroupDetail) {
+            // Updates preview section visibility is handled above
             if (searchFocusArea) searchFocusArea.style.display = 'none';
             if (resultsArea) resultsArea.style.display = 'none';
-            if (updatesPreviewSection) updatesPreviewSection.style.display = 'none';
+            // if (updatesPreviewSection) updatesPreviewSection.style.display = 'none'; // Handled above
             if (pageFooter) pageFooter.style.display = 'none';
         } else if (showSearch) {
+            // Updates preview section visibility is handled above
+            // if (updatesPreviewSection) updatesPreviewSection.style.display = 'none'; // Handled above
             currentGroupData = null;
         }
         if (!isInitialLoad) { saveStateToLocalStorage(); }
     }
+
     window.resetToHomepage = function(event) {
         if (window.history.pushState) { const cleanUrl = window.location.origin + window.location.pathname; if (window.location.search !== '') { window.history.pushState({ path: cleanUrl }, '', cleanUrl); } }
         currentGroupData = null;
@@ -1239,7 +1256,7 @@
                     currentState.typeFilter = tabMappings[activeResultsTab]?.typeFilter || '';
                     if(searchInput) searchInput.value = currentState.searchTerm;
                 } else if (parsedState.viewMode === 'groupDetail' && parsedState.currentGroupKey) {
-                    currentViewMode = 'homepage';
+                    currentViewMode = 'homepage'; // Will be redirected by handleUrlChange if groupKey is still in URL
                 } else {
                     currentViewMode = 'homepage';
                     activeResultsTab = 'allFiles';
@@ -1326,25 +1343,39 @@
                 const preprocessedInitialItems = initialApiData.items.map(preprocessMovieData);
                 localSuggestionData = preprocessedInitialItems;
                 populateQualityFilter(preprocessedInitialItems);
-                if (currentViewMode === 'homepage' || (isInitialLoad && !currentState.searchTerm && !new URLSearchParams(window.location.search).has('viewGroup'))) {
-                     await loadUpdatesPreview();
-                }
+                
+                // Always call loadUpdatesPreview for initial homepage state.
+                // It will manage its own content (spinner, items, or "no updates").
+                // setViewMode later will just ensure the section is visible.
+                await loadUpdatesPreview();
+                
             } else {
-                if (currentViewMode === 'homepage' && updatesPreviewList && !updatesPreviewList.hasChildNodes()) {
+                // If initialApiData for suggestions fails or is empty
+                if (updatesPreviewList && !updatesPreviewList.hasChildNodes() && weeklyUpdatesGroups.length === 0) {
+                    // loadUpdatesPreview would have already set a spinner or message.
+                    // If it resulted in "no updates", that message should already be there.
+                    // This fallback might be redundant if loadUpdatesPreview is robust.
                     updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">Could not load initial data for updates.</div>';
                 }
-                populateQualityFilter([]);
+                populateQualityFilter([]); // Populate with empty if suggestions failed
+                if (currentViewMode === 'homepage' && weeklyUpdatesGroups.length === 0) {
+                    // Ensure updates preview shows 'no updates' if its own fetch failed.
+                    await loadUpdatesPreview(); 
+                }
             }
         } catch (e) {
             if (e.name !== 'AbortError') {
                 console.error("Error during initial data fetch for suggestions/updates:", e);
-                if (currentViewMode === 'homepage' && updatesPreviewList && !updatesPreviewList.hasChildNodes()) {
+                if (updatesPreviewList && !updatesPreviewList.hasChildNodes() && weeklyUpdatesGroups.length === 0) {
                     updatesPreviewList.innerHTML = `<div class="error-message grid-status-message">Error loading initial data: ${e.message}.</div>`;
                 }
-                 populateQualityFilter([]);
+                populateQualityFilter([]);
+                if (currentViewMode === 'homepage' && weeklyUpdatesGroups.length === 0) {
+                    await loadUpdatesPreview(); // Attempt to show error/status in updates
+                }
             }
         }
-        handleUrlChange();
+        handleUrlChange(); // This will set the view mode correctly
         if (currentViewMode === 'search' && currentState.searchTerm && allFilesGridContainer.querySelector('.loading-message')) {
              if(searchInput) searchInput.value = currentState.searchTerm;
              showLoadingStateInGrids(`Loading search results for "${sanitize(currentState.searchTerm)}"...`);
