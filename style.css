@@ -29,7 +29,7 @@
 --pagination-disabled-color: #adb5bd;
 --pagination-disabled-bg: #ffffff;
 --pagination-disabled-border: #dee2e6;
---filter-active-border: var(--primary-color); / Changed to primary for active filter */
+--filter-active-border: var(--primary-color);
 --tab-active-border: var(--primary-color);
 --tab-hover-bg: #e9ecef;
 --suggestion-hover-bg: #e9ecef;
