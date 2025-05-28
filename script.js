@@ -1,4 +1,4 @@
-// --- START OF script.js (MODIFIED FOR GROUPING, GRID VIEW, GROUP DETAIL VIEW + TRAILER EMBED + CLICKABLE FILENAME ACTIONS) ---
+// --- START OF script.js (MODIFIED FOR GROUPING, GRID VIEW, GROUP DETAIL VIEW + TRAILER EMBED + DIRECT HUB/GDFLIX LINKS) ---
 (function() {
     'use strict';
 
@@ -9,7 +9,7 @@
         HDR_LOGO_URL: "https://as1.ftcdn.net/v2/jpg/05/32/83/72/1000_F_532837228_v8CGZRU0jy39uCtqFRnJz6xDntrGuLLx.webp",
         FOURK_LOGO_URL: "https://i.pinimg.com/736x/85/c4/b0/85c4b0a2fb8612825d0cd2f53460925f.jpg",
         ITEMS_PER_PAGE: 50,
-        LOCAL_STORAGE_KEY: 'cinemaGharState_v19_grouping_trailer_links_clickableActions', // Incremented version
+        LOCAL_STORAGE_KEY: 'cinemaGharState_v18_grouping_trailer_links', // Incremented version
         PLAYER_VOLUME_KEY: 'cinemaGharPlayerVolume',
         PLAYER_SPEED_KEY: 'cinemaGharPlayerSpeed',
         SEARCH_DEBOUNCE_DELAY: 300,
@@ -413,20 +413,25 @@
         if (resultsArea) resultsArea.style.display = showSearch ? 'block' : 'none';
         if (groupDetailViewEl) groupDetailViewEl.style.display = showGroupDetail ? 'block' : 'none';
         if (pageFooter) pageFooter.style.display = (showHomepage || showSearch) ? 'flex' : 'none';
-
+    
         if (showHomepage) {
             if (searchInput) searchInput.value = '';
             currentState.searchTerm = '';
             if (suggestionsContainer) suggestionsContainer.style.display = 'none';
             activeResultsTab = 'allFiles'; currentState.currentPage = 1; currentState.typeFilter = '';
-
+            
             if (updatesPreviewSection) updatesPreviewSection.style.display = 'block';
 
+            // Decision to load/display updates:
             if (weeklyUpdatesGroups.length === 0) {
-                await loadUpdatesPreview();
+                // No data fetched yet, or previous fetch failed. loadUpdatesPreview handles spinner.
+                await loadUpdatesPreview(); // Await this critical load
             } else if (updatesPreviewList && (!updatesPreviewList.querySelector('.grid-item') && !updatesPreviewList.querySelector('.update-item'))) {
+                // Data exists, but nothing rendered (e.g., navigating back to homepage).
                 displayInitialUpdates();
             }
+            // "Show More" button state is managed by displayInitialUpdates/appendMoreUpdates.
+            // If no items after load/display, they will hide the button.
             if (showMoreUpdatesButton) {
                  if (weeklyUpdatesGroups.length > 0 && weeklyUpdatesGroups.length > updatesPreviewShownCount && updatesPreviewShownCount > 0) {
                     showMoreUpdatesButton.style.display = 'block';
@@ -434,7 +439,7 @@
                     showMoreUpdatesButton.style.display = 'none';
                  }
             }
-
+            
             document.title = "Cinema Ghar Index";
             currentGroupData = null;
         } else if (showGroupDetail) {
@@ -446,9 +451,9 @@
             currentGroupData = null;
             if (updatesPreviewSection) updatesPreviewSection.style.display = 'none';
         }
-        if (!isInitialLoad) { saveStateToLocalStorage(); }
+        if (!isInitialLoad) { saveStateToLocalStorage(); } // isInitialLoad will be false after first full setup
     }
-    window.resetToHomepage = async function(event) {
+    window.resetToHomepage = async function(event) { // Made async to align with setViewMode
         if (window.history.pushState) { const cleanUrl = window.location.origin + window.location.pathname; if (window.location.search !== '') { window.history.pushState({ path: cleanUrl }, '', cleanUrl); } }
         currentGroupData = null;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
@@ -456,7 +461,7 @@
         await setViewMode('homepage');
         if (searchInput) { setTimeout(() => searchInput.focus(), 100); }
     }
-    window.goBackToResults = function() {
+    window.goBackToResults = function() { // No need for async here, it manipulates URL then calls handleUrlChange
         currentGroupData = null;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         if (currentState.searchTerm || lastSearchTermForResults) {
@@ -467,14 +472,14 @@
             const newQuery = urlParams.toString();
             const targetUrl = window.location.pathname + (newQuery ? `?${newQuery}` : '');
             history.pushState({}, '', targetUrl);
-            handleUrlChange(true);
+            handleUrlChange(true); // Let handleUrlChange (now async) manage it
         } else {
-            history.back();
+            history.back(); // This will trigger popstate -> handleUrlChange
         }
     }
-    window.addEventListener('popstate', (event) => { handleUrlChange(true); });
+    window.addEventListener('popstate', (event) => { handleUrlChange(true); }); // handleUrlChange is async
 
-    async function handleUrlChange(isPopState = false) {
+    async function handleUrlChange(isPopState = false) { // Made async
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         const urlParams = new URLSearchParams(window.location.search);
         const groupKey = urlParams.get('viewGroup');
@@ -482,15 +487,15 @@
         const legacyShareId = urlParams.get('shareId');
         const legacyViewId = urlParams.get('viewId');
         const queryParam = urlParams.get('q');
-
+    
         let viewChanged = false;
-
+    
         if (groupKey) {
-            await displayGroupDetail(groupKey, fileIdToOpen);
+            await displayGroupDetail(groupKey, fileIdToOpen); // displayGroupDetail is async
             viewChanged = true;
         } else if (legacyShareId || legacyViewId) {
             const targetFileId = legacyShareId || legacyViewId;
-            await handleLegacyFileLink(targetFileId);
+            await handleLegacyFileLink(targetFileId); // handleLegacyFileLink is async
             urlParams.delete('shareId');
             urlParams.delete('viewId');
             const newQueryString = urlParams.toString();
@@ -499,27 +504,30 @@
         } else if (queryParam) {
             if (currentViewMode !== 'search' || currentState.searchTerm !== queryParam || (isInitialLoad && !isPopState)) {
                 searchInput.value = queryParam;
-                handleSearchSubmit(false);
+                // handleSearchSubmit itself is not async, but it calls async setViewMode and fetchAndRenderResults.
+                // For initial load, the await on handleUrlChange in initializeApp will cover this.
+                handleSearchSubmit(false); 
             } else {
-                 await setViewMode('search');
+                 await setViewMode('search'); // Ensure search view is active
             }
             viewChanged = true;
         } else {
+            // Default to homepage if no other conditions met or if explicitly navigating
             if (currentViewMode !== 'homepage' || isInitialLoad || isPopState ) {
                 await setViewMode('homepage');
             }
             viewChanged = true;
         }
-
-        if (!viewChanged && isInitialLoad) {
+        
+        if (!viewChanged && isInitialLoad) { // Fallback, should not be typically hit with the logic above
             await setViewMode('homepage');
         }
 
         if (isInitialLoad) {
-            isInitialLoad = false;
+            isInitialLoad = false; // Set after the first full view determination and setup
         }
     }
-    async function handleLegacyFileLink(fileId) {
+    async function handleLegacyFileLink(fileId) { // Made async
         if (pageLoader) pageLoader.style.display = 'flex';
         try {
             const fileDataResponse = await fetchApiData({ id: fileId });
@@ -530,7 +538,7 @@
                 newUrlParams.set('viewGroup', groupKey);
                 newUrlParams.set('fileId', fileId);
                 history.replaceState({ viewGroup: groupKey, fileId: fileId }, '', `${window.location.pathname}?${newUrlParams.toString()}`);
-                await displayGroupDetail(groupKey, fileId);
+                await displayGroupDetail(groupKey, fileId); // displayGroupDetail is async
             } else {
                 console.warn(`Legacy file ID ${fileId} not found. Redirecting to homepage.`);
                 await resetToHomepage();
@@ -539,6 +547,7 @@
             console.error(`Error handling legacy file link for ID ${fileId}:`, error);
             await resetToHomepage();
         } finally {
+            // displayGroupDetail manages its own loader hiding if successful
             if (pageLoader && pageLoader.style.display !== 'none' && !(currentViewMode === 'groupDetail')) {
                  pageLoader.style.display = 'none';
             }
@@ -549,7 +558,7 @@
     function handleSearchInput() { clearTimeout(suggestionDebounceTimeout); const searchTerm = searchInput.value.trim(); if (searchTerm.length < 2) { suggestionsContainer.style.display = 'none'; return; } suggestionDebounceTimeout = setTimeout(() => { fetchAndDisplaySuggestions(searchTerm); }, config.SUGGESTIONS_DEBOUNCE_DELAY); }
     function fetchAndDisplaySuggestions(term) { const normalizedTerm = normalizeTextForSearch(term); if (!normalizedTerm) { suggestionsContainer.style.display = 'none'; return; } const matchingItems = localSuggestionData.filter(movie => movie.searchText.includes(normalizedTerm)).slice(0, config.MAX_SUGGESTIONS); suggestionsContainer.innerHTML = ''; if (matchingItems.length > 0) { const fragment = document.createDocumentFragment(); matchingItems.forEach(item => { const div = document.createElement('div'); let displayText = item.displayFilename; let highlighted = false; if (term.length > 0) { try { const safeTerm = escapeRegExp(term); const regex = new RegExp(`(${safeTerm})`, 'i'); if ((item.displayFilename || '').match(regex)) { div.innerHTML = (item.displayFilename || '').replace(regex, '<strong>$1</strong>'); highlighted = true; } } catch (e) { console.warn("Regex error for highlight:", e); } } if (!highlighted) { div.textContent = item.displayFilename; } div.title = item.displayFilename; div.onclick = () => selectSuggestion(item.displayFilename); fragment.appendChild(div); }); suggestionsContainer.appendChild(fragment); suggestionsContainer.style.display = 'block'; } else { suggestionsContainer.style.display = 'none'; } }
     function selectSuggestion(selectedValue) { searchInput.value = selectedValue; suggestionsContainer.style.display = 'none'; handleSearchSubmit(); }
-    window.handleSearchSubmit = async function(pushHistory = true) {
+    window.handleSearchSubmit = async function(pushHistory = true) { // Made async due to setViewMode
         if (suggestionsContainer) { suggestionsContainer.style.display = 'none'; }
         const searchTerm = searchInput.value.trim();
         if (searchInput) { searchInput.blur(); }
@@ -560,7 +569,7 @@
             currentGroupData = null;
         }
         lastSearchTermForResults = searchTerm;
-        await setViewMode('search');
+        await setViewMode('search'); // setViewMode is async
         activeResultsTab = 'allFiles';
         currentState.currentPage = 1;
         currentState.searchTerm = searchTerm;
@@ -573,7 +582,7 @@
         }
         updateActiveTabAndPanel();
         showLoadingStateInGrids(`Searching for "${sanitize(searchTerm)}"...`);
-        fetchAndRenderResults();
+        fetchAndRenderResults(); // This is already async and handles its rendering
     }
     function handleSearchClear() { clearTimeout(suggestionDebounceTimeout); suggestionsContainer.style.display = 'none'; setTimeout(async () => { if (searchInput.value.trim() === '') { if (currentViewMode === 'search') { await resetToHomepage(); } else { currentState.searchTerm = ''; saveStateToLocalStorage(); } } }, 100); }
     function showLoadingStateInGrids(message = 'Loading...') {
@@ -586,29 +595,29 @@
 
     // --- Updates Preview Logic ---
     async function loadUpdatesPreview() {
-        if (!updatesPreviewList || !showMoreUpdatesButton) {
+        if (!updatesPreviewList || !showMoreUpdatesButton) { // Removed currentViewMode check, setViewMode handles that
              if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none';
             return;
         }
         updatesPreviewList.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading updates...</span></div>`;
-        showMoreUpdatesButton.style.display = 'none';
+        showMoreUpdatesButton.style.display = 'none'; 
         updatesPreviewShownCount = 0;
-        weeklyUpdatesGroups = [];
-
+        weeklyUpdatesGroups = []; 
+    
         try {
             const rawItemsToFetch = config.UPDATES_PREVIEW_INITIAL_COUNT + (config.UPDATES_PREVIEW_LOAD_MORE_COUNT * 2);
             const params = { sort: 'lastUpdated', sortDir: 'desc', limit: rawItemsToFetch, page: 1 };
             const data = await fetchApiData(params);
-
+    
             if (data && data.items && data.items.length > 0) {
                 const preprocessedItems = data.items.map(preprocessMovieData);
-                weeklyUpdatesGroups = groupItems(preprocessedItems);
+                weeklyUpdatesGroups = groupItems(preprocessedItems); 
                 weeklyUpdatesGroups.forEach(group => {
                     if (!allKnownGroups.has(group.groupKey) || allKnownGroups.get(group.groupKey).files.length < group.files.length) {
                          allKnownGroups.set(group.groupKey, group);
                     }
                 });
-                displayInitialUpdates();
+                displayInitialUpdates(); 
             } else {
                 updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
                 showMoreUpdatesButton.style.display = 'none';
@@ -622,7 +631,7 @@
     }
     function displayInitialUpdates() {
         if (!updatesPreviewList || !showMoreUpdatesButton) return;
-        updatesPreviewList.innerHTML = '';
+        updatesPreviewList.innerHTML = ''; 
         updatesPreviewShownCount = 0;
         if (weeklyUpdatesGroups.length === 0) {
             updatesPreviewList.innerHTML = '<div class="status-message grid-status-message">No recent updates found.</div>';
@@ -673,8 +682,8 @@
             fragment.appendChild(groupGridItemElement);
         });
         const initialLoader = updatesPreviewList.querySelector('.loading-inline-spinner');
-        if (initialLoader && startIndex === 0 && updatesPreviewList.innerHTML.includes('loading-inline-spinner')) {
-             initialLoader.remove();
+        if (initialLoader && startIndex === 0 && updatesPreviewList.innerHTML.includes('loading-inline-spinner')) { 
+             initialLoader.remove(); 
         }
         updatesPreviewList.appendChild(fragment);
     }
@@ -800,7 +809,7 @@
         const scrollPosition = elementTop - stickyHeaderHeight - 20;
         window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
     }
-    window.switchTab = async function(tabId) {
+    window.switchTab = async function(tabId) { // Made async
         if (currentViewMode !== 'search' || tabId === activeResultsTab || !tabMappings[tabId]) { return; }
         activeResultsTab = tabId;
         currentState.currentPage = 1;
@@ -808,12 +817,12 @@
         closePlayerIfNeeded(null);
         updateActiveTabAndPanel();
         showLoadingStateInGrids(`Loading ${tabMappings[tabId].typeFilter || 'all content'}...`);
-        await fetchAndRenderResults();
+        await fetchAndRenderResults(); // Await the results
         saveStateToLocalStorage();
     }
 
     // --- Navigation to Group Detail View ---
-    async function navigateToGroupView(groupKey) {
+    async function navigateToGroupView(groupKey) { // Made async
         if (!groupKey) return;
         lastFocusedElement = document.activeElement;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
@@ -824,7 +833,7 @@
         const newUrl = `${window.location.pathname}?${newUrlParams.toString()}`;
         try { history.pushState({ viewGroup: groupKey }, '', newUrl); }
         catch (e) { console.error("History pushState failed:", e); }
-        await displayGroupDetail(groupKey);
+        await displayGroupDetail(groupKey); // displayGroupDetail is async
     }
 
     // --- Share Logic ---
@@ -847,15 +856,15 @@
     }
 
     // --- Group Detail Display Logic ---
-    async function displayGroupDetail(groupKey, fileIdToHighlight = null) {
+    async function displayGroupDetail(groupKey, fileIdToHighlight = null) { // Made async
         if (!groupKey || !groupDetailViewEl || !groupDetailContentEl) return;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         groupDetailAbortController = new AbortController();
         const signal = groupDetailAbortController.signal;
+        
+        if (pageLoader && pageLoader.style.display === 'none') pageLoader.style.display = 'flex'; // Show page loader for group detail
 
-        if (pageLoader && pageLoader.style.display === 'none') pageLoader.style.display = 'flex';
-
-        await setViewMode('groupDetail');
+        await setViewMode('groupDetail'); // Await this to set classes correctly
         groupDetailContentEl.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading group details (ID: ${sanitize(groupKey)})...</span></div>`;
         currentGroupData = null;
         if (backToHomeButtonGroupDetail) backToHomeButtonGroupDetail.style.display = 'inline-flex';
@@ -882,16 +891,17 @@
                     } else {
                         if (!groupData) throw new Error(`Group ${groupKey} could not be found or constructed from search: ${inferredSearchTerm}.`);
                     }
-                } else if (!groupData) {
+                } else if (!groupData) { // If groupData was initially null and API found nothing
                      throw new Error(`No files found for group ${groupKey} (title: ${inferredSearchTerm}).`);
                 }
+                 // If groupData existed (e.g. from updates) but API gave no *new* files, we can still use existing groupData.
             }
             if (signal.aborted) return;
             currentGroupData = groupData;
-            if (!currentGroupData) throw new Error(`Failed to load data for group ${groupKey}.`);
+            if (!currentGroupData) throw new Error(`Failed to load data for group ${groupKey}.`); // Final check
 
             document.title = `${currentGroupData.displayTitle || 'Group Detail'} - Cinema Ghar`;
-            if (!currentGroupData.tmdbDetails || !currentGroupData.tmdbDetails.genres || !currentGroupData.tmdbDetails.hasOwnProperty('trailerKey')) {
+            if (!currentGroupData.tmdbDetails || !currentGroupData.tmdbDetails.genres || !currentGroupData.tmdbDetails.hasOwnProperty('trailerKey')) { 
                 const tmdbQuery = new URLSearchParams();
                 tmdbQuery.set('query', currentGroupData.displayTitle);
                 tmdbQuery.set('type', currentGroupData.isSeries ? 'tv' : 'movie');
@@ -906,7 +916,7 @@
                     if (tmdbResponse.ok) {
                         const fullTmdbData = await tmdbResponse.json();
                         currentGroupData.tmdbDetails = { ...(currentGroupData.tmdbDetails || {}), ...fullTmdbData };
-                        allKnownGroups.set(groupKey, currentGroupData);
+                        allKnownGroups.set(groupKey, currentGroupData); // Update cache
                     }
                 } catch (tmdbError) {
                     clearTimeout(tmdbTimeoutId);
@@ -931,7 +941,7 @@
             if (groupDetailContentEl.innerHTML && !groupDetailContentEl.querySelector('.loading-inline-spinner')) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
-            if (pageLoader && pageLoader.style.display !== 'none') {
+            if (pageLoader && pageLoader.style.display !== 'none') { // Hide page loader after group detail setup
                 pageLoader.style.display = 'none';
             }
         }
@@ -1012,19 +1022,12 @@
                 setTimeout(() => {
                     fileElement.scrollIntoView({ behavior: 'auto', block: 'center' });
                     fileElement.classList.add('highlighted-file');
-                    // MODIFIED: If actions should open for highlighted file, trigger it.
-                    const filenameToggler = fileElement.querySelector('.clickable-filename[data-action="toggle-file-actions"]');
-                    if (filenameToggler) {
-                         // Simulate a click event to trigger the toggle logic correctly
-                         const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
-                         filenameToggler.dispatchEvent(clickEvent);
-                    }
                     setTimeout(() => fileElement.classList.remove('highlighted-file'), 2500);
                 }, 200);
             }
         }
     }
-    // MODIFIED: createGroupDetailFileListItemHTML
+
     function createGroupDetailFileListItemHTML(file, groupData) {
         const displayFilename = file.displayFilename;
         const displaySize = file.sizeData.display;
@@ -1037,102 +1040,75 @@
         const lowerFilename = (displayFilename || '').toLowerCase();
         if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
         if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
-
         const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
         const escapedFilename = displayFilename.replace(/'/g, "\\'");
         const escapedUrl = file.url ? file.url.replace(/'/g, "\\'") : '';
-        const escapedFileId = file.id ? String(file.id).replace(/[^a-zA-Z0-9-_]/g, '') : ('file-' + Math.random().toString(36).substring(2, 10)); // Fallback for unique ID
+        const escapedFileId = file.id ? String(file.id).replace(/[^a-zA-Z0-9-_]/g, '') : '';
         const escapedGroupKey = groupData.groupKey.replace(/'/g, "\\'");
         const escapedHubcloudUrl = file.hubcloud_link ? file.hubcloud_link.replace(/'/g, "\\'") : '';
         const escapedGdflixUrl = file.gdflix_link ? file.gdflix_link.replace(/'/g, "\\'") : '';
 
-        let fileActionsContentHTML = '';
-
+        let fileActionButtonsHTML = '<div class="file-actions">';
         if (file.url) {
-            fileActionsContentHTML += `<button class="button play-button" data-action="play-file" data-file-id="${escapedFileId}" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play</button>`;
-            fileActionsContentHTML += `<a class="button download-button" href="${file.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Download</a>`;
-            fileActionsContentHTML += `<button class="button vlc-button" data-action="copy-vlc-file" data-file-id="${escapedFileId}" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL</button><span class="copy-feedback" role="status" aria-live="polite"></span>`;
+            fileActionButtonsHTML += `<button class="button play-button" data-action="play-file" data-file-id="${escapedFileId}" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play</button>`;
+            fileActionButtonsHTML += `<a class="button download-button" href="${file.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Download</a>`;
+            fileActionButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc-file" data-file-id="${escapedFileId}" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL</button><span class="copy-feedback" role="status" aria-live="polite"></span>`;
             if (navigator.userAgent.toLowerCase().includes("android")) {
-                fileActionsContentHTML += `<button class="button intent-button" data-action="open-intent-file" data-file-id="${escapedFileId}" data-url="${escapedUrl}" data-title="${escapedStreamTitle}"><span aria-hidden="true">📱</span> Play External</button>`;
+                fileActionButtonsHTML += `<button class="button intent-button" data-action="open-intent-file" data-file-id="${escapedFileId}" data-url="${escapedUrl}" data-title="${escapedStreamTitle}"><span aria-hidden="true">📱</span> Play External</button>`;
             }
         }
 
+        // Bypass Buttons
         if (file.hubcloud_link) {
-            fileActionsContentHTML += `<button class="button hubcloud-bypass-button" data-action="bypass-hubcloud-file" data-file-id="${escapedFileId}" data-hubcloud-url="${escapedHubcloudUrl}"><span aria-hidden="true" class="button-icon">☁️</span><span class="button-spinner spinner"></span><span class="button-text">Bypass HubCloud</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`;
+            fileActionButtonsHTML += `<button class="button hubcloud-bypass-button" data-action="bypass-hubcloud-file" data-file-id="${escapedFileId}" data-hubcloud-url="${escapedHubcloudUrl}"><span aria-hidden="true" class="button-icon">☁️</span><span class="button-spinner spinner"></span><span class="button-text">Bypass HubCloud</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`;
         }
         if (file.gdflix_link) {
-            fileActionsContentHTML += `<button class="button gdflix-bypass-button" data-action="bypass-gdflix-file" data-file-id="${escapedFileId}" data-gdflix-url="${escapedGdflixUrl}"><span aria-hidden="true" class="button-icon">🎬</span><span class="button-spinner spinner"></span><span class="button-text">Bypass GDFLIX</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`;
+            fileActionButtonsHTML += `<button class="button gdflix-bypass-button" data-action="bypass-gdflix-file" data-file-id="${escapedFileId}" data-gdflix-url="${escapedGdflixUrl}"><span aria-hidden="true" class="button-icon">🎬</span><span class="button-spinner spinner"></span><span class="button-text">Bypass GDFLIX</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`;
         }
-
+        
+        // Direct Link Buttons (shown if the link exists, IN ADDITION to any bypass button)
         if (file.hubcloud_link) {
-            fileActionsContentHTML += `<a class="button hubcloud-button" href="${sanitize(file.hubcloud_link)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">☁️</span> HubCloud Link</a>`;
+            fileActionButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(file.hubcloud_link)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">☁️</span> HubCloud Link</a>`;
         }
         if (file.gdflix_link) {
-            fileActionsContentHTML += `<a class="button gdflix-button" href="${sanitize(file.gdflix_link)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">🎬</span> GDFLIX Link</a>`;
+            fileActionButtonsHTML += `<a class="button gdflix-button" href="${sanitize(file.gdflix_link)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">🎬</span> GDFLIX Link</a>`;
         }
 
-        fileActionsContentHTML += `<button class="button share-button" data-action="share-file" data-file-id="${escapedFileId}" data-group-key="${escapedGroupKey}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share File</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`;
+        // Share button
+        fileActionButtonsHTML += `<button class="button share-button" data-action="share-file" data-file-id="${escapedFileId}" data-group-key="${escapedGroupKey}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share File</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`;
+        
+        // Other specific direct links
+        if (file.telegram_link) { fileActionButtonsHTML += `<a class="button telegram-button" href="${sanitize(file.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`; }
+        if (file.filepress_link) fileActionButtonsHTML += `<a class="button filepress-button" href="${sanitize(file.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
+        if (file.gdtot_link)    fileActionButtonsHTML += `<a class="button gdtot-button" href="${sanitize(file.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
 
-        if (file.telegram_link) { fileActionsContentHTML += `<a class="button telegram-button" href="${sanitize(file.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`; }
-        if (file.filepress_link) fileActionsContentHTML += `<a class="button filepress-button" href="${sanitize(file.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
-        if (file.gdtot_link)    fileActionsContentHTML += `<a class="button gdtot-button" href="${sanitize(file.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
-
-        const actionsId = `file-actions-${escapedFileId}`;
+        fileActionButtonsHTML += '</div>'; // End .file-actions
 
         return `
             <li class="file-item" data-file-id="${escapedFileId}">
                 <div class="file-info">
-                    <span class="file-name clickable-filename" title="${displayFilename}"
-                          data-action="toggle-file-actions" role="button" tabindex="0"
-                          aria-expanded="false" aria-controls="${actionsId}">
-                        ${displayFilename}
-                    </span>
+                    <span class="file-name" title="${displayFilename}">${displayFilename}</span>
                     <span class="file-meta">
                         Quality: ${displayQuality} ${fourkLogoHtml}${hdrLogoHtml} | Size: ${displaySize} | Lang: ${sanitize(file.languages || 'N/A')} | Updated: ${formattedDateRelative}
                     </span>
                 </div>
-                <div class="file-actions" id="${actionsId}">
-                    ${fileActionsContentHTML}
-                </div>
+                ${fileActionButtonsHTML}
             </li>`;
     }
 
-
     function updateFileInGroupAfterBypass(fileId, encodedFinalUrl) {
         if (!currentGroupData || !groupDetailContentEl) return;
-        const fileIndex = currentGroupData.files.findIndex(f => {
-            const currentFileId = f.id ? String(f.id).replace(/[^a-zA-Z0-9-_]/g, '') : ('file-' + f.tempIdSuffix); // tempIdSuffix would need to be added if ID can be null
-            return currentFileId === fileId;
-        });
-
+        const fileIndex = currentGroupData.files.findIndex(f => String(f.id) === String(fileId));
         if (fileIndex === -1) return;
         currentGroupData.files[fileIndex].url = encodedFinalUrl;
         currentGroupData.files[fileIndex].hubcloud_link = null;
         currentGroupData.files[fileIndex].gdflix_link = null;
-
         const fileListItem = groupDetailContentEl.querySelector(`.file-item[data-file-id="${sanitize(fileId)}"]`);
         if (fileListItem) {
-            const wasActionsVisible = fileListItem.classList.contains('actions-visible'); // Preserve state
             const newListItemHTML = createGroupDetailFileListItemHTML(currentGroupData.files[fileIndex], currentGroupData);
             fileListItem.outerHTML = newListItemHTML;
-
-            // Re-find the new list item and its elements
-            const newFileListItem = groupDetailContentEl.querySelector(`.file-item[data-file-id="${sanitize(fileId)}"]`);
-            if (newFileListItem && wasActionsVisible) {
-                newFileListItem.classList.add('actions-visible');
-                const filenameToggler = newFileListItem.querySelector('.clickable-filename[data-action="toggle-file-actions"]');
-                if (filenameToggler) filenameToggler.setAttribute('aria-expanded', 'true');
-                 const actionsDiv = newFileListItem.querySelector('.file-actions');
-                 if (actionsDiv) actionsDiv.style.display = 'flex'; // Or your chosen display type
-            }
-
             const newPlayButton = groupDetailContentEl.querySelector(`.file-item[data-file-id="${sanitize(fileId)}"] .play-button`);
-            if(newPlayButton && wasActionsVisible) { // Only focus if actions were open and play is available
-                setTimeout(() => newPlayButton.focus(), 50);
-            } else if (newFileListItem && wasActionsVisible) {
-                 const firstAction = newFileListItem.querySelector('.file-actions .button, .file-actions a');
-                 if(firstAction) setTimeout(() => firstAction.focus(), 50);
-            }
+            if(newPlayButton) setTimeout(() => newPlayButton.focus(), 50);
         }
     }
 
@@ -1219,7 +1195,7 @@
         clearCopyFeedback(); clearBypassFeedback();
         if (videoTitle) videoTitle.innerText = '';
         if (wasGlobalMode) {
-            resetToHomepage();
+            resetToHomepage(); // This is async now, but closePlayer is not awaited by callers
             lastFocusedElement = null;
             return;
         }
@@ -1279,18 +1255,19 @@
                 currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc';
                 currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : '';
                 currentState.searchTerm = typeof parsedState.searchTerm === 'string' ? parsedState.searchTerm : '';
-                lastSearchTermForResults = currentState.searchTerm;
-
+                lastSearchTermForResults = currentState.searchTerm; // Keep this for back navigation logic
+                
+                // Determine initial currentViewMode based on saved state, but URL params will override in handleUrlChange
                 if (parsedState.viewMode === 'search' && currentState.searchTerm) {
-                    currentViewMode = 'search';
+                    currentViewMode = 'search'; // Tentative, handleUrlChange will confirm
                     activeResultsTab = typeof parsedState.activeTab === 'string' ? parsedState.activeTab : 'allFiles';
                     currentState.currentPage = typeof parsedState.currentPage === 'number' ? parsedState.currentPage : 1;
                     currentState.typeFilter = tabMappings[activeResultsTab]?.typeFilter || '';
                     if(searchInput) searchInput.value = currentState.searchTerm;
                 } else if (parsedState.viewMode === 'groupDetail' && parsedState.currentGroupKey) {
-                    currentViewMode = 'homepage';
+                    currentViewMode = 'homepage'; // Default to homepage, let URL check in handleUrlChange take over
                 } else {
-                    currentViewMode = 'homepage';
+                    currentViewMode = 'homepage'; // Default
                     activeResultsTab = 'allFiles';
                     currentState.currentPage = 1;
                     currentState.typeFilter = '';
@@ -1326,7 +1303,7 @@
             const response = await fetch(url, { signal: currentSignal });
             if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); }
             const data = await response.json();
-            if (!params.id && activeResultsTab && tabMappings[activeResultsTab]) {
+            if (!params.id && activeResultsTab && tabMappings[activeResultsTab]) { // Added activeResultsTab check
                 const activePagination = tabMappings[activeResultsTab]?.pagination;
                 if (activePagination && data.totalPages !== undefined) {
                     activePagination.dataset.totalPages = data.totalPages;
@@ -1340,11 +1317,11 @@
         if (currentViewMode !== 'search') return;
         try {
             const apiResponse = await fetchApiData();
-            if (apiResponse === null) return;
+            if (apiResponse === null) return; 
             renderActiveResultsView(apiResponse);
             saveStateToLocalStorage();
         } catch (error) {
-            if (error.name !== 'AbortError' && activeResultsTab && tabMappings[activeResultsTab]) {
+            if (error.name !== 'AbortError' && activeResultsTab && tabMappings[activeResultsTab]) { // Added activeResultsTab check
                 const { gridContainer } = tabMappings[activeResultsTab];
                 if (gridContainer) { gridContainer.innerHTML = `<div class="error-message grid-status-message">Error loading results: ${error.message}. Please try again.</div>`; }
                 Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; });
@@ -1362,14 +1339,15 @@
         updateFilterIndicator();
     }
     function displayLoadError(message) { const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (groupDetailContentEl) groupDetailContentEl.innerHTML = ''; if (groupDetailViewEl) groupDetailViewEl.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'item-detail-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
-
-    async function initializeApp() {
-        isInitialLoad = true;
+    
+    async function initializeApp() { // Made async
+        isInitialLoad = true; // Set true before any view determination
         if (pageLoader) pageLoader.style.display = 'flex';
-
-        loadStateFromLocalStorage();
+    
+        loadStateFromLocalStorage(); // Sets initial currentState.currentViewMode
         if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); }
-
+    
+        // Fetch suggestion data (does not block critical path for initial view rendering)
         try {
             const initialDataLimit = Math.max(500, config.UPDATES_PREVIEW_INITIAL_COUNT * 5);
             const initialApiData = await fetchApiData({ limit: initialDataLimit, sort: 'lastUpdated', sortDir: 'desc' });
@@ -1388,19 +1366,28 @@
                 populateQualityFilter([]);
             }
         }
-
-        await handleUrlChange();
-
+    
+        // IMPORTANT: Await handleUrlChange to ensure initial view (especially homepage updates)
+        // is processed before potentially hiding the pageLoader too early.
+        await handleUrlChange(); 
+    
+        // Logic for restoring search results if that was the last view state
+        // (handleUrlChange would have set currentViewMode to 'search' if q param was present)
         if (currentViewMode === 'search' && currentState.searchTerm) {
-            if (allFilesGridContainer && allFilesGridContainer.querySelector('.loading-message')) {
+            if (allFilesGridContainer && allFilesGridContainer.querySelector('.loading-message')) { // Check if search results need rendering
                  if(searchInput) searchInput.value = currentState.searchTerm;
+                 // showLoadingStateInGrids might have been called by handleSearchSubmit inside handleUrlChange
+                 // fetchAndRenderResults is also likely called by handleSearchSubmit.
+                 // This might be redundant if handleUrlChange correctly triggers search.
+                 // However, if restoring from localStorage without 'q' in URL, this ensures search view.
                  if (!new URLSearchParams(window.location.search).has('q')) {
                     showLoadingStateInGrids(`Loading search results for "${sanitize(currentState.searchTerm)}"...`);
                     await fetchAndRenderResults();
                  }
             }
         }
-
+    
+        // Hide general page loader if it's still visible and not handled by specific views
         const urlParams = new URLSearchParams(window.location.search);
         if (pageLoader && pageLoader.style.display !== 'none' &&
             !(currentViewMode === 'groupDetail' || urlParams.get('shareId') || urlParams.get('viewId')) ) {
@@ -1415,13 +1402,12 @@
          if (groupGridItemTrigger) {
              event.preventDefault();
              const groupKey = groupGridItemTrigger.dataset.groupKey;
-             if (groupKey) { navigateToGroupView(groupKey); }
+             if (groupKey) { navigateToGroupView(groupKey); } // navigateToGroupView is async
              else { console.error("Could not find groupKey for grid item navigation."); }
              return;
          }
-         // MODIFIED: Check for clicks within #item-detail-content (includes filename and buttons)
          if (target.closest('#item-detail-content')) {
-             handleGroupDetailActionClick(event); // This will now handle toggles and button clicks
+             handleGroupDetailActionClick(event);
              return;
          }
          if (target.matches('.close-btn') && target.closest('#videoContainer')) {
@@ -1429,79 +1415,28 @@
           }
          if (target.closest('th.sortable')) { handleSort(event); return; }
     }
-    // MODIFIED: handleGroupDetailActionClick
     function handleGroupDetailActionClick(event) {
-        const actionElement = event.target.closest('[data-action]');
-        if (!actionElement || !currentGroupData) return;
-
-        const action = actionElement.dataset.action;
-        const fileItemLi = actionElement.closest('.file-item');
-        const fileId = fileItemLi ? fileItemLi.dataset.fileId : null;
-
-        currentFileForAction = fileId ? currentGroupData.files.find(f => {
-            // Handle potential fallback ID from createGroupDetailFileListItemHTML
-            const checkFileId = f.id ? String(f.id).replace(/[^a-zA-Z0-9-_]/g, '') : ('file-' + f.tempRandomSuffix); // Assume tempRandomSuffix was added if ID was null
-            return checkFileId === fileId;
-        }) : null;
-        
-        if (action && action.endsWith('-file') && action !== 'toggle-file-actions' && !currentFileForAction) {
+        const button = event.target.closest('.button');
+        if (!button || !currentGroupData) return;
+        const action = button.dataset.action;
+        const fileId = button.dataset.fileId;
+        currentFileForAction = fileId ? currentGroupData.files.find(f => String(f.id) === String(fileId)) : null;
+        if (action && action.endsWith('-file') && !currentFileForAction) {
             console.warn(`Action ${action} requires a file context, but file ${fileId} not found in current group.`);
             return;
         }
-        lastFocusedElement = actionElement;
-
+        lastFocusedElement = button;
         switch (action) {
-            case 'toggle-file-actions':
-                event.preventDefault();
-                if (fileItemLi) {
-                    const actionsDiv = fileItemLi.querySelector('.file-actions');
-                    const filenameToggler = actionElement; // In this case, actionElement IS the toggler (the span.clickable-filename)
-
-                    if (!actionsDiv || !filenameToggler) break;
-
-                    const isCurrentlyVisible = fileItemLi.classList.contains('actions-visible');
-
-                    // Hide all other open action sections first
-                    const allFileItemsInList = fileItemLi.parentElement.querySelectorAll('.file-item.actions-visible');
-                    allFileItemsInList.forEach(item => {
-                        if (item !== fileItemLi) {
-                            item.classList.remove('actions-visible');
-                            const otherToggler = item.querySelector('.clickable-filename[data-action="toggle-file-actions"]');
-                            if (otherToggler) {
-                                otherToggler.setAttribute('aria-expanded', 'false');
-                            }
-                        }
-                    });
-
-                    // Toggle current item's actions
-                    fileItemLi.classList.toggle('actions-visible', !isCurrentlyVisible);
-                    filenameToggler.setAttribute('aria-expanded', String(!isCurrentlyVisible));
-                }
-                break;
-            case 'play-file': if (currentFileForAction && currentFileForAction.url) { event.preventDefault(); streamVideo(actionElement.dataset.title, currentFileForAction.url, actionElement.dataset.filename); } break;
-            case 'copy-vlc-file': if (currentFileForAction && currentFileForAction.url) { event.preventDefault(); copyVLCLink(actionElement, currentFileForAction.url); } break;
-            case 'open-intent-file': if (currentFileForAction && currentFileForAction.url) { event.preventDefault(); openWithIntent(currentFileForAction.url, actionElement.dataset.title); } break;
-            case 'share-file': event.preventDefault(); handleShareClick(actionElement); break;
-            case 'bypass-hubcloud-file': if (currentFileForAction && currentFileForAction.hubcloud_link) { event.preventDefault(); triggerHubCloudBypassForFile(actionElement, currentFileForAction); } break;
-            case 'bypass-gdflix-file': if (currentFileForAction && currentFileForAction.gdflix_link) { event.preventDefault(); triggerGDFLIXBypassForFile(actionElement, currentFileForAction); } break;
-            case 'toggle-custom-url-player': event.preventDefault(); toggleCustomUrlInputInPlayer(actionElement); break;
-            default: if (actionElement.tagName === 'A' && actionElement.href && actionElement.target === '_blank' && actionElement.closest('.file-actions')) { /* Allow default for links */ } break;
+            case 'play-file': if (currentFileForAction && currentFileForAction.url) { event.preventDefault(); streamVideo(button.dataset.title, currentFileForAction.url, button.dataset.filename); } break;
+            case 'copy-vlc-file': if (currentFileForAction && currentFileForAction.url) { event.preventDefault(); copyVLCLink(button, currentFileForAction.url); } break;
+            case 'open-intent-file': if (currentFileForAction && currentFileForAction.url) { event.preventDefault(); openWithIntent(currentFileForAction.url, button.dataset.title); } break;
+            case 'share-file': event.preventDefault(); handleShareClick(button); break;
+            case 'bypass-hubcloud-file': if (currentFileForAction && currentFileForAction.hubcloud_link) { event.preventDefault(); triggerHubCloudBypassForFile(button, currentFileForAction); } break;
+            case 'bypass-gdflix-file': if (currentFileForAction && currentFileForAction.gdflix_link) { event.preventDefault(); triggerGDFLIXBypassForFile(button, currentFileForAction); } break;
+            case 'toggle-custom-url-player': event.preventDefault(); toggleCustomUrlInputInPlayer(button); break;
+            default: if (button.tagName === 'A' && button.href && button.target === '_blank') {} break;
         }
     }
-
-    // NEW: handleContentKeydown for keyboard accessibility of clickable filenames
-    function handleContentKeydown(event) {
-        const target = event.target;
-        if (target.closest('#item-detail-content')) {
-            if (target.matches('.clickable-filename[data-action="toggle-file-actions"]')) {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    // event.preventDefault(); // handleGroupDetailActionClick will preventDefault for the toggle
-                    handleGroupDetailActionClick(event);
-                }
-            }
-        }
-    }
-
     function handleGlobalCustomUrlClick(event) { event.preventDefault(); lastFocusedElement = event.target; if (!container || !videoContainer || !playerCustomUrlSection || !playerCustomUrlInput) return; closePlayerIfNeeded(null); if (videoContainer.parentElement !== container) { if (videoContainer.parentElement) { videoContainer.parentElement.removeChild(videoContainer); } container.appendChild(videoContainer); } else { if (!container.contains(videoContainer)) { container.appendChild(videoContainer); } } if(resultsArea) resultsArea.style.display = 'none'; if(groupDetailViewEl) groupDetailViewEl.style.display = 'none'; if(searchFocusArea) searchFocusArea.style.display = 'none'; if(pageFooter) pageFooter.style.display = 'none'; isGlobalCustomUrlMode = true; videoContainer.classList.add('global-custom-url-mode'); if (videoElement) videoElement.style.display = 'none'; if (customControlsContainer) customControlsContainer.style.display = 'none'; if (videoTitle) videoTitle.innerText = 'Play Custom URL'; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) audioWarningDiv.style.display = 'none'; playerCustomUrlSection.style.display = 'flex'; if (playerCustomUrlInput) playerCustomUrlInput.value = ''; if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = ''; videoContainer.style.display = 'flex'; if (playerCustomUrlInput) { setTimeout(() => playerCustomUrlInput.focus(), 50); } }
     function handleGlobalPlayCustomUrl(event) { event.preventDefault(); if (!playerCustomUrlInput || !playerCustomUrlFeedback) return; const customUrlRaw = playerCustomUrlInput.value.trim(); playerCustomUrlFeedback.textContent = ''; if (!customUrlRaw) { playerCustomUrlFeedback.textContent = 'Please enter a URL.'; playerCustomUrlInput.focus(); return; } let customUrlEncoded = customUrlRaw; try { new URL(customUrlRaw); customUrlEncoded = customUrlRaw.replace(/ /g, '%20'); } catch (e) { playerCustomUrlFeedback.textContent = 'Invalid URL format.'; playerCustomUrlInput.focus(); return; } if(playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if(videoElement) videoElement.style.display = 'block'; if(customControlsContainer) customControlsContainer.style.display = 'flex'; streamVideo("Custom URL Video", customUrlEncoded, null, true); }
     function toggleCustomUrlInputInPlayer(toggleButton, triggeredByError = false) {
@@ -1577,8 +1512,7 @@
             if (result.success && result.finalUrl) {
                 const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20');
                 setBypassButtonState(buttonElement, 'success', 'Success!');
-                const fileIdFromButton = buttonElement.dataset.fileId; // Get ID from button for safety
-                updateFileInGroupAfterBypass(fileIdFromButton, encodedFinalUrl);
+                updateFileInGroupAfterBypass(file.id, encodedFinalUrl);
             } else { throw new Error(result.details || result.error || 'Unknown HubCloud bypass failure'); }
         } catch (error) { clearTimeout(timeoutId); if (error.name === 'AbortError' && !apiController.signal.aborted) { setBypassButtonState(buttonElement, 'error', 'Timeout'); } else if (error.name === 'AbortError') { setBypassButtonState(buttonElement, 'idle'); } else { setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); } }
     }
@@ -1597,8 +1531,7 @@
             if (result.success && result.finalUrl) {
                 const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20');
                 setBypassButtonState(buttonElement, 'success', 'Success!');
-                const fileIdFromButton = buttonElement.dataset.fileId; // Get ID from button for safety
-                updateFileInGroupAfterBypass(fileIdFromButton, encodedFinalUrl);
+                updateFileInGroupAfterBypass(file.id, encodedFinalUrl);
             } else { throw new Error(result.error || 'Unknown GDFLIX bypass failure'); }
         } catch (error) { clearTimeout(timeoutId); if (error.name === 'AbortError' && !apiController.signal.aborted) { setBypassButtonState(buttonElement, 'error', 'Timeout'); } else if (error.name === 'AbortError') { setBypassButtonState(buttonElement, 'idle'); } else { setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); } }
     }
@@ -1606,13 +1539,10 @@
 
     // --- Add Event Listeners ---
     document.addEventListener('DOMContentLoaded', async () => {
-         await initializeApp();
+         await initializeApp(); // initializeApp is now async
          if (searchInput) { searchInput.addEventListener('input', handleSearchInput); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); handleSearchSubmit(); } else if (event.key === 'Escape') { suggestionsContainer.style.display = 'none'; } }); searchInput.addEventListener('search', handleSearchClear); searchInput.addEventListener('blur', () => { setTimeout(() => { const searchButton = document.getElementById('searchSubmitButton'); if (document.activeElement !== searchInput && !suggestionsContainer.contains(document.activeElement) && document.activeElement !== searchButton) { suggestionsContainer.style.display = 'none'; } }, 150); }); }
          if (qualityFilterSelect) { qualityFilterSelect.addEventListener('change', triggerFilterChange); }
-         if (container) {
-            container.addEventListener('click', handleContentClick);
-            container.addEventListener('keydown', handleContentKeydown); // NEW listener for keyboard
-        }
+         if (container) { container.addEventListener('click', handleContentClick); }
          if (playCustomUrlGlobalButton) { playCustomUrlGlobalButton.addEventListener('click', handleGlobalCustomUrlClick); }
          if (playerPlayCustomUrlButton) {
             playerPlayCustomUrlButton.addEventListener('click', (event) => {
