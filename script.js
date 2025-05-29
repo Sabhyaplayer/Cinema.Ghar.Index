@@ -141,37 +141,17 @@
         let rawUrl = (movie.url && typeof movie.url === 'string' && movie.url.toLowerCase() !== 'null' && movie.url.trim() !== '') ? movie.url.trim() : null;
         if (rawUrl) {
             try {
-                // Use the URL constructor to parse and normalize the URL.
-                // This handles existing encodings correctly and re-encodes if necessary.
                 const urlObject = new URL(rawUrl);
                 let href = urlObject.href;
-
-                // While urlObject.href is generally well-encoded, some servers or specific components
-                // might be fussy about characters like '[', ']', '+', even if they are technically allowed
-                // in paths. The original code had specific replacements for these.
-                // '[' and ']' should be %5B and %5D in paths. urlObject.href might leave them if they were unencoded.
-                // Example: new URL("http://example.com/file[1].mkv").href is "http://example.com/file[1].mkv"
-                // So, explicit replacement is good.
                 href = href.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
-
-                // '+' is a valid character in paths and is not encoded by URL.href.
-                // If a server incorrectly decodes '+' as a space in a path segment, then encoding it to %2B is a workaround.
-                // This was in the original code, so let's keep it for safety, though it's usually for query parameters.
                 href = href.replace(/\+/g, '%2B');
-
                 processed.url = href;
             } catch (e) {
                 console.warn("Error constructing URL object or encoding, falling back for:", rawUrl, e);
-                // Fallback to a simpler encoding strategy, similar to original but ensure spaces handled first
-                let fallbackUrl = rawUrl.replace(/ /g, '%20'); // Ensure spaces are %20
-                fallbackUrl = encodeURI(fallbackUrl); // Then apply encodeURI
+                let fallbackUrl = rawUrl.replace(/ /g, '%20'); 
+                fallbackUrl = encodeURI(fallbackUrl); 
                 fallbackUrl = fallbackUrl.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
                 fallbackUrl = fallbackUrl.replace(/\+/g, '%2B');
-                
-                // A note on '#': The new URL().href approach correctly encodes '#' in path segments to '%23'.
-                // e.g., new URL("http://a.com/fi#le.mkv").href results in "http://a.com/fi%23le.mkv".
-                // The old encodeURI approach would leave '#' as is, potentially breaking URLs if '#' was in a filename.
-                // So, the new URL() approach is preferred. The fallback here is just a simpler version of the old logic.
                 processed.url = fallbackUrl;
             }
         } else {
@@ -195,28 +175,55 @@
         processed.extractedTitle = null; processed.extractedYear = null; processed.extractedSeason = null;
         processed.tmdbDetails = movie.tmdbDetails || null;
 
-        const filename = processed.displayFilename;
-        if (filename) {
-            let cleanedName = filename;
+        const filenameForParsing = processed.displayFilename;
+        if (filenameForParsing) {
+            let cleanedName = filenameForParsing;
             const qualityTagsRegex = /(\b(4k|2160p|1080p|720p|480p|web-?dl|webrip|bluray|bdrip|brrip|hdtv|hdrip|dvdrip|dvdscr|hdcam|hc|tc|ts|cam|hdr|dv|dolby.?vision|hevc|x265)\b)/gi;
             cleanedName = cleanedName.replace(qualityTagsRegex, '');
-            const seasonMatch = cleanedName.match(/[. (_-](S(\d{1,2}))(?:E\d{1,2}|[. (_-])/i) || cleanedName.match(/[. (_-](Season[. _]?(\d{1,2}))(?:[. (_]|$)/i);
+            
+            const seasonMatch = cleanedName.match(/[. (_-](S(\d{1,2}))(?:E\d{1,2}(?![Pp])|[. (_-])/i) || cleanedName.match(/[. (_-](Season[. _]?(\d{1,2}))(?:[. (_]|$)/i);
+            
             if (seasonMatch && (seasonMatch[2] || seasonMatch[3])) {
                 processed.extractedSeason = parseInt(seasonMatch[2] || seasonMatch[3], 10);
                 if (!processed.isSeries) processed.isSeries = true;
                 const titleEndIndex = seasonMatch.index;
-                processed.extractedTitle = cleanedName.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
-                const yearInTitleMatch = processed.extractedTitle.match(/[.(_[](\d{4})[.)_\]]$/);
-                if(yearInTitleMatch && yearInTitleMatch[1]) {
-                     const potentialYear = parseInt(yearInTitleMatch[1], 10);
-                     if (potentialYear > 1900 && potentialYear < 2050) {
-                         processed.extractedYear = potentialYear;
-                         processed.extractedTitle = processed.extractedTitle.replace(new RegExp(`[.(_[]${potentialYear}[.)_\]]$`), '').trim();
-                     }
+                let titleFromFileName = cleanedName.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
+
+                // Try to extract year (19xx or 20xx) if it's at the end of titleFromFileName
+                const yearAtEndRegex = /(?:^|\s|[._(-])(19\d{2}|20\d{2})$/i; 
+                const yearMatchInTitle = titleFromFileName.match(yearAtEndRegex);
+
+                if (yearMatchInTitle && yearMatchInTitle[1]) {
+                    const potentialYear = parseInt(yearMatchInTitle[1], 10);
+                    if (potentialYear > 1900 && potentialYear < 2050) {
+                        processed.extractedYear = potentialYear;
+                        // Remove the year (and its preceding separator) from titleFromFileName
+                        let yearPartOriginalString = yearMatchInTitle[0]; // e.g., " 2025" or ".2025"
+                        let yearPartStartIndex = titleFromFileName.lastIndexOf(yearPartOriginalString);
+                        
+                        if (yearPartStartIndex !== -1) {
+                             processed.extractedTitle = titleFromFileName.substring(0, yearPartStartIndex).trim();
+                        } else { 
+                             // Fallback: remove just year digits from end if lastIndexOf failed (e.g. complex unicode spaces)
+                             processed.extractedTitle = titleFromFileName.replace(new RegExp(escapeRegExp(yearMatchInTitle[1]) + "$"), "").trim();
+                        }
+                    } else { 
+                        processed.extractedTitle = titleFromFileName; // Year found but out of sane range
+                    }
+                } else { 
+                    processed.extractedTitle = titleFromFileName; // No year found at the end of titleFromFileName
                 }
-            } else {
+                // Clean any remaining trailing separators from the title
+                if (processed.extractedTitle) {
+                    processed.extractedTitle = processed.extractedTitle.replace(/[._\-( ]+$/, "").trim();
+                }
+
+            } else { // No seasonMatch
                 if (processed.isSeries === true && !seasonMatch) { /* keep isSeries */ }
                 else { processed.isSeries = false; }
+                
+                // Original year matching for non-series items.
+                // This regex looks for year in brackets/dots, not necessarily at the end.
                 const yearMatch = cleanedName.match(/[.(_[](\d{4})[.)_\]]/);
                 if (yearMatch && yearMatch[1]) {
                     const year = parseInt(yearMatch[1], 10);
@@ -227,20 +234,36 @@
                     }
                 }
             }
+
+            // Fallback if title extraction resulted in an empty string or wasn't successful
             if (!processed.extractedTitle && cleanedName) {
                 processed.extractedTitle = cleanedName.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
             }
+            
+            // Further cleanup for extracted title
             if (processed.extractedTitle) {
-                processed.extractedTitle = processed.extractedTitle.replace(/[- ]+$/, '').trim();
+                processed.extractedTitle = processed.extractedTitle.replace(/[- ]+$/, '').trim(); // remove trailing hyphens/spaces
+                 // If title itself is a year and we don't have an extractedYear yet (common for movies)
                  if (/^\d{4}$/.test(processed.extractedTitle) && !processed.extractedYear) {
-                    processed.extractedYear = parseInt(processed.extractedTitle, 10);
-                    processed.extractedTitle = null;
-                 } else if (/^\d{4}$/.test(processed.extractedTitle) && processed.extractedYear) {
-                    processed.extractedTitle = cleanedName.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
-                    if (/^\d{4}$/.test(processed.extractedTitle)) processed.extractedTitle = null;
+                    const potentialYearFromTitle = parseInt(processed.extractedTitle, 10);
+                    if (potentialYearFromTitle > 1900 && potentialYearFromTitle < 2050) {
+                        processed.extractedYear = potentialYearFromTitle;
+                        // Attempt to find a better title from original filename if current title is just a year
+                        let tempTitleCandidate = filenameForParsing.split(new RegExp(escapeRegExp(processed.extractedTitle)))[0];
+                        if (tempTitleCandidate && tempTitleCandidate !== filenameForParsing) {
+                             processed.extractedTitle = tempTitleCandidate.replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim().replace(/[- ]+$/, '').trim();
+                        } else {
+                            processed.extractedTitle = null; // Or keep as year if no other part
+                        }
+                    }
+                 } else if (/^\d{4}$/.test(processed.extractedTitle) && processed.extractedYear && !processed.isSeries) {
+                    // If title is a year, but we already have a year, and it's not a series, likely title is just the year.
+                    // Example: File "2012 (2009).mkv" -> title "2012", year "2009".
+                    // This case is complex, previous logic might be better.
                  }
             }
         }
+        // Final fallback for title if all else failed or resulted in empty
         if (!processed.extractedTitle && processed.displayFilename) {
              processed.extractedTitle = processed.displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim();
         }
@@ -282,6 +305,9 @@
             if (item.lastUpdatedTimestamp > group.lastUpdatedTimestamp) {
                 group.lastUpdatedTimestamp = item.lastUpdatedTimestamp;
             }
+            // Update group's year/season if the current item has one and group doesn't, or prefer item with lower season if it's a series pack vs episode.
+            // For simplicity, the first item's year/season sets the group's initial year/season.
+            // More sophisticated merging could be done here if needed (e.g. if a series has files with and without year extracted).
         });
         groups.forEach(group => {
             group.files.sort((a, b) => {
@@ -333,27 +359,49 @@
         }
         const fileCountBadge = `<span class="file-count-badge">${group.files.length} ${group.files.length === 1 ? 'file' : 'files'}</span>`;
         const initialSpinnerDisplay = (!group.tmdbDetails?.posterPath && !group.posterPathFetchAttempted) ? 'block' : 'none';
+        
+        // Determine title and subtitle for display
+        let displayCardTitle = group.displayTitle;
+        let displayCardSubtitle = '';
+        if (group.isSeries && group.season) {
+            displayCardSubtitle = `Season ${group.season}`;
+        } else if (!group.isSeries && group.year) {
+            // For movies, year is often part of the title display in UIs if not already in title
+            // displayCardSubtitle = String(group.year); // Or append to title if not there
+        }
+
 
         card.innerHTML = `
             <div class="poster-container">
                 <img src="${config.POSTER_PLACEHOLDER_URL}" alt="Poster for ${sanitize(group.displayTitle)}" class="poster-image" loading="lazy">
                 <div class="poster-fallback-content" style="display: none;">
-                    <h3 class="fallback-title"></h3>
-                    <p class="fallback-year"></p>
+                    <h3 class="fallback-title">${sanitize(displayCardTitle)}</h3>
+                    <p class="fallback-year">${sanitize(displayCardSubtitle)}</p>
                 </div>
                 <div class="poster-spinner spinner" style="display: ${initialSpinnerDisplay};"></div>
                 <div class="quality-badges-overlay">${fileCountBadge}${fourkLogoHtml}${hdrLogoHtml}</div>
+            </div>
+            <div class="grid-item-info">
+                <h3 class="grid-item-title">${sanitize(displayCardTitle)}</h3>
+                ${displayCardSubtitle ? `<p class="grid-item-subtitle">${sanitize(displayCardSubtitle)}</p>` : ''}
             </div>
         `;
         const posterContainer = card.querySelector('.poster-container');
         const imgElement = posterContainer.querySelector('.poster-image');
         const spinnerElement = posterContainer.querySelector('.poster-spinner');
+        
+        // Update fallback content text based on refined displayCardTitle/Subtitle
+        const fallbackTitleEl = posterContainer.querySelector('.poster-fallback-content .fallback-title');
+        const fallbackYearEl = posterContainer.querySelector('.poster-fallback-content .fallback-year');
+        if(fallbackTitleEl) fallbackTitleEl.textContent = displayCardTitle;
+        if(fallbackYearEl) fallbackYearEl.textContent = displayCardSubtitle;
+
 
         imgElement.onerror = function() {
             this.style.display = 'none';
             const parentPosterContainer = this.closest('.poster-container');
             if (group && parentPosterContainer) {
-                setupFallbackDisplayForGroup(group, parentPosterContainer);
+                setupFallbackDisplayForGroup(group, parentPosterContainer); // setupFallback will use group.displayTitle and group.season/year
             }
             const localSpinner = parentPosterContainer ? parentPosterContainer.querySelector('.poster-spinner') : null;
             if (localSpinner) localSpinner.style.display = 'none';
@@ -390,16 +438,18 @@
             return;
         }
         if (spinnerElement) spinnerElement.style.display = 'block';
-        imgElement.style.display = 'block';
-        if (fallbackContentElement) fallbackContentElement.style.display = 'none';
+        imgElement.style.display = 'block'; // Keep it block, placeholder will show
+        if (fallbackContentElement) fallbackContentElement.style.display = 'none'; // Hide text fallback while loading image
         group.posterPathFetchAttempted = true;
 
         try {
             const tmdbQuery = new URLSearchParams();
             tmdbQuery.set('query', group.displayTitle);
             tmdbQuery.set('type', group.isSeries ? 'tv' : 'movie');
-            if (!group.isSeries && group.year) {
+            if (!group.isSeries && group.year) { // For movies, use extracted year if available
                 tmdbQuery.set('year', group.year);
+            } else if (group.isSeries && group.year) { // For series, TMDB API can use first_air_date_year
+                 tmdbQuery.set('first_air_date_year', group.year);
             }
             const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}&fetchFullDetails=false`;
             const tmdbController = new AbortController();
@@ -935,6 +985,7 @@
                 tmdbQuery.set('query', currentGroupData.displayTitle);
                 tmdbQuery.set('type', currentGroupData.isSeries ? 'tv' : 'movie');
                 if (!currentGroupData.isSeries && currentGroupData.year) tmdbQuery.set('year', currentGroupData.year);
+                else if (currentGroupData.isSeries && currentGroupData.year) tmdbQuery.set('first_air_date_year', currentGroupData.year);
                 tmdbQuery.set('fetchFullDetails', 'true');
                 const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}`;
                 const tmdbController = new AbortController();
@@ -1562,7 +1613,6 @@
         }
         let customUrlEncoded;
         try {
-            // Use the same robust encoding as preprocessMovieData
             const urlObject = new URL(customUrlRaw);
             customUrlEncoded = urlObject.href;
             customUrlEncoded = customUrlEncoded.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
