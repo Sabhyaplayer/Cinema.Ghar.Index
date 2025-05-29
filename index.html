@@ -59,16 +59,17 @@
             <button id="backToHomeButtonResults" class="button back-button" onclick="resetToHomepage()">
                 ← Back to Home
             </button>
-            <!-- Filter Area within Results -->
-            <div class="results-filter-area">
+            
+            <!-- Filter and Controls Area within Results -->
+            <div class="results-controls-area">
                 <div class="filter-group">
-                    <label for="mainQualityFilterSelect">Filter by Quality:</label>
-                    <select id="mainQualityFilterSelect">
+                    <label for="globalQualityFilterSelect">Filter by Quality:</label>
+                    <select id="globalQualityFilterSelect">
                         <option value="">All Qualities</option>
                         <!-- Options populated by JS -->
                     </select>
                 </div>
-                <!-- Sorting controls are implicit via table headers if used, or could be explicit dropdowns -->
+                <!-- Sorting controls could be added here as dropdowns if table headers are not preferred for sorting -->
             </div>
 
             <!-- Tab Navigation -->
