@@ -138,19 +138,41 @@
         const processed = { ...movie };
         processed.id = movie.original_id;
         
-        // Ensure URL is properly encoded before use, especially if it might contain spaces or special characters
         let rawUrl = (movie.url && typeof movie.url === 'string' && movie.url.toLowerCase() !== 'null' && movie.url.trim() !== '') ? movie.url.trim() : null;
         if (rawUrl) {
             try {
-                // Basic space encoding first
-                rawUrl = rawUrl.replace(/ /g, '%20');
-                // More robust encoding for player compatibility
-                let tempEncodedUrl = encodeURI(rawUrl); // Handles most standard chars, preserves URL structure
-                tempEncodedUrl = tempEncodedUrl.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
-                processed.url = tempEncodedUrl;
+                // Use the URL constructor to parse and normalize the URL.
+                // This handles existing encodings correctly and re-encodes if necessary.
+                const urlObject = new URL(rawUrl);
+                let href = urlObject.href;
+
+                // While urlObject.href is generally well-encoded, some servers or specific components
+                // might be fussy about characters like '[', ']', '+', even if they are technically allowed
+                // in paths. The original code had specific replacements for these.
+                // '[' and ']' should be %5B and %5D in paths. urlObject.href might leave them if they were unencoded.
+                // Example: new URL("http://example.com/file[1].mkv").href is "http://example.com/file[1].mkv"
+                // So, explicit replacement is good.
+                href = href.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
+
+                // '+' is a valid character in paths and is not encoded by URL.href.
+                // If a server incorrectly decodes '+' as a space in a path segment, then encoding it to %2B is a workaround.
+                // This was in the original code, so let's keep it for safety, though it's usually for query parameters.
+                href = href.replace(/\+/g, '%2B');
+
+                processed.url = href;
             } catch (e) {
-                console.warn("Error encoding URL, using space replacement only for:", rawUrl, e);
-                processed.url = rawUrl; // Fallback to basic space encoding
+                console.warn("Error constructing URL object or encoding, falling back for:", rawUrl, e);
+                // Fallback to a simpler encoding strategy, similar to original but ensure spaces handled first
+                let fallbackUrl = rawUrl.replace(/ /g, '%20'); // Ensure spaces are %20
+                fallbackUrl = encodeURI(fallbackUrl); // Then apply encodeURI
+                fallbackUrl = fallbackUrl.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
+                fallbackUrl = fallbackUrl.replace(/\+/g, '%2B');
+                
+                // A note on '#': The new URL().href approach correctly encodes '#' in path segments to '%23'.
+                // e.g., new URL("http://a.com/fi#le.mkv").href results in "http://a.com/fi%23le.mkv".
+                // The old encodeURI approach would leave '#' as is, potentially breaking URLs if '#' was in a filename.
+                // So, the new URL() approach is preferred. The fallback here is just a simpler version of the old logic.
+                processed.url = fallbackUrl;
             }
         } else {
             processed.url = null;
@@ -1048,7 +1070,6 @@
         if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
         if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
         
-        // Use file.url directly as it should be pre-encoded by preprocessMovieData or updateFileInGroupAfterBypass
         const fileUrlForAttributes = file.url || ''; 
         
         const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
@@ -1102,11 +1123,11 @@
             </li>`;
     }
 
-    function updateFileInGroupAfterBypass(fileId, fullyEncodedFinalUrl) { // Parameter name changed
+    function updateFileInGroupAfterBypass(fileId, newUrl) { 
         if (!currentGroupData || !groupDetailContentEl) return;
         const fileIndex = currentGroupData.files.findIndex(f => String(f.id) === String(fileId));
         if (fileIndex === -1) return;
-        currentGroupData.files[fileIndex].url = fullyEncodedFinalUrl; // Use the fully encoded URL
+        currentGroupData.files[fileIndex].url = newUrl; 
         currentGroupData.files[fileIndex].hubcloud_link = null;
         currentGroupData.files[fileIndex].gdflix_link = null;
         
@@ -1174,10 +1195,10 @@
         }
         if (warningText && audioWarningDiv) { audioWarningDiv.innerHTML = warningText; audioWarningDiv.style.display = 'block'; }
         if (videoTitle) videoTitle.innerText = title || "Video";
-        if (vlcText) vlcText.innerText = url; // URL should be correctly encoded here
+        if (vlcText) vlcText.innerText = url; 
         if (vlcBox) vlcBox.style.display = 'block';
         
-        videoElement.src = url; // The URL passed here should be fully and correctly encoded
+        videoElement.src = url; 
         
         videoElement.load();
         videoElement.play().catch(e => { console.warn("Video play failed:", e); handleVideoError(e); });
@@ -1541,9 +1562,11 @@
         }
         let customUrlEncoded;
         try {
-            new URL(customUrlRaw); // Validate if it's a basic URL structure
-            customUrlEncoded = encodeURI(customUrlRaw);
-            customUrlEncoded = customUrlEncoded.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
+            // Use the same robust encoding as preprocessMovieData
+            const urlObject = new URL(customUrlRaw);
+            customUrlEncoded = urlObject.href;
+            customUrlEncoded = customUrlEncoded.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
+            customUrlEncoded = customUrlEncoded.replace(/\+/g, '%2B');
         } catch (e) {
             playerCustomUrlFeedback.textContent = 'Invalid URL format.';
             playerCustomUrlInput.focus();
@@ -1607,9 +1630,10 @@
         }
         let customUrlEncoded;
         try {
-            new URL(customUrlRaw); // Validate
-            customUrlEncoded = encodeURI(customUrlRaw);
-            customUrlEncoded = customUrlEncoded.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
+            const urlObject = new URL(customUrlRaw);
+            customUrlEncoded = urlObject.href;
+            customUrlEncoded = customUrlEncoded.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
+            customUrlEncoded = customUrlEncoded.replace(/\+/g, '%2B');
         }
         catch (e) {
             feedbackSpan.textContent = 'Invalid URL format.';
@@ -1624,6 +1648,22 @@
     }
 
     // --- HubCloud/GDFLIX Bypass Logic ---
+    function _encodeBypassResultUrl(rawUrl) {
+        try {
+            const urlObject = new URL(rawUrl);
+            let href = urlObject.href;
+            href = href.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
+            href = href.replace(/\+/g, '%2B');
+            return href;
+        } catch (e) {
+            console.error("Error encoding bypassed URL during _encodeBypassResultUrl, using basic encoding:", rawUrl, e);
+            let fallbackEncodedUrl = rawUrl.replace(/ /g, '%20');
+            fallbackEncodedUrl = encodeURI(fallbackEncodedUrl);
+            fallbackEncodedUrl = fallbackEncodedUrl.replace(/\[/g, '%5B').replace(/\]/g, '%5D');
+            fallbackEncodedUrl = fallbackEncodedUrl.replace(/\+/g, '%2B');
+            return fallbackEncodedUrl;
+        }
+    }
     async function triggerHubCloudBypassForFile(buttonElement, fileToUpdate) { 
         const hubcloudUrl = buttonElement.dataset.hubcloudUrl || fileToUpdate.hubcloud_link; 
         if (!hubcloudUrl) { setBypassButtonState(buttonElement, 'error', 'Missing URL'); return; }
@@ -1637,8 +1677,7 @@
             if (!response.ok) { let errorDetails = `HTTP Error: ${response.status}`; try { errorDetails = (await response.json()).details || errorDetails; } catch (_) {} throw new Error(errorDetails); }
             const result = await response.json();
             if (result.success && result.finalUrl) {
-                let encodedFinalUrl = encodeURI(result.finalUrl);
-                encodedFinalUrl = encodedFinalUrl.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
+                const encodedFinalUrl = _encodeBypassResultUrl(result.finalUrl);
                 setBypassButtonState(buttonElement, 'success', 'Success!');
                 updateFileInGroupAfterBypass(fileToUpdate.id, encodedFinalUrl);
             } else { throw new Error(result.details || result.error || 'Unknown HubCloud bypass failure'); }
@@ -1657,8 +1696,7 @@
             if (!response.ok) { let errorDetails = `HTTP Error: ${response.status}`; try { errorDetails = (await response.json()).error || errorDetails; } catch (_) {} throw new Error(errorDetails); }
             const result = await response.json();
             if (result.success && result.finalUrl) {
-                let encodedFinalUrl = encodeURI(result.finalUrl);
-                encodedFinalUrl = encodedFinalUrl.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
+                const encodedFinalUrl = _encodeBypassResultUrl(result.finalUrl);
                 setBypassButtonState(buttonElement, 'success', 'Success!');
                 updateFileInGroupAfterBypass(fileToUpdate.id, encodedFinalUrl);
             } else { throw new Error(result.error || 'Unknown GDFLIX bypass failure'); }
