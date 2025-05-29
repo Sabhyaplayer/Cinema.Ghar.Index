@@ -189,7 +189,6 @@
                 const titleEndIndex = seasonMatch.index;
                 let titleFromFileName = cleanedName.substring(0, titleEndIndex).replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
 
-                // Try to extract year (19xx or 20xx) if it's at the end of titleFromFileName
                 const yearAtEndRegex = /(?:^|\s|[._(-])(19\d{2}|20\d{2})$/i; 
                 const yearMatchInTitle = titleFromFileName.match(yearAtEndRegex);
 
@@ -197,33 +196,28 @@
                     const potentialYear = parseInt(yearMatchInTitle[1], 10);
                     if (potentialYear > 1900 && potentialYear < 2050) {
                         processed.extractedYear = potentialYear;
-                        // Remove the year (and its preceding separator) from titleFromFileName
-                        let yearPartOriginalString = yearMatchInTitle[0]; // e.g., " 2025" or ".2025"
+                        let yearPartOriginalString = yearMatchInTitle[0]; 
                         let yearPartStartIndex = titleFromFileName.lastIndexOf(yearPartOriginalString);
                         
                         if (yearPartStartIndex !== -1) {
                              processed.extractedTitle = titleFromFileName.substring(0, yearPartStartIndex).trim();
                         } else { 
-                             // Fallback: remove just year digits from end if lastIndexOf failed (e.g. complex unicode spaces)
                              processed.extractedTitle = titleFromFileName.replace(new RegExp(escapeRegExp(yearMatchInTitle[1]) + "$"), "").trim();
                         }
                     } else { 
-                        processed.extractedTitle = titleFromFileName; // Year found but out of sane range
+                        processed.extractedTitle = titleFromFileName; 
                     }
                 } else { 
-                    processed.extractedTitle = titleFromFileName; // No year found at the end of titleFromFileName
+                    processed.extractedTitle = titleFromFileName; 
                 }
-                // Clean any remaining trailing separators from the title
                 if (processed.extractedTitle) {
                     processed.extractedTitle = processed.extractedTitle.replace(/[._\-( ]+$/, "").trim();
                 }
 
-            } else { // No seasonMatch
+            } else { 
                 if (processed.isSeries === true && !seasonMatch) { /* keep isSeries */ }
                 else { processed.isSeries = false; }
                 
-                // Original year matching for non-series items.
-                // This regex looks for year in brackets/dots, not necessarily at the end.
                 const yearMatch = cleanedName.match(/[.(_[](\d{4})[.)_\]]/);
                 if (yearMatch && yearMatch[1]) {
                     const year = parseInt(yearMatch[1], 10);
@@ -235,35 +229,27 @@
                 }
             }
 
-            // Fallback if title extraction resulted in an empty string or wasn't successful
             if (!processed.extractedTitle && cleanedName) {
                 processed.extractedTitle = cleanedName.split(/[\.({\[]/)[0].replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim();
             }
             
-            // Further cleanup for extracted title
             if (processed.extractedTitle) {
-                processed.extractedTitle = processed.extractedTitle.replace(/[- ]+$/, '').trim(); // remove trailing hyphens/spaces
-                 // If title itself is a year and we don't have an extractedYear yet (common for movies)
+                processed.extractedTitle = processed.extractedTitle.replace(/[- ]+$/, '').trim(); 
                  if (/^\d{4}$/.test(processed.extractedTitle) && !processed.extractedYear) {
                     const potentialYearFromTitle = parseInt(processed.extractedTitle, 10);
                     if (potentialYearFromTitle > 1900 && potentialYearFromTitle < 2050) {
                         processed.extractedYear = potentialYearFromTitle;
-                        // Attempt to find a better title from original filename if current title is just a year
                         let tempTitleCandidate = filenameForParsing.split(new RegExp(escapeRegExp(processed.extractedTitle)))[0];
                         if (tempTitleCandidate && tempTitleCandidate !== filenameForParsing) {
                              processed.extractedTitle = tempTitleCandidate.replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim().replace(/[- ]+$/, '').trim();
                         } else {
-                            processed.extractedTitle = null; // Or keep as year if no other part
+                            processed.extractedTitle = null; 
                         }
                     }
                  } else if (/^\d{4}$/.test(processed.extractedTitle) && processed.extractedYear && !processed.isSeries) {
-                    // If title is a year, but we already have a year, and it's not a series, likely title is just the year.
-                    // Example: File "2012 (2009).mkv" -> title "2012", year "2009".
-                    // This case is complex, previous logic might be better.
                  }
             }
         }
-        // Final fallback for title if all else failed or resulted in empty
         if (!processed.extractedTitle && processed.displayFilename) {
              processed.extractedTitle = processed.displayFilename.split(/[\.\(\[]/)[0].replace(/[_ ]+/g, ' ').trim();
         }
@@ -305,9 +291,6 @@
             if (item.lastUpdatedTimestamp > group.lastUpdatedTimestamp) {
                 group.lastUpdatedTimestamp = item.lastUpdatedTimestamp;
             }
-            // Update group's year/season if the current item has one and group doesn't, or prefer item with lower season if it's a series pack vs episode.
-            // For simplicity, the first item's year/season sets the group's initial year/season.
-            // More sophisticated merging could be done here if needed (e.g. if a series has files with and without year extracted).
         });
         groups.forEach(group => {
             group.files.sort((a, b) => {
@@ -329,6 +312,8 @@
         const titleEl = fallbackContent.querySelector('.fallback-title');
         const yearEl = fallbackContent.querySelector('.fallback-year');
         if (img) img.style.display = 'none';
+        
+        // For fallback, use the group's displayTitle and season/year
         if (titleEl) titleEl.textContent = group.displayTitle;
         let yearTextContent = '';
         if (group.isSeries && group.season) {
@@ -360,17 +345,16 @@
         const fileCountBadge = `<span class="file-count-badge">${group.files.length} ${group.files.length === 1 ? 'file' : 'files'}</span>`;
         const initialSpinnerDisplay = (!group.tmdbDetails?.posterPath && !group.posterPathFetchAttempted) ? 'block' : 'none';
         
-        // Determine title and subtitle for display
+        // Determine title and subtitle for display (used in fallback)
         let displayCardTitle = group.displayTitle;
         let displayCardSubtitle = '';
         if (group.isSeries && group.season) {
             displayCardSubtitle = `Season ${group.season}`;
         } else if (!group.isSeries && group.year) {
-            // For movies, year is often part of the title display in UIs if not already in title
-            // displayCardSubtitle = String(group.year); // Or append to title if not there
+            // displayCardSubtitle = String(group.year); // No subtitle needed for movies usually, year might be in title
         }
 
-
+        // MODIFICATION: Removed the div.grid-item-info that was previously here.
         card.innerHTML = `
             <div class="poster-container">
                 <img src="${config.POSTER_PLACEHOLDER_URL}" alt="Poster for ${sanitize(group.displayTitle)}" class="poster-image" loading="lazy">
@@ -381,27 +365,21 @@
                 <div class="poster-spinner spinner" style="display: ${initialSpinnerDisplay};"></div>
                 <div class="quality-badges-overlay">${fileCountBadge}${fourkLogoHtml}${hdrLogoHtml}</div>
             </div>
-            <div class="grid-item-info">
-                <h3 class="grid-item-title">${sanitize(displayCardTitle)}</h3>
-                ${displayCardSubtitle ? `<p class="grid-item-subtitle">${sanitize(displayCardSubtitle)}</p>` : ''}
-            </div>
         `;
         const posterContainer = card.querySelector('.poster-container');
         const imgElement = posterContainer.querySelector('.poster-image');
         const spinnerElement = posterContainer.querySelector('.poster-spinner');
         
-        // Update fallback content text based on refined displayCardTitle/Subtitle
         const fallbackTitleEl = posterContainer.querySelector('.poster-fallback-content .fallback-title');
         const fallbackYearEl = posterContainer.querySelector('.poster-fallback-content .fallback-year');
         if(fallbackTitleEl) fallbackTitleEl.textContent = displayCardTitle;
         if(fallbackYearEl) fallbackYearEl.textContent = displayCardSubtitle;
 
-
         imgElement.onerror = function() {
             this.style.display = 'none';
             const parentPosterContainer = this.closest('.poster-container');
             if (group && parentPosterContainer) {
-                setupFallbackDisplayForGroup(group, parentPosterContainer); // setupFallback will use group.displayTitle and group.season/year
+                setupFallbackDisplayForGroup(group, parentPosterContainer); 
             }
             const localSpinner = parentPosterContainer ? parentPosterContainer.querySelector('.poster-spinner') : null;
             if (localSpinner) localSpinner.style.display = 'none';
@@ -438,17 +416,17 @@
             return;
         }
         if (spinnerElement) spinnerElement.style.display = 'block';
-        imgElement.style.display = 'block'; // Keep it block, placeholder will show
-        if (fallbackContentElement) fallbackContentElement.style.display = 'none'; // Hide text fallback while loading image
+        imgElement.style.display = 'block'; 
+        if (fallbackContentElement) fallbackContentElement.style.display = 'none'; 
         group.posterPathFetchAttempted = true;
 
         try {
             const tmdbQuery = new URLSearchParams();
             tmdbQuery.set('query', group.displayTitle);
             tmdbQuery.set('type', group.isSeries ? 'tv' : 'movie');
-            if (!group.isSeries && group.year) { // For movies, use extracted year if available
+            if (!group.isSeries && group.year) { 
                 tmdbQuery.set('year', group.year);
-            } else if (group.isSeries && group.year) { // For series, TMDB API can use first_air_date_year
+            } else if (group.isSeries && group.year) { 
                  tmdbQuery.set('first_air_date_year', group.year);
             }
             const tmdbUrl = `${config.TMDB_API_PROXY_URL}?${tmdbQuery.toString()}&fetchFullDetails=false`;
