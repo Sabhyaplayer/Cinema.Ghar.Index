@@ -1,4 +1,4 @@
-// --- START OF script.js (MODIFIED FOR GROUPING, GRID VIEW, GROUP DETAIL VIEW + TRAILER EMBED + DIRECT HUB/GDFLIX LINKS) ---
+// --- START OF script.js (MODIFIED FOR GROUPING, GRID VIEW, GROUP DETAIL VIEW + TRAILER EMBED + CLICK-TO-REVEAL ACTIONS) ---
 (function() {
     'use strict';
 
@@ -422,16 +422,11 @@
             
             if (updatesPreviewSection) updatesPreviewSection.style.display = 'block';
 
-            // Decision to load/display updates:
             if (weeklyUpdatesGroups.length === 0) {
-                // No data fetched yet, or previous fetch failed. loadUpdatesPreview handles spinner.
-                await loadUpdatesPreview(); // Await this critical load
+                await loadUpdatesPreview(); 
             } else if (updatesPreviewList && (!updatesPreviewList.querySelector('.grid-item') && !updatesPreviewList.querySelector('.update-item'))) {
-                // Data exists, but nothing rendered (e.g., navigating back to homepage).
                 displayInitialUpdates();
             }
-            // "Show More" button state is managed by displayInitialUpdates/appendMoreUpdates.
-            // If no items after load/display, they will hide the button.
             if (showMoreUpdatesButton) {
                  if (weeklyUpdatesGroups.length > 0 && weeklyUpdatesGroups.length > updatesPreviewShownCount && updatesPreviewShownCount > 0) {
                     showMoreUpdatesButton.style.display = 'block';
@@ -451,9 +446,9 @@
             currentGroupData = null;
             if (updatesPreviewSection) updatesPreviewSection.style.display = 'none';
         }
-        if (!isInitialLoad) { saveStateToLocalStorage(); } // isInitialLoad will be false after first full setup
+        if (!isInitialLoad) { saveStateToLocalStorage(); } 
     }
-    window.resetToHomepage = async function(event) { // Made async to align with setViewMode
+    window.resetToHomepage = async function(event) { 
         if (window.history.pushState) { const cleanUrl = window.location.origin + window.location.pathname; if (window.location.search !== '') { window.history.pushState({ path: cleanUrl }, '', cleanUrl); } }
         currentGroupData = null;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
@@ -461,7 +456,7 @@
         await setViewMode('homepage');
         if (searchInput) { setTimeout(() => searchInput.focus(), 100); }
     }
-    window.goBackToResults = function() { // No need for async here, it manipulates URL then calls handleUrlChange
+    window.goBackToResults = function() { 
         currentGroupData = null;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         if (currentState.searchTerm || lastSearchTermForResults) {
@@ -472,14 +467,14 @@
             const newQuery = urlParams.toString();
             const targetUrl = window.location.pathname + (newQuery ? `?${newQuery}` : '');
             history.pushState({}, '', targetUrl);
-            handleUrlChange(true); // Let handleUrlChange (now async) manage it
+            handleUrlChange(true); 
         } else {
-            history.back(); // This will trigger popstate -> handleUrlChange
+            history.back(); 
         }
     }
-    window.addEventListener('popstate', (event) => { handleUrlChange(true); }); // handleUrlChange is async
+    window.addEventListener('popstate', (event) => { handleUrlChange(true); }); 
 
-    async function handleUrlChange(isPopState = false) { // Made async
+    async function handleUrlChange(isPopState = false) { 
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         const urlParams = new URLSearchParams(window.location.search);
         const groupKey = urlParams.get('viewGroup');
@@ -491,11 +486,11 @@
         let viewChanged = false;
     
         if (groupKey) {
-            await displayGroupDetail(groupKey, fileIdToOpen); // displayGroupDetail is async
+            await displayGroupDetail(groupKey, fileIdToOpen); 
             viewChanged = true;
         } else if (legacyShareId || legacyViewId) {
             const targetFileId = legacyShareId || legacyViewId;
-            await handleLegacyFileLink(targetFileId); // handleLegacyFileLink is async
+            await handleLegacyFileLink(targetFileId); 
             urlParams.delete('shareId');
             urlParams.delete('viewId');
             const newQueryString = urlParams.toString();
@@ -504,30 +499,27 @@
         } else if (queryParam) {
             if (currentViewMode !== 'search' || currentState.searchTerm !== queryParam || (isInitialLoad && !isPopState)) {
                 searchInput.value = queryParam;
-                // handleSearchSubmit itself is not async, but it calls async setViewMode and fetchAndRenderResults.
-                // For initial load, the await on handleUrlChange in initializeApp will cover this.
                 handleSearchSubmit(false); 
             } else {
-                 await setViewMode('search'); // Ensure search view is active
+                 await setViewMode('search'); 
             }
             viewChanged = true;
         } else {
-            // Default to homepage if no other conditions met or if explicitly navigating
             if (currentViewMode !== 'homepage' || isInitialLoad || isPopState ) {
                 await setViewMode('homepage');
             }
             viewChanged = true;
         }
         
-        if (!viewChanged && isInitialLoad) { // Fallback, should not be typically hit with the logic above
+        if (!viewChanged && isInitialLoad) { 
             await setViewMode('homepage');
         }
 
         if (isInitialLoad) {
-            isInitialLoad = false; // Set after the first full view determination and setup
+            isInitialLoad = false; 
         }
     }
-    async function handleLegacyFileLink(fileId) { // Made async
+    async function handleLegacyFileLink(fileId) { 
         if (pageLoader) pageLoader.style.display = 'flex';
         try {
             const fileDataResponse = await fetchApiData({ id: fileId });
@@ -538,7 +530,7 @@
                 newUrlParams.set('viewGroup', groupKey);
                 newUrlParams.set('fileId', fileId);
                 history.replaceState({ viewGroup: groupKey, fileId: fileId }, '', `${window.location.pathname}?${newUrlParams.toString()}`);
-                await displayGroupDetail(groupKey, fileId); // displayGroupDetail is async
+                await displayGroupDetail(groupKey, fileId); 
             } else {
                 console.warn(`Legacy file ID ${fileId} not found. Redirecting to homepage.`);
                 await resetToHomepage();
@@ -547,7 +539,6 @@
             console.error(`Error handling legacy file link for ID ${fileId}:`, error);
             await resetToHomepage();
         } finally {
-            // displayGroupDetail manages its own loader hiding if successful
             if (pageLoader && pageLoader.style.display !== 'none' && !(currentViewMode === 'groupDetail')) {
                  pageLoader.style.display = 'none';
             }
@@ -558,7 +549,7 @@
     function handleSearchInput() { clearTimeout(suggestionDebounceTimeout); const searchTerm = searchInput.value.trim(); if (searchTerm.length < 2) { suggestionsContainer.style.display = 'none'; return; } suggestionDebounceTimeout = setTimeout(() => { fetchAndDisplaySuggestions(searchTerm); }, config.SUGGESTIONS_DEBOUNCE_DELAY); }
     function fetchAndDisplaySuggestions(term) { const normalizedTerm = normalizeTextForSearch(term); if (!normalizedTerm) { suggestionsContainer.style.display = 'none'; return; } const matchingItems = localSuggestionData.filter(movie => movie.searchText.includes(normalizedTerm)).slice(0, config.MAX_SUGGESTIONS); suggestionsContainer.innerHTML = ''; if (matchingItems.length > 0) { const fragment = document.createDocumentFragment(); matchingItems.forEach(item => { const div = document.createElement('div'); let displayText = item.displayFilename; let highlighted = false; if (term.length > 0) { try { const safeTerm = escapeRegExp(term); const regex = new RegExp(`(${safeTerm})`, 'i'); if ((item.displayFilename || '').match(regex)) { div.innerHTML = (item.displayFilename || '').replace(regex, '<strong>$1</strong>'); highlighted = true; } } catch (e) { console.warn("Regex error for highlight:", e); } } if (!highlighted) { div.textContent = item.displayFilename; } div.title = item.displayFilename; div.onclick = () => selectSuggestion(item.displayFilename); fragment.appendChild(div); }); suggestionsContainer.appendChild(fragment); suggestionsContainer.style.display = 'block'; } else { suggestionsContainer.style.display = 'none'; } }
     function selectSuggestion(selectedValue) { searchInput.value = selectedValue; suggestionsContainer.style.display = 'none'; handleSearchSubmit(); }
-    window.handleSearchSubmit = async function(pushHistory = true) { // Made async due to setViewMode
+    window.handleSearchSubmit = async function(pushHistory = true) { 
         if (suggestionsContainer) { suggestionsContainer.style.display = 'none'; }
         const searchTerm = searchInput.value.trim();
         if (searchInput) { searchInput.blur(); }
@@ -569,7 +560,7 @@
             currentGroupData = null;
         }
         lastSearchTermForResults = searchTerm;
-        await setViewMode('search'); // setViewMode is async
+        await setViewMode('search'); 
         activeResultsTab = 'allFiles';
         currentState.currentPage = 1;
         currentState.searchTerm = searchTerm;
@@ -582,7 +573,7 @@
         }
         updateActiveTabAndPanel();
         showLoadingStateInGrids(`Searching for "${sanitize(searchTerm)}"...`);
-        fetchAndRenderResults(); // This is already async and handles its rendering
+        fetchAndRenderResults(); 
     }
     function handleSearchClear() { clearTimeout(suggestionDebounceTimeout); suggestionsContainer.style.display = 'none'; setTimeout(async () => { if (searchInput.value.trim() === '') { if (currentViewMode === 'search') { await resetToHomepage(); } else { currentState.searchTerm = ''; saveStateToLocalStorage(); } } }, 100); }
     function showLoadingStateInGrids(message = 'Loading...') {
@@ -595,7 +586,7 @@
 
     // --- Updates Preview Logic ---
     async function loadUpdatesPreview() {
-        if (!updatesPreviewList || !showMoreUpdatesButton) { // Removed currentViewMode check, setViewMode handles that
+        if (!updatesPreviewList || !showMoreUpdatesButton) { 
              if (showMoreUpdatesButton) showMoreUpdatesButton.style.display = 'none';
             return;
         }
@@ -809,7 +800,7 @@
         const scrollPosition = elementTop - stickyHeaderHeight - 20;
         window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
     }
-    window.switchTab = async function(tabId) { // Made async
+    window.switchTab = async function(tabId) { 
         if (currentViewMode !== 'search' || tabId === activeResultsTab || !tabMappings[tabId]) { return; }
         activeResultsTab = tabId;
         currentState.currentPage = 1;
@@ -817,12 +808,12 @@
         closePlayerIfNeeded(null);
         updateActiveTabAndPanel();
         showLoadingStateInGrids(`Loading ${tabMappings[tabId].typeFilter || 'all content'}...`);
-        await fetchAndRenderResults(); // Await the results
+        await fetchAndRenderResults(); 
         saveStateToLocalStorage();
     }
 
     // --- Navigation to Group Detail View ---
-    async function navigateToGroupView(groupKey) { // Made async
+    async function navigateToGroupView(groupKey) { 
         if (!groupKey) return;
         lastFocusedElement = document.activeElement;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
@@ -833,7 +824,7 @@
         const newUrl = `${window.location.pathname}?${newUrlParams.toString()}`;
         try { history.pushState({ viewGroup: groupKey }, '', newUrl); }
         catch (e) { console.error("History pushState failed:", e); }
-        await displayGroupDetail(groupKey); // displayGroupDetail is async
+        await displayGroupDetail(groupKey); 
     }
 
     // --- Share Logic ---
@@ -856,15 +847,15 @@
     }
 
     // --- Group Detail Display Logic ---
-    async function displayGroupDetail(groupKey, fileIdToHighlight = null) { // Made async
+    async function displayGroupDetail(groupKey, fileIdToHighlight = null) { 
         if (!groupKey || !groupDetailViewEl || !groupDetailContentEl) return;
         if (groupDetailAbortController) { groupDetailAbortController.abort(); groupDetailAbortController = null; }
         groupDetailAbortController = new AbortController();
         const signal = groupDetailAbortController.signal;
         
-        if (pageLoader && pageLoader.style.display === 'none') pageLoader.style.display = 'flex'; // Show page loader for group detail
+        if (pageLoader && pageLoader.style.display === 'none') pageLoader.style.display = 'flex'; 
 
-        await setViewMode('groupDetail'); // Await this to set classes correctly
+        await setViewMode('groupDetail'); 
         groupDetailContentEl.innerHTML = `<div class="loading-inline-spinner" role="status" aria-live="polite"><div class="spinner"></div><span>Loading group details (ID: ${sanitize(groupKey)})...</span></div>`;
         currentGroupData = null;
         if (backToHomeButtonGroupDetail) backToHomeButtonGroupDetail.style.display = 'inline-flex';
@@ -891,14 +882,13 @@
                     } else {
                         if (!groupData) throw new Error(`Group ${groupKey} could not be found or constructed from search: ${inferredSearchTerm}.`);
                     }
-                } else if (!groupData) { // If groupData was initially null and API found nothing
+                } else if (!groupData) { 
                      throw new Error(`No files found for group ${groupKey} (title: ${inferredSearchTerm}).`);
                 }
-                 // If groupData existed (e.g. from updates) but API gave no *new* files, we can still use existing groupData.
             }
             if (signal.aborted) return;
             currentGroupData = groupData;
-            if (!currentGroupData) throw new Error(`Failed to load data for group ${groupKey}.`); // Final check
+            if (!currentGroupData) throw new Error(`Failed to load data for group ${groupKey}.`); 
 
             document.title = `${currentGroupData.displayTitle || 'Group Detail'} - Cinema Ghar`;
             if (!currentGroupData.tmdbDetails || !currentGroupData.tmdbDetails.genres || !currentGroupData.tmdbDetails.hasOwnProperty('trailerKey')) { 
@@ -916,7 +906,7 @@
                     if (tmdbResponse.ok) {
                         const fullTmdbData = await tmdbResponse.json();
                         currentGroupData.tmdbDetails = { ...(currentGroupData.tmdbDetails || {}), ...fullTmdbData };
-                        allKnownGroups.set(groupKey, currentGroupData); // Update cache
+                        allKnownGroups.set(groupKey, currentGroupData); 
                     }
                 } catch (tmdbError) {
                     clearTimeout(tmdbTimeoutId);
@@ -941,7 +931,7 @@
             if (groupDetailContentEl.innerHTML && !groupDetailContentEl.querySelector('.loading-inline-spinner')) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
-            if (pageLoader && pageLoader.style.display !== 'none') { // Hide page loader after group detail setup
+            if (pageLoader && pageLoader.style.display !== 'none') { 
                 pageLoader.style.display = 'none';
             }
         }
@@ -1048,7 +1038,7 @@
         const escapedHubcloudUrl = file.hubcloud_link ? file.hubcloud_link.replace(/'/g, "\\'") : '';
         const escapedGdflixUrl = file.gdflix_link ? file.gdflix_link.replace(/'/g, "\\'") : '';
 
-        let fileActionButtonsHTML = '<div class="file-actions">';
+        let fileActionButtonsHTML = '<div class="file-actions">'; // Actions div will be hidden/shown
         if (file.url) {
             fileActionButtonsHTML += `<button class="button play-button" data-action="play-file" data-file-id="${escapedFileId}" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play</button>`;
             fileActionButtonsHTML += `<a class="button download-button" href="${file.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Download</a>`;
@@ -1058,7 +1048,6 @@
             }
         }
 
-        // Bypass Buttons
         if (file.hubcloud_link) {
             fileActionButtonsHTML += `<button class="button hubcloud-bypass-button" data-action="bypass-hubcloud-file" data-file-id="${escapedFileId}" data-hubcloud-url="${escapedHubcloudUrl}"><span aria-hidden="true" class="button-icon">☁️</span><span class="button-spinner spinner"></span><span class="button-text">Bypass HubCloud</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`;
         }
@@ -1066,7 +1055,6 @@
             fileActionButtonsHTML += `<button class="button gdflix-bypass-button" data-action="bypass-gdflix-file" data-file-id="${escapedFileId}" data-gdflix-url="${escapedGdflixUrl}"><span aria-hidden="true" class="button-icon">🎬</span><span class="button-spinner spinner"></span><span class="button-text">Bypass GDFLIX</span></button><span class="bypass-feedback" role="status" aria-live="polite"></span>`;
         }
         
-        // Direct Link Buttons (shown if the link exists, IN ADDITION to any bypass button)
         if (file.hubcloud_link) {
             fileActionButtonsHTML += `<a class="button hubcloud-button" href="${sanitize(file.hubcloud_link)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">☁️</span> HubCloud Link</a>`;
         }
@@ -1074,19 +1062,17 @@
             fileActionButtonsHTML += `<a class="button gdflix-button" href="${sanitize(file.gdflix_link)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">🎬</span> GDFLIX Link</a>`;
         }
 
-        // Share button
         fileActionButtonsHTML += `<button class="button share-button" data-action="share-file" data-file-id="${escapedFileId}" data-group-key="${escapedGroupKey}" data-title="${escapedStreamTitle}" data-filename="${escapedFilename}"><span aria-hidden="true">🔗</span> Share File</button><span class="copy-feedback share-fallback" role="status" aria-live="polite">Link copied!</span>`;
         
-        // Other specific direct links
         if (file.telegram_link) { fileActionButtonsHTML += `<a class="button telegram-button" href="${sanitize(file.telegram_link)}" target="_blank" rel="noopener noreferrer">Telegram File</a>`; }
         if (file.filepress_link) fileActionButtonsHTML += `<a class="button filepress-button" href="${sanitize(file.filepress_link)}" target="_blank" rel="noopener noreferrer">Filepress</a>`;
         if (file.gdtot_link)    fileActionButtonsHTML += `<a class="button gdtot-button" href="${sanitize(file.gdtot_link)}" target="_blank" rel="noopener noreferrer">GDToT</a>`;
 
-        fileActionButtonsHTML += '</div>'; // End .file-actions
+        fileActionButtonsHTML += '</div>'; 
 
         return `
             <li class="file-item" data-file-id="${escapedFileId}">
-                <div class="file-info">
+                <div class="file-info file-info-clickable">
                     <span class="file-name" title="${displayFilename}">${displayFilename}</span>
                     <span class="file-meta">
                         Quality: ${displayQuality} ${fourkLogoHtml}${hdrLogoHtml} | Size: ${displaySize} | Lang: ${sanitize(file.languages || 'N/A')} | Updated: ${formattedDateRelative}
@@ -1103,11 +1089,25 @@
         currentGroupData.files[fileIndex].url = encodedFinalUrl;
         currentGroupData.files[fileIndex].hubcloud_link = null;
         currentGroupData.files[fileIndex].gdflix_link = null;
+        
+        // Re-render the specific list item
         const fileListItem = groupDetailContentEl.querySelector(`.file-item[data-file-id="${sanitize(fileId)}"]`);
         if (fileListItem) {
             const newListItemHTML = createGroupDetailFileListItemHTML(currentGroupData.files[fileIndex], currentGroupData);
-            fileListItem.outerHTML = newListItemHTML;
-            const newPlayButton = groupDetailContentEl.querySelector(`.file-item[data-file-id="${sanitize(fileId)}"] .play-button`);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newListItemHTML;
+            const newFileItem = tempDiv.firstElementChild;
+            
+            // Preserve expanded state if it was expanded
+            const oldActions = fileListItem.querySelector('.file-actions');
+            if (oldActions && oldActions.classList.contains('actions-expanded')) {
+                newFileItem.querySelector('.file-actions')?.classList.add('actions-expanded');
+                newFileItem.querySelector('.file-info-clickable')?.classList.add('info-active');
+            }
+            
+            fileListItem.replaceWith(newFileItem);
+            
+            const newPlayButton = newFileItem.querySelector('.play-button');
             if(newPlayButton) setTimeout(() => newPlayButton.focus(), 50);
         }
     }
@@ -1195,7 +1195,7 @@
         clearCopyFeedback(); clearBypassFeedback();
         if (videoTitle) videoTitle.innerText = '';
         if (wasGlobalMode) {
-            resetToHomepage(); // This is async now, but closePlayer is not awaited by callers
+            resetToHomepage(); 
             lastFocusedElement = null;
             return;
         }
@@ -1255,19 +1255,18 @@
                 currentState.sortDirection = (typeof parsedState.sortDirection === 'string' && ['asc', 'desc'].includes(parsedState.sortDirection)) ? parsedState.sortDirection : 'desc';
                 currentState.qualityFilter = typeof parsedState.qualityFilter === 'string' ? parsedState.qualityFilter : '';
                 currentState.searchTerm = typeof parsedState.searchTerm === 'string' ? parsedState.searchTerm : '';
-                lastSearchTermForResults = currentState.searchTerm; // Keep this for back navigation logic
+                lastSearchTermForResults = currentState.searchTerm; 
                 
-                // Determine initial currentViewMode based on saved state, but URL params will override in handleUrlChange
                 if (parsedState.viewMode === 'search' && currentState.searchTerm) {
-                    currentViewMode = 'search'; // Tentative, handleUrlChange will confirm
+                    currentViewMode = 'search'; 
                     activeResultsTab = typeof parsedState.activeTab === 'string' ? parsedState.activeTab : 'allFiles';
                     currentState.currentPage = typeof parsedState.currentPage === 'number' ? parsedState.currentPage : 1;
                     currentState.typeFilter = tabMappings[activeResultsTab]?.typeFilter || '';
                     if(searchInput) searchInput.value = currentState.searchTerm;
                 } else if (parsedState.viewMode === 'groupDetail' && parsedState.currentGroupKey) {
-                    currentViewMode = 'homepage'; // Default to homepage, let URL check in handleUrlChange take over
+                    currentViewMode = 'homepage'; 
                 } else {
-                    currentViewMode = 'homepage'; // Default
+                    currentViewMode = 'homepage'; 
                     activeResultsTab = 'allFiles';
                     currentState.currentPage = 1;
                     currentState.typeFilter = '';
@@ -1303,7 +1302,7 @@
             const response = await fetch(url, { signal: currentSignal });
             if (!response.ok) { let errorBody = null; try { errorBody = await response.json(); } catch (_) {} const errorDetails = errorBody?.error || errorBody?.details || `Status: ${response.status}`; throw new Error(`API Error: ${errorDetails}`); }
             const data = await response.json();
-            if (!params.id && activeResultsTab && tabMappings[activeResultsTab]) { // Added activeResultsTab check
+            if (!params.id && activeResultsTab && tabMappings[activeResultsTab]) { 
                 const activePagination = tabMappings[activeResultsTab]?.pagination;
                 if (activePagination && data.totalPages !== undefined) {
                     activePagination.dataset.totalPages = data.totalPages;
@@ -1321,7 +1320,7 @@
             renderActiveResultsView(apiResponse);
             saveStateToLocalStorage();
         } catch (error) {
-            if (error.name !== 'AbortError' && activeResultsTab && tabMappings[activeResultsTab]) { // Added activeResultsTab check
+            if (error.name !== 'AbortError' && activeResultsTab && tabMappings[activeResultsTab]) { 
                 const { gridContainer } = tabMappings[activeResultsTab];
                 if (gridContainer) { gridContainer.innerHTML = `<div class="error-message grid-status-message">Error loading results: ${error.message}. Please try again.</div>`; }
                 Object.values(tabMappings).forEach(m => { if(m.pagination) m.pagination.style.display = 'none'; });
@@ -1340,14 +1339,13 @@
     }
     function displayLoadError(message) { const errorHtml = `<div class="error-container" role="alert">${sanitize(message)}</div>`; if (searchFocusArea) searchFocusArea.innerHTML = ''; searchFocusArea.style.display = 'none'; if (resultsArea) resultsArea.innerHTML = ''; resultsArea.style.display = 'none'; if (updatesPreviewSection) updatesPreviewSection.innerHTML = ''; updatesPreviewSection.style.display = 'none'; if (groupDetailContentEl) groupDetailContentEl.innerHTML = ''; if (groupDetailViewEl) groupDetailViewEl.style.display = 'none'; if (pageFooter) pageFooter.style.display = 'none'; container.classList.remove('results-active', 'item-detail-active'); if (mainErrorArea) { mainErrorArea.innerHTML = errorHtml; } else if (container) { container.insertAdjacentHTML('afterbegin', errorHtml); } if (pageLoader) pageLoader.style.display = 'none'; }
     
-    async function initializeApp() { // Made async
-        isInitialLoad = true; // Set true before any view determination
+    async function initializeApp() { 
+        isInitialLoad = true; 
         if (pageLoader) pageLoader.style.display = 'flex';
     
-        loadStateFromLocalStorage(); // Sets initial currentState.currentViewMode
+        loadStateFromLocalStorage(); 
         if (qualityFilterSelect) { qualityFilterSelect.value = currentState.qualityFilter || ''; updateFilterIndicator(); }
     
-        // Fetch suggestion data (does not block critical path for initial view rendering)
         try {
             const initialDataLimit = Math.max(500, config.UPDATES_PREVIEW_INITIAL_COUNT * 5);
             const initialApiData = await fetchApiData({ limit: initialDataLimit, sort: 'lastUpdated', sortDir: 'desc' });
@@ -1367,19 +1365,11 @@
             }
         }
     
-        // IMPORTANT: Await handleUrlChange to ensure initial view (especially homepage updates)
-        // is processed before potentially hiding the pageLoader too early.
         await handleUrlChange(); 
     
-        // Logic for restoring search results if that was the last view state
-        // (handleUrlChange would have set currentViewMode to 'search' if q param was present)
         if (currentViewMode === 'search' && currentState.searchTerm) {
-            if (allFilesGridContainer && allFilesGridContainer.querySelector('.loading-message')) { // Check if search results need rendering
+            if (allFilesGridContainer && allFilesGridContainer.querySelector('.loading-message')) { 
                  if(searchInput) searchInput.value = currentState.searchTerm;
-                 // showLoadingStateInGrids might have been called by handleSearchSubmit inside handleUrlChange
-                 // fetchAndRenderResults is also likely called by handleSearchSubmit.
-                 // This might be redundant if handleUrlChange correctly triggers search.
-                 // However, if restoring from localStorage without 'q' in URL, this ensures search view.
                  if (!new URLSearchParams(window.location.search).has('q')) {
                     showLoadingStateInGrids(`Loading search results for "${sanitize(currentState.searchTerm)}"...`);
                     await fetchAndRenderResults();
@@ -1387,7 +1377,6 @@
             }
         }
     
-        // Hide general page loader if it's still visible and not handled by specific views
         const urlParams = new URLSearchParams(window.location.search);
         if (pageLoader && pageLoader.style.display !== 'none' &&
             !(currentViewMode === 'groupDetail' || urlParams.get('shareId') || urlParams.get('viewId')) ) {
@@ -1398,41 +1387,128 @@
     // --- Event Handling Setup ---
     function handleContentClick(event) {
          const target = event.target;
+
+         // --- 1. Handle click on .file-info to toggle actions ---
+         const fileInfoTrigger = target.closest('.file-info-clickable');
+         if (fileInfoTrigger && target.closest('#item-detail-content')) {
+             event.preventDefault(); 
+             const fileItem = fileInfoTrigger.closest('.file-item');
+             if (fileItem) {
+                 const fileActions = fileItem.querySelector('.file-actions');
+                 if (fileActions) {
+                     const isCurrentlyExpanded = fileActions.classList.contains('actions-expanded');
+                     
+                     // Accordion behavior: Close all other currently open action panels
+                     const allFileItems = fileItem.parentElement.querySelectorAll('.file-item');
+                     allFileItems.forEach(item => {
+                         const otherActions = item.querySelector('.file-actions');
+                         const otherInfo = item.querySelector('.file-info-clickable');
+                         if (otherActions && otherActions !== fileActions && otherActions.classList.contains('actions-expanded')) {
+                             otherActions.classList.remove('actions-expanded');
+                             otherInfo?.classList.remove('info-active');
+                         }
+                     });
+
+                     // Toggle the current one
+                     if (isCurrentlyExpanded) {
+                         fileActions.classList.remove('actions-expanded');
+                         fileInfoTrigger.classList.remove('info-active');
+                     } else {
+                         fileActions.classList.add('actions-expanded');
+                         fileInfoTrigger.classList.add('info-active');
+                     }
+                 }
+             }
+             return; // Processed this click, do not proceed further
+         }
+
+         // --- 2. Handle group grid item navigation ---
          const groupGridItemTrigger = target.closest('.grid-item, .update-item');
          if (groupGridItemTrigger) {
              event.preventDefault();
              const groupKey = groupGridItemTrigger.dataset.groupKey;
-             if (groupKey) { navigateToGroupView(groupKey); } // navigateToGroupView is async
+             if (groupKey) { navigateToGroupView(groupKey); } 
              else { console.error("Could not find groupKey for grid item navigation."); }
              return;
          }
+
+         // --- 3. Handle button clicks within group detail (or player close) ---
          if (target.closest('#item-detail-content')) {
-             handleGroupDetailActionClick(event);
+             handleGroupDetailActionClick(event); // This will catch button clicks inside .file-actions
              return;
          }
+         
+         // --- 4. Handle player close button ---
          if (target.matches('.close-btn') && target.closest('#videoContainer')) {
               event.preventDefault(); lastFocusedElement = target; closePlayer(lastFocusedElement); return;
           }
+         
+         // --- 5. Handle sort table header ---
          if (target.closest('th.sortable')) { handleSort(event); return; }
     }
     function handleGroupDetailActionClick(event) {
-        const button = event.target.closest('.button');
-        if (!button || !currentGroupData) return;
+        const button = event.target.closest('.button'); // This will get a button inside .file-actions
+        if (!button || !currentGroupData) return; // If no button or no group data, exit
+
+        // Only process if the button is inside .file-actions OR is the main custom URL toggle
+        const isInFileActions = button.closest('.file-actions');
+        const isCustomUrlToggle = button.dataset.action === 'toggle-custom-url-player' && button.closest('#item-detail-content');
+
+        if (!isInFileActions && !isCustomUrlToggle) {
+            return; // Not a button we're interested in here (e.g. TMDb link button)
+        }
+        
         const action = button.dataset.action;
-        const fileId = button.dataset.fileId;
-        currentFileForAction = fileId ? currentGroupData.files.find(f => String(f.id) === String(fileId)) : null;
-        if (action && action.endsWith('-file') && !currentFileForAction) {
+        const fileId = button.dataset.fileId; // This will be present for buttons inside .file-actions
+        
+        currentFileForAction = null; // Reset
+        if (fileId && currentGroupData.files) {
+             currentFileForAction = currentGroupData.files.find(f => String(f.id) === String(fileId));
+        }
+
+        if (action && action.endsWith('-file') && !action.startsWith('bypass-') && !currentFileForAction) {
             console.warn(`Action ${action} requires a file context, but file ${fileId} not found in current group.`);
             return;
         }
+        if (action && (action.startsWith('bypass-')) && !button.dataset.hubcloudUrl && !button.dataset.gdflixUrl) {
+             console.warn(`Bypass action ${action} missing source URL on button.`);
+             // For bypass, we use the URL from the button directly, not from currentFileForAction.url
+             // but we do need currentFileForAction for updating the item later.
+             if (!currentFileForAction && fileId) { // Try to get it if only fileId was on button
+                currentFileForAction = currentGroupData.files.find(f => String(f.id) === String(fileId));
+             }
+             if (!currentFileForAction) {
+                console.warn(`Bypass action ${action} could not find file item for ID ${fileId} to update later.`);
+                return;
+             }
+        }
+
         lastFocusedElement = button;
         switch (action) {
             case 'play-file': if (currentFileForAction && currentFileForAction.url) { event.preventDefault(); streamVideo(button.dataset.title, currentFileForAction.url, button.dataset.filename); } break;
             case 'copy-vlc-file': if (currentFileForAction && currentFileForAction.url) { event.preventDefault(); copyVLCLink(button, currentFileForAction.url); } break;
             case 'open-intent-file': if (currentFileForAction && currentFileForAction.url) { event.preventDefault(); openWithIntent(currentFileForAction.url, button.dataset.title); } break;
             case 'share-file': event.preventDefault(); handleShareClick(button); break;
-            case 'bypass-hubcloud-file': if (currentFileForAction && currentFileForAction.hubcloud_link) { event.preventDefault(); triggerHubCloudBypassForFile(button, currentFileForAction); } break;
-            case 'bypass-gdflix-file': if (currentFileForAction && currentFileForAction.gdflix_link) { event.preventDefault(); triggerGDFLIXBypassForFile(button, currentFileForAction); } break;
+            case 'bypass-hubcloud-file': {
+                const hubUrl = button.dataset.hubcloudUrl;
+                if (hubUrl && currentFileForAction) { // currentFileForAction needed for updateFileInGroupAfterBypass
+                    event.preventDefault(); 
+                    triggerHubCloudBypassForFile(button, currentFileForAction); // Pass file object for update
+                } else {
+                    console.warn("HubCloud bypass: Missing URL or file context for update.", hubUrl, currentFileForAction);
+                }
+                break;
+            }
+            case 'bypass-gdflix-file': {
+                const gdflixUrl = button.dataset.gdflixUrl;
+                if (gdflixUrl && currentFileForAction) { // currentFileForAction needed for updateFileInGroupAfterBypass
+                     event.preventDefault(); 
+                     triggerGDFLIXBypassForFile(button, currentFileForAction); // Pass file object for update
+                } else {
+                    console.warn("GDFLIX bypass: Missing URL or file context for update.", gdflixUrl, currentFileForAction);
+                }
+                break;
+            }
             case 'toggle-custom-url-player': event.preventDefault(); toggleCustomUrlInputInPlayer(button); break;
             default: if (button.tagName === 'A' && button.href && button.target === '_blank') {} break;
         }
@@ -1497,10 +1573,10 @@
     }
 
     // --- HubCloud/GDFLIX Bypass Logic ---
-    async function triggerHubCloudBypassForFile(buttonElement, file) {
-        const hubcloudUrl = file.hubcloud_link;
+    async function triggerHubCloudBypassForFile(buttonElement, fileToUpdate) { // Changed param name
+        const hubcloudUrl = buttonElement.dataset.hubcloudUrl || fileToUpdate.hubcloud_link; // Get URL from button or file
         if (!hubcloudUrl) { setBypassButtonState(buttonElement, 'error', 'Missing URL'); return; }
-        if (!file || !file.id) { setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
+        if (!fileToUpdate || !fileToUpdate.id) { setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
         setBypassButtonState(buttonElement, 'loading');
         const apiController = new AbortController();
         const timeoutId = setTimeout(() => { apiController.abort(); setBypassButtonState(buttonElement, 'error', 'Timeout'); }, config.BYPASS_TIMEOUT);
@@ -1512,14 +1588,14 @@
             if (result.success && result.finalUrl) {
                 const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20');
                 setBypassButtonState(buttonElement, 'success', 'Success!');
-                updateFileInGroupAfterBypass(file.id, encodedFinalUrl);
+                updateFileInGroupAfterBypass(fileToUpdate.id, encodedFinalUrl);
             } else { throw new Error(result.details || result.error || 'Unknown HubCloud bypass failure'); }
         } catch (error) { clearTimeout(timeoutId); if (error.name === 'AbortError' && !apiController.signal.aborted) { setBypassButtonState(buttonElement, 'error', 'Timeout'); } else if (error.name === 'AbortError') { setBypassButtonState(buttonElement, 'idle'); } else { setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); } }
     }
-    async function triggerGDFLIXBypassForFile(buttonElement, file) {
-        const gdflixUrl = file.gdflix_link;
+    async function triggerGDFLIXBypassForFile(buttonElement, fileToUpdate) { // Changed param name
+        const gdflixUrl = buttonElement.dataset.gdflixUrl || fileToUpdate.gdflix_link; // Get URL from button or file
         if (!gdflixUrl) { setBypassButtonState(buttonElement, 'error', 'Missing URL'); return; }
-        if (!file || !file.id) { setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
+        if (!fileToUpdate || !fileToUpdate.id) { setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
         setBypassButtonState(buttonElement, 'loading');
         const apiController = new AbortController();
         const timeoutId = setTimeout(() => { apiController.abort(); setBypassButtonState(buttonElement, 'error', 'Timeout'); }, config.BYPASS_TIMEOUT);
@@ -1531,7 +1607,7 @@
             if (result.success && result.finalUrl) {
                 const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20');
                 setBypassButtonState(buttonElement, 'success', 'Success!');
-                updateFileInGroupAfterBypass(file.id, encodedFinalUrl);
+                updateFileInGroupAfterBypass(fileToUpdate.id, encodedFinalUrl);
             } else { throw new Error(result.error || 'Unknown GDFLIX bypass failure'); }
         } catch (error) { clearTimeout(timeoutId); if (error.name === 'AbortError' && !apiController.signal.aborted) { setBypassButtonState(buttonElement, 'error', 'Timeout'); } else if (error.name === 'AbortError') { setBypassButtonState(buttonElement, 'idle'); } else { setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); } }
     }
@@ -1539,7 +1615,7 @@
 
     // --- Add Event Listeners ---
     document.addEventListener('DOMContentLoaded', async () => {
-         await initializeApp(); // initializeApp is now async
+         await initializeApp(); 
          if (searchInput) { searchInput.addEventListener('input', handleSearchInput); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); handleSearchSubmit(); } else if (event.key === 'Escape') { suggestionsContainer.style.display = 'none'; } }); searchInput.addEventListener('search', handleSearchClear); searchInput.addEventListener('blur', () => { setTimeout(() => { const searchButton = document.getElementById('searchSubmitButton'); if (document.activeElement !== searchInput && !suggestionsContainer.contains(document.activeElement) && document.activeElement !== searchButton) { suggestionsContainer.style.display = 'none'; } }, 150); }); }
          if (qualityFilterSelect) { qualityFilterSelect.addEventListener('change', triggerFilterChange); }
          if (container) { container.addEventListener('click', handleContentClick); }
@@ -1565,7 +1641,7 @@
                     clickedOnPotentialTrigger = playCustomUrlGlobalButton && playCustomUrlGlobalButton.contains(event.target);
                 } else if (currentViewMode === 'groupDetail' && groupDetailContentEl) {
                      clickedOnPotentialTrigger = groupDetailContentEl.contains(event.target) &&
-                        (event.target.closest('.play-button') || event.target.closest('.custom-url-toggle-button'));
+                        (event.target.closest('.play-button') || event.target.closest('.custom-url-toggle-button') || event.target.closest('.file-info-clickable'));
                 }
                 if (!clickedInsidePlayer && !clickedOnPotentialTrigger) { closePlayer(event.target); }
             }
