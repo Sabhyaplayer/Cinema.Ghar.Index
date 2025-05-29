@@ -137,8 +137,25 @@
     function preprocessMovieData(movie) {
         const processed = { ...movie };
         processed.id = movie.original_id;
-        processed.url = (movie.url && typeof movie.url === 'string' && movie.url.toLowerCase() !== 'null' && movie.url.trim() !== '') ? movie.url : null;
-        if (processed.url) { processed.url = processed.url.replace(/ /g, '%20');}
+        
+        // Ensure URL is properly encoded before use, especially if it might contain spaces or special characters
+        let rawUrl = (movie.url && typeof movie.url === 'string' && movie.url.toLowerCase() !== 'null' && movie.url.trim() !== '') ? movie.url.trim() : null;
+        if (rawUrl) {
+            try {
+                // Basic space encoding first
+                rawUrl = rawUrl.replace(/ /g, '%20');
+                // More robust encoding for player compatibility
+                let tempEncodedUrl = encodeURI(rawUrl); // Handles most standard chars, preserves URL structure
+                tempEncodedUrl = tempEncodedUrl.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
+                processed.url = tempEncodedUrl;
+            } catch (e) {
+                console.warn("Error encoding URL, using space replacement only for:", rawUrl, e);
+                processed.url = rawUrl; // Fallback to basic space encoding
+            }
+        } else {
+            processed.url = null;
+        }
+
         processed.hubcloud_link = (movie.hubcloud_link && typeof movie.hubcloud_link === 'string' && movie.hubcloud_link.toLowerCase() !== 'null' && movie.hubcloud_link.trim() !== '') ? movie.hubcloud_link : null;
         processed.gdflix_link = (movie.gdflix_link && typeof movie.gdflix_link === 'string' && movie.gdflix_link.toLowerCase() !== 'null' && movie.gdflix_link.trim() !== '') ? movie.gdflix_link : null;
         processed.displayFilename = sanitize(movie.filename || '');
@@ -1030,21 +1047,24 @@
         const lowerFilename = (displayFilename || '').toLowerCase();
         if (displayQuality === '4K' || lowerFilename.includes('2160p') || lowerFilename.includes('.4k.')) { fourkLogoHtml = `<img src="${config.FOURK_LOGO_URL}" alt="4K" class="quality-logo fourk-logo" title="4K Ultra HD" />`; }
         if ((displayQuality || '').includes('HDR') || (displayQuality || '').includes('DOLBY VISION') || displayQuality === 'DV' || lowerFilename.includes('hdr') || lowerFilename.includes('dolby.vision') || lowerFilename.includes('.dv.')) { hdrLogoHtml = `<img src="${config.HDR_LOGO_URL}" alt="HDR/DV" class="quality-logo hdr-logo" title="HDR / Dolby Vision Content" />`; }
+        
+        // Use file.url directly as it should be pre-encoded by preprocessMovieData or updateFileInGroupAfterBypass
+        const fileUrlForAttributes = file.url || ''; 
+        
         const escapedStreamTitle = streamTitle.replace(/'/g, "\\'");
         const escapedFilename = displayFilename.replace(/'/g, "\\'");
-        const escapedUrl = file.url ? file.url.replace(/'/g, "\\'") : '';
         const escapedFileId = file.id ? String(file.id).replace(/[^a-zA-Z0-9-_]/g, '') : '';
         const escapedGroupKey = groupData.groupKey.replace(/'/g, "\\'");
         const escapedHubcloudUrl = file.hubcloud_link ? file.hubcloud_link.replace(/'/g, "\\'") : '';
         const escapedGdflixUrl = file.gdflix_link ? file.gdflix_link.replace(/'/g, "\\'") : '';
 
-        let fileActionButtonsHTML = '<div class="file-actions">'; // Actions div will be hidden/shown
+        let fileActionButtonsHTML = '<div class="file-actions">'; 
         if (file.url) {
-            fileActionButtonsHTML += `<button class="button play-button" data-action="play-file" data-file-id="${escapedFileId}" data-title="${escapedStreamTitle}" data-url="${escapedUrl}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play</button>`;
-            fileActionButtonsHTML += `<a class="button download-button" href="${file.url}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Download</a>`;
-            fileActionButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc-file" data-file-id="${escapedFileId}" data-url="${escapedUrl}"><span aria-hidden="true">📋</span> Copy URL</button><span class="copy-feedback" role="status" aria-live="polite"></span>`;
+            fileActionButtonsHTML += `<button class="button play-button" data-action="play-file" data-file-id="${escapedFileId}" data-title="${escapedStreamTitle}" data-url="${fileUrlForAttributes.replace(/'/g, "\\'")}" data-filename="${escapedFilename}"><span aria-hidden="true">▶️</span> Play</button>`;
+            fileActionButtonsHTML += `<a class="button download-button" href="${fileUrlForAttributes}" download="${displayFilename}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💾</span> Download</a>`;
+            fileActionButtonsHTML += `<button class="button vlc-button" data-action="copy-vlc-file" data-file-id="${escapedFileId}" data-url="${fileUrlForAttributes.replace(/'/g, "\\'")}"><span aria-hidden="true">📋</span> Copy URL</button><span class="copy-feedback" role="status" aria-live="polite"></span>`;
             if (navigator.userAgent.toLowerCase().includes("android")) {
-                fileActionButtonsHTML += `<button class="button intent-button" data-action="open-intent-file" data-file-id="${escapedFileId}" data-url="${escapedUrl}" data-title="${escapedStreamTitle}"><span aria-hidden="true">📱</span> Play External</button>`;
+                fileActionButtonsHTML += `<button class="button intent-button" data-action="open-intent-file" data-file-id="${escapedFileId}" data-url="${fileUrlForAttributes.replace(/'/g, "\\'")}" data-title="${escapedStreamTitle}"><span aria-hidden="true">📱</span> Play External</button>`;
             }
         }
 
@@ -1082,15 +1102,14 @@
             </li>`;
     }
 
-    function updateFileInGroupAfterBypass(fileId, encodedFinalUrl) {
+    function updateFileInGroupAfterBypass(fileId, fullyEncodedFinalUrl) { // Parameter name changed
         if (!currentGroupData || !groupDetailContentEl) return;
         const fileIndex = currentGroupData.files.findIndex(f => String(f.id) === String(fileId));
         if (fileIndex === -1) return;
-        currentGroupData.files[fileIndex].url = encodedFinalUrl;
+        currentGroupData.files[fileIndex].url = fullyEncodedFinalUrl; // Use the fully encoded URL
         currentGroupData.files[fileIndex].hubcloud_link = null;
         currentGroupData.files[fileIndex].gdflix_link = null;
         
-        // Re-render the specific list item
         const fileListItem = groupDetailContentEl.querySelector(`.file-item[data-file-id="${sanitize(fileId)}"]`);
         if (fileListItem) {
             const newListItemHTML = createGroupDetailFileListItemHTML(currentGroupData.files[fileIndex], currentGroupData);
@@ -1098,7 +1117,6 @@
             tempDiv.innerHTML = newListItemHTML;
             const newFileItem = tempDiv.firstElementChild;
             
-            // Preserve expanded state if it was expanded
             const oldActions = fileListItem.querySelector('.file-actions');
             if (oldActions && oldActions.classList.contains('actions-expanded')) {
                 newFileItem.querySelector('.file-actions')?.classList.add('actions-expanded');
@@ -1156,9 +1174,11 @@
         }
         if (warningText && audioWarningDiv) { audioWarningDiv.innerHTML = warningText; audioWarningDiv.style.display = 'block'; }
         if (videoTitle) videoTitle.innerText = title || "Video";
-        if (vlcText) vlcText.innerText = url;
+        if (vlcText) vlcText.innerText = url; // URL should be correctly encoded here
         if (vlcBox) vlcBox.style.display = 'block';
-        videoElement.src = url;
+        
+        videoElement.src = url; // The URL passed here should be fully and correctly encoded
+        
         videoElement.load();
         videoElement.play().catch(e => { console.warn("Video play failed:", e); handleVideoError(e); });
         if (videoContainer.style.display === 'none') { videoContainer.style.display = 'flex'; }
@@ -1331,7 +1351,7 @@
         if (!qualityFilterSelect) return;
         const currentSelectedValue = qualityFilterSelect.value;
         rawItems.forEach(item => { if (item.displayQuality && item.displayQuality !== 'N/A') { uniqueQualities.add(item.displayQuality); } });
-        const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X265'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); });
+        const sortedQualities = [...uniqueQualities].sort((a, b) => { const getScore = (q) => { q = String(q || '').toUpperCase().trim(); const resMatch = q.match(/^(\d{3,4})P$/); if (q === '4K' || q === '2160P') return 100; if (resMatch) return parseInt(resMatch[1], 10); if (q === '1080P') return 90; if (q === '720P') return 80; if (q === '480P') return 70; if (['WEBDL', 'BLURAY', 'BDRIP', 'BRRIP'].includes(q)) return 60; if (['WEBIP', 'HDTV', 'HDRIP'].includes(q)) return 50; if (['DVD', 'DVDRIP'].includes(q)) return 40; if (['DVDSCR', 'HC', 'HDCAM', 'TC', 'TS', 'CAM'].includes(q)) return 30; if (['HDR', 'DOLBY VISION', 'DV', 'HEVC', 'X25'].includes(q)) return 20; return 0; }; const scoreA = getScore(a); const scoreB = getScore(b); if (scoreA !== scoreB) return scoreB - scoreA; return String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' }); });
         while (qualityFilterSelect.options.length > 1) { qualityFilterSelect.remove(1); }
         sortedQualities.forEach(quality => { if (quality && quality !== 'N/A') { const option = document.createElement('option'); option.value = quality; option.textContent = quality; qualityFilterSelect.appendChild(option); } });
         qualityFilterSelect.value = [...qualityFilterSelect.options].some(opt => opt.value === currentSelectedValue) ? currentSelectedValue : "";
@@ -1398,7 +1418,6 @@
                  if (fileActions) {
                      const isCurrentlyExpanded = fileActions.classList.contains('actions-expanded');
                      
-                     // Accordion behavior: Close all other currently open action panels
                      const allFileItems = fileItem.parentElement.querySelectorAll('.file-item');
                      allFileItems.forEach(item => {
                          const otherActions = item.querySelector('.file-actions');
@@ -1409,7 +1428,6 @@
                          }
                      });
 
-                     // Toggle the current one
                      if (isCurrentlyExpanded) {
                          fileActions.classList.remove('actions-expanded');
                          fileInfoTrigger.classList.remove('info-active');
@@ -1419,7 +1437,7 @@
                      }
                  }
              }
-             return; // Processed this click, do not proceed further
+             return; 
          }
 
          // --- 2. Handle group grid item navigation ---
@@ -1434,7 +1452,7 @@
 
          // --- 3. Handle button clicks within group detail (or player close) ---
          if (target.closest('#item-detail-content')) {
-             handleGroupDetailActionClick(event); // This will catch button clicks inside .file-actions
+             handleGroupDetailActionClick(event); 
              return;
          }
          
@@ -1447,21 +1465,20 @@
          if (target.closest('th.sortable')) { handleSort(event); return; }
     }
     function handleGroupDetailActionClick(event) {
-        const button = event.target.closest('.button'); // This will get a button inside .file-actions
-        if (!button || !currentGroupData) return; // If no button or no group data, exit
+        const button = event.target.closest('.button'); 
+        if (!button || !currentGroupData) return; 
 
-        // Only process if the button is inside .file-actions OR is the main custom URL toggle
         const isInFileActions = button.closest('.file-actions');
         const isCustomUrlToggle = button.dataset.action === 'toggle-custom-url-player' && button.closest('#item-detail-content');
 
         if (!isInFileActions && !isCustomUrlToggle) {
-            return; // Not a button we're interested in here (e.g. TMDb link button)
+            return; 
         }
         
         const action = button.dataset.action;
-        const fileId = button.dataset.fileId; // This will be present for buttons inside .file-actions
+        const fileId = button.dataset.fileId; 
         
-        currentFileForAction = null; // Reset
+        currentFileForAction = null; 
         if (fileId && currentGroupData.files) {
              currentFileForAction = currentGroupData.files.find(f => String(f.id) === String(fileId));
         }
@@ -1472,9 +1489,7 @@
         }
         if (action && (action.startsWith('bypass-')) && !button.dataset.hubcloudUrl && !button.dataset.gdflixUrl) {
              console.warn(`Bypass action ${action} missing source URL on button.`);
-             // For bypass, we use the URL from the button directly, not from currentFileForAction.url
-             // but we do need currentFileForAction for updating the item later.
-             if (!currentFileForAction && fileId) { // Try to get it if only fileId was on button
+             if (!currentFileForAction && fileId) { 
                 currentFileForAction = currentGroupData.files.find(f => String(f.id) === String(fileId));
              }
              if (!currentFileForAction) {
@@ -1491,9 +1506,9 @@
             case 'share-file': event.preventDefault(); handleShareClick(button); break;
             case 'bypass-hubcloud-file': {
                 const hubUrl = button.dataset.hubcloudUrl;
-                if (hubUrl && currentFileForAction) { // currentFileForAction needed for updateFileInGroupAfterBypass
+                if (hubUrl && currentFileForAction) { 
                     event.preventDefault(); 
-                    triggerHubCloudBypassForFile(button, currentFileForAction); // Pass file object for update
+                    triggerHubCloudBypassForFile(button, currentFileForAction); 
                 } else {
                     console.warn("HubCloud bypass: Missing URL or file context for update.", hubUrl, currentFileForAction);
                 }
@@ -1501,9 +1516,9 @@
             }
             case 'bypass-gdflix-file': {
                 const gdflixUrl = button.dataset.gdflixUrl;
-                if (gdflixUrl && currentFileForAction) { // currentFileForAction needed for updateFileInGroupAfterBypass
+                if (gdflixUrl && currentFileForAction) { 
                      event.preventDefault(); 
-                     triggerGDFLIXBypassForFile(button, currentFileForAction); // Pass file object for update
+                     triggerGDFLIXBypassForFile(button, currentFileForAction); 
                 } else {
                     console.warn("GDFLIX bypass: Missing URL or file context for update.", gdflixUrl, currentFileForAction);
                 }
@@ -1514,7 +1529,31 @@
         }
     }
     function handleGlobalCustomUrlClick(event) { event.preventDefault(); lastFocusedElement = event.target; if (!container || !videoContainer || !playerCustomUrlSection || !playerCustomUrlInput) return; closePlayerIfNeeded(null); if (videoContainer.parentElement !== container) { if (videoContainer.parentElement) { videoContainer.parentElement.removeChild(videoContainer); } container.appendChild(videoContainer); } else { if (!container.contains(videoContainer)) { container.appendChild(videoContainer); } } if(resultsArea) resultsArea.style.display = 'none'; if(groupDetailViewEl) groupDetailViewEl.style.display = 'none'; if(searchFocusArea) searchFocusArea.style.display = 'none'; if(pageFooter) pageFooter.style.display = 'none'; isGlobalCustomUrlMode = true; videoContainer.classList.add('global-custom-url-mode'); if (videoElement) videoElement.style.display = 'none'; if (customControlsContainer) customControlsContainer.style.display = 'none'; if (videoTitle) videoTitle.innerText = 'Play Custom URL'; if (vlcBox) vlcBox.style.display = 'none'; if (audioWarningDiv) audioWarningDiv.style.display = 'none'; playerCustomUrlSection.style.display = 'flex'; if (playerCustomUrlInput) playerCustomUrlInput.value = ''; if (playerCustomUrlFeedback) playerCustomUrlFeedback.textContent = ''; videoContainer.style.display = 'flex'; if (playerCustomUrlInput) { setTimeout(() => playerCustomUrlInput.focus(), 50); } }
-    function handleGlobalPlayCustomUrl(event) { event.preventDefault(); if (!playerCustomUrlInput || !playerCustomUrlFeedback) return; const customUrlRaw = playerCustomUrlInput.value.trim(); playerCustomUrlFeedback.textContent = ''; if (!customUrlRaw) { playerCustomUrlFeedback.textContent = 'Please enter a URL.'; playerCustomUrlInput.focus(); return; } let customUrlEncoded = customUrlRaw; try { new URL(customUrlRaw); customUrlEncoded = customUrlRaw.replace(/ /g, '%20'); } catch (e) { playerCustomUrlFeedback.textContent = 'Invalid URL format.'; playerCustomUrlInput.focus(); return; } if(playerCustomUrlSection) playerCustomUrlSection.style.display = 'none'; if(videoElement) videoElement.style.display = 'block'; if(customControlsContainer) customControlsContainer.style.display = 'flex'; streamVideo("Custom URL Video", customUrlEncoded, null, true); }
+    function handleGlobalPlayCustomUrl(event) {
+        event.preventDefault();
+        if (!playerCustomUrlInput || !playerCustomUrlFeedback) return;
+        const customUrlRaw = playerCustomUrlInput.value.trim();
+        playerCustomUrlFeedback.textContent = '';
+        if (!customUrlRaw) {
+            playerCustomUrlFeedback.textContent = 'Please enter a URL.';
+            playerCustomUrlInput.focus();
+            return;
+        }
+        let customUrlEncoded;
+        try {
+            new URL(customUrlRaw); // Validate if it's a basic URL structure
+            customUrlEncoded = encodeURI(customUrlRaw);
+            customUrlEncoded = customUrlEncoded.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
+        } catch (e) {
+            playerCustomUrlFeedback.textContent = 'Invalid URL format.';
+            playerCustomUrlInput.focus();
+            return;
+        }
+        if(playerCustomUrlSection) playerCustomUrlSection.style.display = 'none';
+        if(videoElement) videoElement.style.display = 'block';
+        if(customControlsContainer) customControlsContainer.style.display = 'flex';
+        streamVideo("Custom URL Video", customUrlEncoded, null, true);
+    }
     function toggleCustomUrlInputInPlayer(toggleButton, triggeredByError = false) {
         if (!videoContainer || !playerCustomUrlSection || !videoElement || !customControlsContainer) return;
         if (videoContainer.style.display === 'none') {
@@ -1561,10 +1600,22 @@
         if (!inputField || !feedbackSpan) return;
         const customUrlRaw = inputField.value.trim();
         feedbackSpan.textContent = '';
-        if (!customUrlRaw) { feedbackSpan.textContent = 'Please enter a URL.'; inputField.focus(); return; }
-        let customUrlEncoded = customUrlRaw;
-        try { new URL(customUrlRaw); customUrlEncoded = customUrlRaw.replace(/ /g, '%20'); }
-        catch (e) { feedbackSpan.textContent = 'Invalid URL format.'; inputField.focus(); return; }
+        if (!customUrlRaw) {
+            feedbackSpan.textContent = 'Please enter a URL.';
+            inputField.focus();
+            return;
+        }
+        let customUrlEncoded;
+        try {
+            new URL(customUrlRaw); // Validate
+            customUrlEncoded = encodeURI(customUrlRaw);
+            customUrlEncoded = customUrlEncoded.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
+        }
+        catch (e) {
+            feedbackSpan.textContent = 'Invalid URL format.';
+            inputField.focus();
+            return;
+        }
         isGlobalCustomUrlMode = false;
         if (playerCustomUrlSection) playerCustomUrlSection.style.display = 'none';
         if (videoElement) videoElement.style.display = 'block';
@@ -1573,8 +1624,8 @@
     }
 
     // --- HubCloud/GDFLIX Bypass Logic ---
-    async function triggerHubCloudBypassForFile(buttonElement, fileToUpdate) { // Changed param name
-        const hubcloudUrl = buttonElement.dataset.hubcloudUrl || fileToUpdate.hubcloud_link; // Get URL from button or file
+    async function triggerHubCloudBypassForFile(buttonElement, fileToUpdate) { 
+        const hubcloudUrl = buttonElement.dataset.hubcloudUrl || fileToUpdate.hubcloud_link; 
         if (!hubcloudUrl) { setBypassButtonState(buttonElement, 'error', 'Missing URL'); return; }
         if (!fileToUpdate || !fileToUpdate.id) { setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
         setBypassButtonState(buttonElement, 'loading');
@@ -1586,14 +1637,15 @@
             if (!response.ok) { let errorDetails = `HTTP Error: ${response.status}`; try { errorDetails = (await response.json()).details || errorDetails; } catch (_) {} throw new Error(errorDetails); }
             const result = await response.json();
             if (result.success && result.finalUrl) {
-                const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20');
+                let encodedFinalUrl = encodeURI(result.finalUrl);
+                encodedFinalUrl = encodedFinalUrl.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
                 setBypassButtonState(buttonElement, 'success', 'Success!');
                 updateFileInGroupAfterBypass(fileToUpdate.id, encodedFinalUrl);
             } else { throw new Error(result.details || result.error || 'Unknown HubCloud bypass failure'); }
         } catch (error) { clearTimeout(timeoutId); if (error.name === 'AbortError' && !apiController.signal.aborted) { setBypassButtonState(buttonElement, 'error', 'Timeout'); } else if (error.name === 'AbortError') { setBypassButtonState(buttonElement, 'idle'); } else { setBypassButtonState(buttonElement, 'error', `Failed: ${error.message.substring(0, 50)}`); } }
     }
-    async function triggerGDFLIXBypassForFile(buttonElement, fileToUpdate) { // Changed param name
-        const gdflixUrl = buttonElement.dataset.gdflixUrl || fileToUpdate.gdflix_link; // Get URL from button or file
+    async function triggerGDFLIXBypassForFile(buttonElement, fileToUpdate) { 
+        const gdflixUrl = buttonElement.dataset.gdflixUrl || fileToUpdate.gdflix_link; 
         if (!gdflixUrl) { setBypassButtonState(buttonElement, 'error', 'Missing URL'); return; }
         if (!fileToUpdate || !fileToUpdate.id) { setBypassButtonState(buttonElement, 'error', 'Context Error'); return; }
         setBypassButtonState(buttonElement, 'loading');
@@ -1605,7 +1657,8 @@
             if (!response.ok) { let errorDetails = `HTTP Error: ${response.status}`; try { errorDetails = (await response.json()).error || errorDetails; } catch (_) {} throw new Error(errorDetails); }
             const result = await response.json();
             if (result.success && result.finalUrl) {
-                const encodedFinalUrl = result.finalUrl.replace(/ /g, '%20');
+                let encodedFinalUrl = encodeURI(result.finalUrl);
+                encodedFinalUrl = encodedFinalUrl.replace(/\[/g, '%5B').replace(/\]/g, '%5D').replace(/\+/g, '%2B');
                 setBypassButtonState(buttonElement, 'success', 'Success!');
                 updateFileInGroupAfterBypass(fileToUpdate.id, encodedFinalUrl);
             } else { throw new Error(result.error || 'Unknown GDFLIX bypass failure'); }
