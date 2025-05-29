@@ -1,4 +1,4 @@
-/* --- START OF style.css (MODIFIED FOR GROUPING, GRID VIEW, GROUP DETAIL VIEW + TRAILER EMBED) --- */
+/* --- START OF style.css (MODIFIED FOR GROUPING, GRID VIEW, GROUP DETAIL VIEW + TRAILER EMBED + CLICK-TO-REVEAL ACTIONS) --- */
 :root {
   --primary-color: #0d6efd;
   --primary-hover: #0b5ed7;
@@ -70,6 +70,10 @@
 
   --transition-speed: 0.3s;
   --transition-timing: ease;
+
+  --file-info-hover-bg: #f0f0f0;
+  --file-info-active-bg: #e9ecef;
+  --file-actions-bg: #f9f9f9;
 }
 
 *, *::before, *::after {
@@ -849,22 +853,35 @@ body {
   background-color: var(--container-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  padding: 15px;
   margin-bottom: 12px;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: column; /* Ensures .file-info and .file-actions stack vertically */
+  gap: 0; /* Remove gap if padding handles spacing */
   transition: box-shadow 0.2s ease;
+  overflow: hidden; /* Important for max-height transition on actions */
+  padding: 0; /* Let sub-elements handle padding */
 }
 
 .file-item:hover {
   box-shadow: var(--shadow-sm);
 }
 
-.file-info {
+.file-info { /* This is now the clickable area */
   flex-grow: 1;
   min-width: 0;
+  padding: 15px; /* Padding for the info section */
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
+
+.file-info:hover {
+  background-color: var(--file-info-hover-bg);
+}
+.file-info.info-active { /* Style when actions are shown */
+  background-color: var(--file-info-active-bg);
+  /* border-bottom: 1px solid var(--border-color); Optional: if no border on .file-actions */
+}
+
 
 .file-name {
   display: block;
@@ -889,32 +906,53 @@ body {
 }
 
 .file-actions {
-  display: flex;
+  display: flex; /* Will be toggled by JS/CSS */
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   flex-shrink: 0;
+
+  /* Styles for hidden state (transitionable) */
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  padding: 0 15px; /* Horizontal padding when hidden for smoother transition */
+  border-top: 0px solid var(--border-color); /* Start with no border */
+  background-color: var(--file-actions-bg);
+  transition: opacity 0.3s ease-out, 
+              max-height 0.3s ease-out, 
+              padding 0.3s ease-out,
+              border-top-width 0.3s ease-out;
 }
+
+.file-actions.actions-expanded {
+  opacity: 1;
+  max-height: 500px; /* Large enough to fit buttons */
+  padding: 15px; /* Full padding when expanded */
+  border-top: 1px solid var(--border-color); /* Add border when expanded */
+}
+
 
 .file-actions .button {
   padding: 8px 14px;
   font-size: 13px;
 }
 
-.file-item.highlighted-file {
+.file-item.highlighted-file .file-info { /* Apply highlight to info part if needed */
   background-color: var(--warning-bg);
-  border-color: var(--warning-border);
-  box-shadow: 0 0 8px rgba(255,193,7,0.5);
+  border-color: var(--warning-border); /* This border won't show as info has no border */
+}
+.file-item.highlighted-file { /* Apply shadow to whole item */
+   box-shadow: 0 0 8px rgba(255,193,7,0.5);
 }
 
+
 @media (min-width: 768px) {
-  .file-item {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
+  /* .file-item flex-direction is now always column, so no changes here needed for that */
   .file-actions {
-    justify-content: flex-end;
+    /* If you want buttons inside the panel to align to the right on desktop: */
+    /* justify-content: flex-end; */
+    /* Current behavior with flex-wrap: wrap and gap: 10px is generally good. */
   }
 }
 
@@ -991,7 +1029,7 @@ body {
   border-radius: 50%;
   border-top-color: #fff;
   animation: spin 0.8s ease infinite;
-  margin-left: -0.5em;
+  margin-left: -0.5em; /* Compensate for margin-right of icon */
 }
 
 .button.loading .button-spinner {
@@ -1745,7 +1783,7 @@ body {
   align-items: center;
 }
 
-.tmdb-rating span {
+.tmdb-rating span { /* This was for a star icon, if you have one */
   margin-right: 4px;
 }
 
@@ -1879,7 +1917,7 @@ hr.detail-separator {
   }
   .tmdb-poster-column {
     flex-basis: 200px;
-    margin-right: 20px;
+    margin-right: 20px; /* This was margin-left: 0; margin-right: 20px */
     margin-left: 0;
     text-align: left;
   }
@@ -1888,7 +1926,7 @@ hr.detail-separator {
     margin: 0;
   }
   .tmdb-info-column {
-    flex-basis: 0;
+    flex-basis: 0; /* Let it grow */
   }
 }
 
@@ -1910,7 +1948,7 @@ hr.detail-separator {
   #cinemaghar-container.results-active #search-focus-area {
     padding: 15px 15px 10px 15px;
     border-bottom: 1px solid var(--border-color);
-    min-height: 67px;
+    min-height: 67px; /* Ensure consistent height */
   }
   #search-focus-area .simple-title {
     font-size: 42px;
@@ -1947,7 +1985,7 @@ hr.detail-separator {
   #searchInputSuggestions {
     width: 100%;
     max-width: 100%;
-    top: calc(100% + 1px);
+    top: calc(100% + 1px); /* Position below input */
     border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
   }
   #searchInputSuggestions div {
@@ -2011,7 +2049,7 @@ hr.detail-separator {
   #item-detail-view {
     padding: 15px;
     margin-top: 10px;
-    max-width: 95%;
+    max-width: 95%; /* Use more width on mobile */
     border-radius: var(--border-radius-sm);
   }
   #item-detail-view .back-button {
@@ -2022,9 +2060,9 @@ hr.detail-separator {
   #item-detail-content {
     padding: 15px 10px;
   }
-  .file-item {
+
+  .file-info { /* Clickable area padding for mobile */
     padding: 12px;
-    gap: 10px;
   }
   .file-name {
     font-size: 0.95em;
@@ -2032,19 +2070,29 @@ hr.detail-separator {
   .file-meta {
     font-size: 0.85em;
   }
-  .file-actions {
+
+  .file-actions { /* For mobile, ensure it takes full width and buttons stack */
+    padding: 12px; /* Adjust padding for mobile if needed */
+  }
+  .file-actions.actions-expanded {
+     padding: 12px;
+  }
+
+  .file-actions .button { /* Buttons stack and take full width */
+    width: 100%;
+    margin: 0; /* Reset individual button margins if any */
+    box-sizing: border-box;
+  }
+  /* Ensure buttons stack when actions are expanded on mobile */
+   .file-actions.actions-expanded {
     flex-direction: column;
     align-items: stretch;
   }
-  .file-actions .button {
-    width: 100%;
-    margin: 0;
-    box-sizing: border-box;
-  }
+
   .file-actions .copy-feedback,
   .file-actions .bypass-feedback {
     margin-left: 0;
-    margin-top: 5px;
+    margin-top: 8px; /* Space below last button or between buttons if they also have margin */
     text-align: center;
     width: 100%;
     display: block;
@@ -2062,8 +2110,8 @@ hr.detail-separator {
   }
   #cinemaghar-container #mainQualityFilterSelect {
     height: 40px;
-    min-width: unset;
-    flex-grow: 1;
+    min-width: unset; /* Allow it to shrink */
+    flex-grow: 1; /* Allow it to grow if space */
   }
   .tab-navigation {
     margin-bottom: 20px;
@@ -2077,7 +2125,7 @@ hr.detail-separator {
     border-radius: var(--border-radius-sm);
   }
   #cinemaghar-container .video-container {
-    padding: 45px 10px 15px 10px;
+    padding: 45px 10px 15px 10px; /* Top padding for close button */
     max-width: 100%;
     margin-left: 0;
     margin-right: 0;
@@ -2117,7 +2165,7 @@ hr.detail-separator {
     font-size: 12px;
     padding: 5px 8px;
     max-width: 120px;
-    height: 34px;
+    height: 34px; /* Adjust height to match buttons */
   }
   #cinemaghar-container .vlc-copy-box {
     font-size: 12px;
@@ -2135,7 +2183,7 @@ hr.detail-separator {
   #playbackSpeedSelect {
     font-size: 12px;
     padding: 3px 6px;
-    height: 34px;
+    height: 34px; /* Adjust height */
   }
   .pagination-container {
     margin: 20px 0 10px 0;
