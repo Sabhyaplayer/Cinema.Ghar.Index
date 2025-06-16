@@ -19,7 +19,7 @@
         UPDATES_PREVIEW_LOAD_MORE_COUNT: 12,
         MOVIE_DATA_API_URL: '/api/movies', // Replace with your actual API endpoint
         BYPASS_API_URL: 'https://hubcloud-bypass.onrender.com/api/hubcloud', // Replace if needed
-        GDFLIX_BYPASS_API_URL: '/api/gdflix',
+        GDFLIX_BYPASS_API_URL: 'https://gdflix-bypass.onrender.com/api/gdflix', // Replace if needed
         BYPASS_TIMEOUT: 60000,
         TMDB_API_PROXY_URL: '/api/tmdb', // Replace with your actual TMDb proxy
         TMDB_FETCH_TIMEOUT: 15000,
