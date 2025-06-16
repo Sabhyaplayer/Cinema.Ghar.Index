@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/gdflix.js": {
+      "maxDuration": 45
+    }
+  }
+}
